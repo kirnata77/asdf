@@ -15,7 +15,7 @@ game/system/       전투, 스킬, 장비, 세이브 등 게임 로직
 game/data/         직업, 몬스터, 맵, 아이템 데이터(파이썬 딕셔너리)
                      file_path.py = 모든 모듈의 import 경로표 (테스트가 실제 파일과 대조)
 game/assets/       폰트, 이미지
-tests/             헤드리스 특성 테스트 + golden/*.json (kivy 없이 돈다)
+tests/             헤드리스 테스트 + golden/*.json (kivy 없이 돈다, 아래 "테스트 지도")
 tools/check.py     완료 기준 게이트 (아래)
 tools/fix_eol.py   줄끝을 CRLF로 통일 (아래 "줄끝")
 docs/              빌드 노트 등 문서
@@ -36,15 +36,36 @@ docs/              빌드 노트 등 문서
 
 한 작업을 끝냈다고 하려면 다음을 모두 만족해야 한다:
 
-1. **`python tools/check.py` 통과** - compileall + `ruff check` + `pytest`.
-   도구 설치: `pip install pytest ruff`. CI(`.github/workflows/check.yml`)도 모든
-   push/PR에서 같은 명령을 돌린다.
+1. **`python tools/check.py` 통과** - compileall + `ruff check` + `pytest` +
+   **커버리지 하한**(game/system + gameflow.py, `COVERAGE_FLOOR` = 90%, 현재 94%).
+   도구 설치: `pip install pytest ruff pytest-cov`. CI(`.github/workflows/check.yml`)도
+   모든 push/PR에서 같은 명령을 돌린다.
+   **로직을 추가/변경하면 테스트도 같이 추가한다** - 어디에 넣을지는 아래 "테스트 지도".
 2. **골든 파일(`tests/golden/`)이 바뀌었다면 이유를 커밋에 적는다.** 리팩터링은
    동작을 바꾸지 않는 것이 정의이므로 골든이 바뀌면 안 된다. 동작을 일부러
    바꾼 경우만 `UPDATE_GOLDEN=1 python -m pytest`로 다시 쓰고 diff를 설명한다.
 3. **화면(kivy) 변경은 테스트가 못 잡는다.** 직접 실행해서 확인하거나, 확인하지
    못했으면 커밋 본문에 `NOT VERIFIED: 화면 동작은 실행해 보지 못함`이라고 쓴다.
 4. **기억 갱신** - `MEMORY.md`의 *Now*와 `.memory/`를 같은 커밋에서 고친다(아래).
+
+## 테스트 지도
+
+| 파일 | 무엇을 | 방식 |
+|---|---|---|
+| `test_systems_basic.py` | 주사위, 효과, 파티, 소지품, 캐릭터 데이터, 마을, 지도, 몬스터AI | 정확한 값 |
+| `test_systems_items.py` | 상점, 장비, 세이브, 레벨업 | 정확한 값 |
+| `test_gameflow.py` | 새 게임 5직업, 세이브 왕복, 로리엔 보스전 | 골든 |
+| `test_gameflow_scenarios.py` | 캠페인(던전 10개/숏컷/마을 개방), 패배/도망/휴식, 상점·장비, 성장 1->10(전직) | 골든 + 값 |
+| `test_combat_rules.py` | 수식, 피해, 속성, 사용 가능 여부, 타겟, 효과 적용, 조건 | 정확한 값 |
+| `test_combat_skills.py` | 스킬 62개 전수(기본/준비됨) | 골든 |
+| `test_combat_monsters.py` | 몬스터 29종의 고유 패턴 73개 + 보스 칭호 | 골든 |
+| `test_combat_effects.py` | 상태이상 20 / 버프 21 / 디버프 20 전수, 반응특성 10종 전투 | 골든 |
+| `test_imports.py`, `test_repo_hygiene.py` | 모듈 import, file_path.py, CRLF | 규칙 |
+
+- 공용 도우미는 `tests/support.py`(자동 전투, 강제 승리/패배, 경로 걷기, 결정적 성장).
+- 무작위는 전부 전역 `random`이라 `random.seed()`로 재현된다. 골든은 시드를 고정해 만든다.
+- **새 스킬/몬스터/버프/상태이상 데이터를 추가하면** 전수 스윕이 자동으로 포함해 골든이
+  바뀐다 - `UPDATE_GOLDEN=1`로 다시 쓰고 새 항목이 맞는지 diff를 읽는다.
 
 ## 작업 방식 (가드레일)
 
