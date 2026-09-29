@@ -1,0 +1,316 @@
+"""game/system의 작은 모듈 단위 테스트 - 규칙을 정확한 값으로 고정한다.
+
+주사위/효과/파티/소지품/캐릭터 데이터/마을/지도/몬스터AI. 무작위가 끼는 곳은
+random.seed()로 고정하거나 random 함수를 바꿔치기해서 경계값을 직접 검사한다.
+"""
+
+import random
+
+import pytest
+
+from game.system import (
+    character_creation_system as 생성,
+    character_data_system as 데이터,
+    dice_utils,
+    effect_engine,
+    map_system,
+    monster_ai,
+    party_system,
+    player_system,
+    town_system,
+)
+
+
+# ---------------------------------------------------------------- dice_utils
+
+def test_주사위_범위와_합():
+    random.seed(0)
+    굴림 = dice_utils.주사위_굴림(50, 6)
+    assert len(굴림) == 50 and set(굴림) <= set(range(1, 7))
+    assert set(굴림) == set(range(1, 7))  # 50번이면 모든 눈이 나온다(시드 0)
+    random.seed(1)
+    합 = dice_utils.주사위_합(3, 8)
+    random.seed(1)
+    assert 합 == sum(dice_utils.주사위_굴림(3, 8))
+    assert dice_utils.주사위_굴림(0, 6) == []
+
+
+@pytest.mark.parametrize("이점,불리,기대", [
+    (False, False, 3),   # 1회만 굴림 -> 첫 값
+    (True, False, 17),   # 이점: 두 값 중 큰 값
+    (False, True, 3),    # 불리: 두 값 중 작은 값
+    (True, True, 3),     # 상쇄 -> 1회
+])
+def test_d20_이점_불리(monkeypatch, 이점, 불리, 기대):
+    값들 = iter([3, 17])
+    monkeypatch.setattr(dice_utils.random, "randint", lambda a, b: next(값들))
+    assert dice_utils.d20_굴림(이점, 불리) == 기대
+
+
+def test_판정과_내성(monkeypatch):
+    monkeypatch.setattr(dice_utils.random, "randint", lambda a, b: 10)
+    assert dice_utils.판정_굴림(3) == (13, 10)
+    assert dice_utils.내성_성공(2, 12) is True    # 12 >= 12
+    assert dice_utils.내성_성공(1, 12) is False   # 11 < 12
+
+
+# ------------------------------------------------------------- effect_engine
+
+def _빈캐릭터(**덮어쓰기):
+    캐릭터 = 데이터.빈_캐릭터()
+    캐릭터.update(덮어쓰기)
+    return 캐릭터
+
+
+def test_효과_즉시_적용_종류별():
+    c = _빈캐릭터(약점스탯="지능")
+    effect_engine.효과_즉시_적용(c, {"변동대상": "어그로", "변동값": 5})
+    effect_engine.효과_즉시_적용(c, {"변동대상": "어그로", "배율": 2})
+    effect_engine.효과_즉시_적용(c, {"변동대상": "근력", "변동값": 3})
+    effect_engine.효과_즉시_적용(c, {"변동대상": "근력", "변동값": "1d4"})  # 숫자 아님 -> 무시
+    effect_engine.효과_즉시_적용(c, {"변동대상": "저항", "변동값": "화"})
+    effect_engine.효과_즉시_적용(c, {"변동대상": "저항", "변동값": "화"})  # 중복 안 쌓임
+    effect_engine.효과_즉시_적용(c, {"약점스탯보너스": 2, "약점패널티상쇄": True})
+    effect_engine.효과_즉시_적용(c, {"변동대상": "AC", "변동값": 1})  # 즉시반영 대상 아님
+    assert (c["어그로"], c["어그로배율"], c["근력"]) == (15, 2.0, 11)
+    assert c["저항"] == ["화"] and c["지능"] == 10 and c["기본AC"] == 10
+
+
+def test_약점스탯보너스_약점없으면_무시():
+    c = _빈캐릭터()
+    effect_engine.효과_즉시_적용(c, {"약점스탯보너스": 2})
+    assert all(c[s] == 8 for s in ("근력", "민첩", "건강", "지능", "지혜", "매력"))
+
+
+def test_특성_부여_와_효과적용():
+    c = _빈캐릭터()
+    정의 = {"효과": {"변동대상": "민첩", "변동값": 1}, "민첩상한해제": ["경갑", "경갑"]}
+    effect_engine.특성_부여(c, "날렵함", 정의)
+    effect_engine.특성_부여(c, "날렵함")  # 이름 중복 추가 안 됨, 정의 없으면 효과 없음
+    effect_engine.특성_효과_적용(c, {"효과": [{"변동대상": "지혜", "변동값": 2}]})
+    effect_engine.특성_효과_적용(c, {})
+    assert c["보유특성"] == ["날렵함"]
+    assert (c["민첩"], c["지혜"], c["민첩상한해제"]) == (9, 10, ["경갑"])
+
+
+# ---------------------------------------------------------- party / player
+
+def test_파티_규칙():
+    파티 = party_system.빈_파티()
+    인원 = [_빈캐릭터(캐릭터명=f"c{i}", 현재HP=i) for i in range(4)]
+    for c in 인원:
+        party_system.파티원_추가(파티, c)
+    with pytest.raises(ValueError, match="최대 4명"):
+        party_system.파티원_추가(파티, _빈캐릭터(캐릭터명="x"))
+    with pytest.raises(ValueError, match="이미 파티에"):
+        파티2 = party_system.빈_파티()
+        party_system.파티원_추가(파티2, 인원[0])
+        party_system.파티원_추가(파티2, 인원[0])
+    assert party_system.생존자_목록(파티) == 인원[1:]  # HP 0은 제외
+    인원[1]["어그로배율"] = 0.5
+    assert party_system.파티_어그로합계(파티) == 10 * 0.5 + 10 + 10
+    party_system.파티원_제거(파티, 인원[3])
+    with pytest.raises(ValueError, match="파티에 없다"):
+        party_system.파티원_제거(파티, 인원[3])
+    for c in 인원:
+        c["현재HP"] = 0
+    assert party_system.전멸_여부(파티)
+
+
+def test_소지품_규칙():
+    플레이어 = player_system.빈_플레이어()
+    assert 플레이어["레벨"] == 1 and 플레이어["파티"] == {"파티원": []}
+    player_system.골드_추가(플레이어, 30)
+    player_system.골드_추가({}, 1)  # 소지품이 없으면 만들어서 넣는다
+    with pytest.raises(ValueError):
+        player_system.골드_추가(플레이어, -1)
+    player_system.아이템_추가(플레이어, "포션", "HP 포션", 2)
+    player_system.아이템_추가(플레이어, "포션", "HP 포션")
+    with pytest.raises(ValueError, match="카테고리"):
+        player_system.아이템_추가(플레이어, "무기", "칼")
+    with pytest.raises(ValueError, match="1 이상"):
+        player_system.아이템_추가(플레이어, "포션", "HP 포션", 0)
+    assert 플레이어["소지품"]["골드"] == 30
+    assert 플레이어["소지품"]["포션"] == {"HP 포션": 3}
+
+
+# --------------------------------------------------------- character data
+
+def test_보정치_차수_HP():
+    c = _빈캐릭터(근력=18, 건강=14)
+    assert [데이터.능력치_보정치(dict(근력=v), "근력") for v in (1, 8, 9, 10, 11, 18)] == [-5, -1, -1, 0, 0, 4]
+    assert [데이터.차수_계산({"레벨": lv}) for lv in (1, 5, 6, 10, 11, 16, 20)] == [1, 1, 2, 2, 3, 4, 4]
+    c["레벨"] = 3
+    assert 데이터.기본최대HP_계산(c, 10, 6) == 10 + 2 + 2 * (6 + 2)
+    c["보유특성"].append("가드")
+    c["보유스킬"].append("삼연참")
+    assert 데이터.특성_보유(c, "가드") and not 데이터.특성_보유(c, "없음")
+    assert 데이터.스킬_보유(c, "삼연참")
+
+
+def test_기술판정_숙련_숙달(monkeypatch):
+    monkeypatch.setattr(dice_utils.random, "randint", lambda a, b: 10)
+    c = _빈캐릭터(근력=14)  # 보정치 +2
+    assert 데이터.기술판정(c, "운동", "근력") == (None, 12)
+    c["숙련"].append("운동")
+    assert 데이터.기술판정(c, "운동", "근력", 14) == (True, 14)
+    c["숙달"].append("운동")
+    assert 데이터.기술판정(c, "운동", "근력", 17) == (False, 16)
+
+
+def test_초기능력치_직업별():
+    for 직업, 구성 in 생성.직업별_주보조약점스탯.items():
+        능력치, 주, 보조, 약점 = 생성.초기능력치_생성(직업)
+        assert (주, 보조, 약점) == (구성["주스탯"], 구성["보조스탯"], 구성["약점스탯"])
+        assert (능력치[주], 능력치[보조], 능력치[약점]) == (13, 12, 8)
+        assert sum(능력치.values()) == 13 + 12 + 8 + 10 * 3
+
+
+def test_캐릭터_생성_주문시전_MP():
+    레벨1 = {"획득": {"획득특성": "힘"}, "기본체력": 10, "레벨당체력증가": 6,
+             "기본가용무기": ["봉"], "시작장비": "나무봉", "시작상의": "천옷"}
+    특성 = {"힘": {"효과": {"변동대상": "지능", "변동값": 2}}}
+    c = 생성.캐릭터_생성("미나", "마법사", 레벨1, 특성, {"무기능력치": ["근력", "지능"]},
+                   주문시전능력치="지능")
+    assert c["지능"] == 15 and c["기본최대MP"] == 50 + 10 * 2 == c["현재MP"]
+    assert c["기본최대HP"] == 10 - 1 == c["현재HP"]  # 마법사 약점 건강 8 -> -1
+    assert c["평타스탯"] == ["근력", "지능"] and c["장착장비"]["무기"] == "나무봉"
+    c2 = 생성.캐릭터_생성("철수", "귀검사", 레벨1, 특성, {"무기능력치": []})
+    assert c2["기본최대MP"] == 50  # 주문시전능력치 없음 -> 보정치 0
+
+
+# ------------------------------------------------------------------- town
+
+def test_마을_개방과_이동():
+    진행도 = town_system.새_진행도()
+    전체 = town_system.기본_마을목록()
+    assert [m["마을명"] for m in town_system.이동가능마을목록(전체, 진행도)] == ["엘븐가드"]
+    with pytest.raises(ValueError, match="이동할 수 없다"):
+        town_system.마을_이동(진행도, "헨돈마이어")
+    헨돈 = next(m for m in 전체 if m["마을명"] == "헨돈마이어")
+    town_system.던전_클리어_처리(진행도, 헨돈["개방조건"]["대상"])
+    town_system.던전_클리어_처리(진행도, 헨돈["개방조건"]["대상"])  # 두 번째는 변화 없음
+    town_system.마을_이동(진행도, "헨돈마이어")
+    assert 진행도["현재마을"] == "헨돈마이어"
+    assert town_system.개방조건만족({"개방조건": {"타입": "알수없음"}}, 진행도) is False
+    assert town_system.이동가능던전목록(헨돈) == 헨돈["던전목록"]
+
+
+def test_오브젝트_클리어_기록과_휴식():
+    진행도 = {}
+    assert not town_system.오브젝트_클리어됨(진행도, "d", (1, 2))
+    town_system.오브젝트_클리어_기록(진행도, "d", (1, 2))
+    assert town_system.오브젝트_클리어됨(진행도, "d", (1, 2))
+    파티 = {"파티원": [_빈캐릭터(기본최대HP=20, 현재HP=0, 기본최대MP=50, 현재MP=3)]}
+    town_system.휴식_처리(파티)
+    c = 파티["파티원"][0]
+    assert (c["현재HP"], c["현재MP"]) == (20, 50)
+
+
+# -------------------------------------------------------------------- map
+
+def _작은맵(**추가):
+    맵 = {
+        "지도": ["XXXXX",
+               "XO@OX",
+               "X#OOX",
+               "XXXXX"],
+        "오브젝트": {(2, 1): {"타입": "보스전투", "클리어시": "통행가능화"}},
+        "연결지역": {(1, 2): {"연결맵": "town_01A_T01_Elvengard"}},
+        "인카운트": None,
+    }
+    맵.update(추가)
+    return 맵
+
+
+def test_지도_이동과_오브젝트():
+    상태 = map_system.던전_시작(_작은맵(), "작은맵")
+    assert 상태["위치"] == (1, 1)  # 입장좌표 없음 -> 첫 O/# 칸
+    assert map_system.이동_시도(상태, "위") == {"결과": "이동불가"}
+    결과 = map_system.이동_시도(상태, "오른쪽")
+    assert 결과["결과"] == "오브젝트" and 결과["위치"] == (2, 1)
+    assert 상태["위치"] == (1, 1) and 상태["걸음수"] == 0  # 오브젝트 칸엔 안 들어간다
+    결과 = map_system.이동_시도(상태, "아래")
+    assert 결과 == {"결과": "이동", "위치": (1, 2), "인카운트": None,
+                  "연결지역": {"연결맵": "town_01A_T01_Elvengard"}}
+    map_system.오브젝트_클리어_처리(상태, (2, 1))
+    map_system.오브젝트_클리어_처리(상태, (9, 9))  # 없는 좌표 -> 무시
+    assert map_system.칸_문자(상태["그리드"], (2, 1)) == "O"
+    assert map_system.칸_문자(상태["그리드"], (-1, 0)) is None
+    assert map_system.칸_문자(상태["그리드"], (0, 9)) is None
+    assert map_system.칸_문자(상태["그리드"], (9, 0)) is None
+
+
+def test_연결지역화_와_시작좌표():
+    맵 = _작은맵(입장좌표=(3, 2))
+    맵["오브젝트"][(2, 1)]["클리어시"] = "연결지역화"
+    상태 = map_system.던전_시작(맵, "작은맵")
+    assert 상태["위치"] == (3, 2)
+    assert map_system.던전_시작(맵, "작은맵", 시작좌표=(2, 2))["위치"] == (2, 2)
+    map_system.오브젝트_클리어_처리(상태, (2, 1))
+    assert 상태["그리드"][1][2] == "#"
+    assert map_system._기본_시작좌표([["X"]]) == (0, 0)
+
+
+def test_숏컷_해금():
+    맵 = _작은맵()
+    맵["지도"] = ["XXXXX", "XO@OX", "X#XOX", "XXXXX"]
+    맵["오브젝트"][(2, 2)] = {"타입": "숏컷", "해금조건": {"필요오브젝트좌표": (2, 1)}}
+    맵["오브젝트"][(3, 3)] = {"타입": "숏컷", "해금조건": {}}  # 조건 없음 -> 무시
+    진행도 = town_system.새_진행도()
+    assert map_system.던전_시작(맵, "작은맵", 진행도=진행도)["그리드"][2][2] == "X"
+    town_system.오브젝트_클리어_기록(진행도, "작은맵", (2, 1))
+    assert map_system.던전_시작(맵, "작은맵", 진행도=진행도)["그리드"][2][2] == "O"
+    assert map_system.던전_시작(맵, "작은맵")["그리드"][2][2] == "X"  # 진행도 없음
+
+
+def test_인카운트_확률_경계(monkeypatch):
+    인카운트 = {"인카운트확률": {"안전걸음": 2, "걸음당증가율": 0.25}, "출현마리수": (2, 2),
+             "출현그룹": [{"그룹확률": 1, "출현몬스터": {"고블린": 1}}]}
+    상태 = map_system.던전_시작(_작은맵(인카운트=인카운트), "작은맵")
+    상태["걸음수"] = 2
+    assert map_system.인카운트_판정(상태) is None  # 안전걸음 이내
+    상태["걸음수"] = 4  # 초과 2걸음 -> 확률 0.5
+    monkeypatch.setattr(map_system.random, "random", lambda: 0.5)
+    assert map_system.인카운트_판정(상태) is None  # 0.5 >= 0.5 -> 안 뜸
+    monkeypatch.setattr(map_system.random, "random", lambda: 0.49)
+    assert map_system.인카운트_판정(상태) == {"등장몬스터": ["고블린", "고블린"]}
+    # 이동 중 인카운트가 뜨면 걸음수가 0으로 돌아간다
+    상태["걸음수"] = 10
+    결과 = map_system.이동_시도(상태, "아래")
+    assert 결과["인카운트"] is None  # "#" 칸은 인카운트 판정을 안 한다
+    상태["위치"], 상태["걸음수"] = (3, 1), 10
+    결과 = map_system.이동_시도(상태, "아래")
+    assert 결과["인카운트"] and 상태["걸음수"] == 0
+
+
+# ------------------------------------------------------------- monster_ai
+
+def _몬스터(패턴, 버프스택=None):
+    return {"원본": {"패턴": 패턴}, "버프스택": 버프스택 or {}}
+
+
+def test_행동선택_패턴과_조건부(monkeypatch):
+    assert monster_ai.행동_선택(_몬스터(None)) is None
+    monkeypatch.setattr(monster_ai.dice_utils, "주사위_합", lambda n, m: 2)
+    패턴 = {"1": {"이름": "a"}, "2": {"이름": "b"}}
+    assert monster_ai.행동_선택(_몬스터(패턴))["이름"] == "b"
+    조건부 = {"1": {"이름": "기본"},
+            "2": {"이름": "조건부행동", "조건": {"버프": "분노", "필요스택": 2},
+                  "조건충족시": {"이름": "강타"}, "조건미충족시": {"이름": "대기"}}}
+    assert monster_ai.행동_선택(_몬스터(조건부, {"분노": 1}))["이름"] == "대기"
+    assert monster_ai.행동_선택(_몬스터(조건부, {"분노": 2}))["이름"] == "강타"
+    조건부["2"]["조건충족시"] = "1번으로"
+    assert monster_ai.행동_선택(_몬스터(조건부, {"분노": 3}))["이름"] == "기본"
+
+
+def test_타겟선택_어그로_표적고정():
+    a = {"원본": {"어그로": 10}, "상태이상": []}
+    b = {"원본": {"어그로": 0}, "상태이상": [{"이름": "도발당함"}]}
+    assert monster_ai.타겟_선택([]) is None
+    random.seed(0)
+    assert {id(monster_ai.타겟_선택([a, b])) for _ in range(20)} == {id(a)}  # b 가중치 0
+    정의 = {"도발당함": {"효과": {"표적고정": True}}}
+    assert monster_ai.타겟_선택([a, b], 정의) is b
+    c = {"원본": {"어그로": 0}, "상태이상": []}
+    assert monster_ai.타겟_선택([c], {}) is c  # 가중치 합 0 -> 무작위
