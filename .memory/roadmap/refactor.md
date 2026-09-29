@@ -34,7 +34,7 @@
   파일 12개 이름 변경 + 참조 50개 파일. 순수 기계적 변경이라 골든 불변이 확실해야 함.
   세이브 JSON에 모듈명이 들어가는지 먼저 확인(들어가면 호환 처리 필요).
   `job_skill_format.py`/`perks_class_format.py`/`job_ability_format.py`는 이미 올바른 철자.
-- **R2 gameflow 직업 레지스트리 데이터화** - 54~135행의 직업별 import 반복을
+- ~~R2 gameflow 직업 레지스트리 데이터화~~ **완료 2026-09-29** (import 25줄 -> 표 5줄, 레지스트리 지문 동일, 골든 불변). - 54~135행의 직업별 import 반복을
   `{직업: (분류번호, 파일접미사)}` 표 + `importlib` 한 번으로. 직업 추가가 한 줄이 되게.
   (`importlib`은 이미 전직 레지스트리에서 쓰고 있음, 82행)
 - **R3 화면 → system 직접 호출 없애기** - `screens_battle.py`(skill_system, 비공개

@@ -5,7 +5,8 @@
 # 이 파일의 함수만 부르고, 로직/데이터 파일을 직접 조합하는 일은 여기서
 # 한다.
 #
-# - 5직업(귀검사/격투가/거너/마법사/프리스트)은 "직업_레지스트리"에,
+# - 5직업(귀검사/격투가/거너/마법사/프리스트)은 "_직업_데이터파일"(직업 -> 데이터 파일명)
+#   한 줄씩으로 등록하고, 그 표로 "직업_레지스트리"를 만든다.
 #   1차 전직(레벨 6~)은 "전직_레지스트리"에 등록한다.
 # - 파티는 최대 4명(party_system.파티_최대인원). combat_system.py/
 #   skill_system.py는 참가자 리스트를 순회하므로 인원수와 무관하게 동작한다.
@@ -51,35 +52,11 @@ from game.system import shop_system
 from game.system import player_system
 from game.system import equipment_system
 
-from game.data.job_level.job_level_010m_ghost_swordsman import 레벨업테이블 as _귀검사레벨업, 전직목록 as _귀검사전직목록
-from game.data.ability.job_ability_010m import 특성목록 as _귀검사특성
-from game.data.equipment.eq_01_weapon_010 import 귀검사무기목록
-from game.data.job_skill.job_skill_010m_ghost_swordsman import 스킬목록 as _귀검사스킬
-
-from game.data.job_level.job_level_020f_fighter import 레벨업테이블 as _격투가레벨업, 전직목록 as _격투가전직목록
-from game.data.ability.job_ability_020f import 특성목록 as _격투가특성
-from game.data.equipment.eq_01_weapon_020 import 격투가무기목록
-from game.data.job_skill.job_skill_020f_fighter import 스킬목록 as _격투가스킬
-
-from game.data.job_level.job_level_030f_gunner import 레벨업테이블 as _거너레벨업, 전직목록 as _거너전직목록
-from game.data.ability.job_ability_030f import 특성목록 as _거너특성
-from game.data.equipment.eq_01_weapon_030 import 거너무기목록
-from game.data.job_skill.job_skill_030f_gunner import 스킬목록 as _거너스킬
-
-from game.data.job_level.job_level_040f_mage import 레벨업테이블 as _마법사레벨업, 전직목록 as _마법사전직목록
-from game.data.ability.job_ability_040f import 특성목록 as _마법사특성
-from game.data.equipment.eq_01_weapon_040 import 마법사무기목록
-from game.data.job_skill.job_skill_040f_mage import 스킬목록 as _마법사스킬
-
-from game.data.job_level.job_level_050f_priest import 레벨업테이블 as _프리스트레벨업, 전직목록 as _프리스트전직목록
-from game.data.ability.job_ability_050f import 특성목록 as _프리스트특성
-from game.data.equipment.eq_01_weapon_050 import 프리스트무기목록
-from game.data.job_skill.job_skill_050f_priest import 스킬목록 as _프리스트스킬
+import importlib
 
 # 1차 전직(레벨 6~10)은 각 1차 계열 job_level_XX.py 하단의 "전직목록"을
 # 읽어 _전직정보_생성()이 레벨업테이블/스킬목록 파일을 이름으로 불러온다.
 # 전직 특성은 1차 계열 job_ability_XX.py에 들어 있다.
-import importlib
 
 # 상점 카탈로그용 - 무기 외 장비(방어구/악세서리/특수장비) 데이터.
 # _상점_카탈로그_생성()이 쓰고, 그 카탈로그를 _장비데이터모음_생성()도
@@ -128,11 +105,6 @@ from game.data.buff.status_effects import 상태이상목록
 
 from game.data.ability.job_ability_0000 import 특성목록 as _공용특성
 from game.data.perks.perks_class_0000 import 퍽목록 as _공용퍽
-from game.data.perks.perks_class_010m import 퍽목록 as _귀검사퍽
-from game.data.perks.perks_class_020f import 퍽목록 as _격투가퍽
-from game.data.perks.perks_class_030f import 퍽목록 as _거너퍽
-from game.data.perks.perks_class_040f import 퍽목록 as _마법사퍽
-from game.data.perks.perks_class_050f import 퍽목록 as _프리스트퍽
 
 
 # =====================================================
@@ -175,43 +147,37 @@ def _몬스터목록_합치기(파일목록):
 # 에도 손으로 import + 항목 추가를 해줘야 한다(town_system.기본_마을목록
 # 처럼, 이 프로젝트에는 아직 자동 스캔 레지스트리 패턴이 없다).
 
-직업_레지스트리 = {
-    "귀검사": {
-        "레벨업테이블": _귀검사레벨업,
-        "특성목록": _귀검사특성,
-        "무기목록": 귀검사무기목록,
-        "스킬목록": _귀검사스킬,
-        "퍽목록": _귀검사퍽,
-    },
-    "격투가": {
-        "레벨업테이블": _격투가레벨업,
-        "특성목록": _격투가특성,
-        "무기목록": 격투가무기목록,
-        "스킬목록": _격투가스킬,
-        "퍽목록": _격투가퍽,
-    },
-    "거너": {
-        "레벨업테이블": _거너레벨업,
-        "특성목록": _거너특성,
-        "무기목록": 거너무기목록,
-        "스킬목록": _거너스킬,
-        "퍽목록": _거너퍽,
-    },
-    "마법사": {
-        "레벨업테이블": _마법사레벨업,
-        "특성목록": _마법사특성,
-        "무기목록": 마법사무기목록,
-        "스킬목록": _마법사스킬,
-        "퍽목록": _마법사퍽,
-    },
-    "프리스트": {
-        "레벨업테이블": _프리스트레벨업,
-        "특성목록": _프리스트특성,
-        "무기목록": 프리스트무기목록,
-        "스킬목록": _프리스트스킬,
-        "퍽목록": _프리스트퍽,
-    },
+# 직업 하나 = 데이터 파일 한 벌. 파일명 규칙(분류코드 "010m" 등, 영문명):
+#   job_level/job_level_{분류코드}_{영문명}.py   레벨업테이블, 전직목록
+#   job_skill/job_skill_{분류코드}_{영문명}.py   스킬목록
+#   ability/job_ability_{분류코드}.py            특성목록
+#   perks/perks_class_{분류코드}.py              퍽목록
+#   equipment/eq_01_weapon_{분류번호}.py         {직업}무기목록 (분류번호 = 분류코드 앞 3자리)
+# 새 직업은 파일을 이 규칙대로 만들고 여기에 한 줄 추가하면 된다.
+_직업_데이터파일 = {
+    "귀검사": ("010m", "ghost_swordsman"),
+    "격투가": ("020f", "fighter"),
+    "거너": ("030f", "gunner"),
+    "마법사": ("040f", "mage"),
+    "프리스트": ("050f", "priest"),
 }
+
+
+def _데이터모듈(경로):
+    return importlib.import_module(f"game.data.{경로}")
+
+
+def _직업정보_불러오기(직업, 분류코드, 영문명):
+    return {
+        "레벨업테이블": _데이터모듈(f"job_level.job_level_{분류코드}_{영문명}").레벨업테이블,
+        "특성목록": _데이터모듈(f"ability.job_ability_{분류코드}").특성목록,
+        "무기목록": getattr(_데이터모듈(f"equipment.eq_01_weapon_{분류코드[:3]}"), f"{직업}무기목록"),
+        "스킬목록": _데이터모듈(f"job_skill.job_skill_{분류코드}_{영문명}").스킬목록,
+        "퍽목록": _데이터모듈(f"perks.perks_class_{분류코드}").퍽목록,
+    }
+
+
+직업_레지스트리 = {직업: _직업정보_불러오기(직업, *파일) for 직업, 파일 in _직업_데이터파일.items()}
 
 직업목록 = list(직업_레지스트리.keys())
 
@@ -240,14 +206,9 @@ def _전직정보_생성(항목):
 
 
 전직_레지스트리 = {
-    직업: {전직명: _전직정보_생성(항목) for 전직명, 항목 in 목록.items()}
-    for 직업, 목록 in (
-        ("귀검사", _귀검사전직목록),
-        ("격투가", _격투가전직목록),
-        ("거너", _거너전직목록),
-        ("마법사", _마법사전직목록),
-        ("프리스트", _프리스트전직목록),
-    )
+    직업: {전직명: _전직정보_생성(항목) for 전직명, 항목 in
+          _데이터모듈(f"job_level.job_level_{분류코드}_{영문명}").전직목록.items()}
+    for 직업, (분류코드, 영문명) in _직업_데이터파일.items()
 }
 _전직_시작레벨 = 6
 
@@ -575,13 +536,7 @@ def 전체_세이브_요약():
 # XX0이 맞지만, 화면에 보여줄 파일이 없을 때 대신 쓸 파일을 고르는 처리는
 # screens_common.py의 _캐릭터이미지_경로()가 맡는다(있는 파일로 자동
 # 대체) - 이 함수는 "논리적으로 맞는" 분류번호만 돌려준다.
-_직업_분류번호 = {
-    "귀검사": "010",
-    "격투가": "020",
-    "거너": "030",
-    "마법사": "040",
-    "프리스트": "050",
-}
+_직업_분류번호 = {직업: 분류코드[:3] for 직업, (분류코드, _) in _직업_데이터파일.items()}
 
 
 def 초상화_설정(게임상태, 코드):
