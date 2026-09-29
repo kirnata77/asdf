@@ -1,5 +1,5 @@
 # =====================
-# Kivy 앱 진입점 (main_system.py의 "앱" 클래스 대응)
+# Kivy 앱 진입점
 # =====================
 import os
 import sys
@@ -36,14 +36,12 @@ from kivy.core.text import LabelBase
 from kivy.uix.screenmanager import ScreenManager, NoTransition
 
 # Kivy 기본 폰트(Roboto)에는 한글 글자가 없어서 화면에 네모(□)로 깨져
-# 보이는 문제가 있다. 한때는 이 파일 용량을 아예 없애려고 기기에 이미
-# 깔려 있는 시스템 한글 폰트를 쓰는 방식(경로 후보를 순서대로 탐색)을
-# 썼었는데, 기기마다 경로가 달라 일부 기기에서는 다시 깨질 위험이 있어서
-# 폐기했다. 대신 나눔고딕을 fontTools로 다이어트(힌팅/GSUB/GPOS/DSIG 등
+# 보이는 문제가 있다. 기기의 시스템 한글 폰트는 기기마다 경로가 달라
+# 믿을 수 없으므로, 나눔고딕을 fontTools로 다이어트(힌팅/GSUB/GPOS/DSIG 등
 # 렌더링에 불필요한 테이블만 제거, 글자 커버리지는 원본과 동일하게 유지)
 # 시킨 단일 폰트 파일 하나(game/assets/font/NanumGothic-Diet.ttf, 약
 # 1.3MB - 원본 나눔고딕 Regular 약 2.0MB 대비 축소)를 앱에 직접 담아
-# "Roboto" 별칭을 덮어쓰는 방식으로 되돌아갔다(2026-09-22).
+# "Roboto" 별칭을 덮어쓴다.
 #
 # 볼드체 파일은 따로 안 담았다 - fn_bold를 생략하면 Kivy가 볼드 스타일
 # 텍스트에도 자동으로 fn_regular를 대신 쓴다(볼드 느낌은 안 나지만 글자는
@@ -109,7 +107,7 @@ class _오류처리기(ExceptionHandler):
 
 ExceptionManager.add_handler(_오류처리기())
 
-# 화면은 game/screens/ 아래 6개 파일로 나뉘어 있다(2026-09-29, 예전 screens.py).
+# 화면은 game/screens/ 아래 6개 파일로 나뉘어 있다.
 from game.screens.screens_menu import (
     메인메뉴화면, 파티생성화면, 불러오기목록화면, 저장목록화면, 옵션화면,
 )
