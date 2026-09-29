@@ -17,6 +17,7 @@ game/data/         직업, 몬스터, 맵, 아이템 데이터(파이썬 딕셔�
 game/assets/       폰트, 이미지
 tests/             헤드리스 특성 테스트 + golden/*.json (kivy 없이 돈다)
 tools/check.py     완료 기준 게이트 (아래)
+tools/fix_eol.py   줄끝을 CRLF로 통일 (아래 "줄끝")
 docs/              빌드 노트 등 문서
 .memory/           작업 기억 (MEMORY.md가 색인)
 ```
@@ -57,10 +58,21 @@ docs/              빌드 노트 등 문서
   되고, 화면은 헤드리스 테스트 범위 밖이다.
 - **세이브 호환성.** `game/saves/*.json` 형식(세이브 키 이름 포함)을 바꾸면 이전
   세이브를 불러오는 호환 처리(`gameflow.게임_불러오기` 참고)를 함께 넣는다.
-- **기존 파일의 줄끝(CRLF/LF)을 유지한다.** 저장소에 둘이 섞여 있어서, 줄끝이 바뀌면
-  diff가 파일 전체가 된다. 커밋 전에 `git diff --stat`으로 줄 수가 예상과 맞는지 본다.
 - **`buildozer.spec`을 바꾸면** CI 캐시 키가 바뀌어 다음 APK 빌드가 SDK/NDK를 새로
   받는다(수십 분). 꼭 필요할 때만 바꾼다.
+
+## 줄끝 - 모든 텍스트 파일은 CRLF
+
+- **저장소의 모든 텍스트 파일(.py, .md, .json, .yml, .toml, .spec, .gitignore 등)은
+  CRLF로 저장한다.** 새 파일도 마찬가지다.
+- **예외는 `.githooks/` 하나** - sh가 실행하므로 LF여야 한다.
+- git은 줄끝을 변환하지 않는다(`.gitattributes`의 `* -text`). 저장소 바이트 = 받은 파일
+  바이트이므로, 각자의 `core.autocrlf` 설정과 무관하다.
+- **커밋 전에 `python tools/fix_eol.py`** - LF가 섞인 파일을 CRLF로 바꾼다.
+  위반은 게이트(`tests/test_repo_hygiene.py`)와 CI가 잡는다.
+- 파이썬 스크립트로 파일을 고칠 때는 `open(..., newline="")`로 읽고 써서 줄끝을 보존한다.
+- 줄끝 통일 커밋은 `.git-blame-ignore-revs`에 등록돼 있다:
+  `git config blame.ignoreRevsFile .git-blame-ignore-revs` (한 번만)
 
 ## 기억 파일 (MEMORY.md / .memory/)
 

@@ -21,9 +21,6 @@
 - **화면이 system의 비공개 함수를 부른다** - `screens_battle.py`가
   `skill_system._정수_평가`를 직접 호출(555, 502행). 계층 규칙 위반, roadmap R3.
 
-- **줄끝이 섞여 있다** - CRLF 116개, LF 29개(`git ls-files --eol`). 파이썬으로 파일을
-  고칠 때 `open(..., newline="")`로 읽고 써야 원래 줄끝이 유지된다 - 안 그러면 diff가 파일
-  전체가 된다(이 세션에서 `file_path.py`로 한 번 겪음). 통일은 roadmap R0.5.
 
 ## 문서
 

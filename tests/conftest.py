@@ -38,7 +38,7 @@ def golden():
         경로 = os.path.join(GOLDEN_DIR, f"{이름}.json")
         실제값 = _정규화(실제값)
         if os.environ.get("UPDATE_GOLDEN") == "1" or not os.path.exists(경로):
-            with open(경로, "w", encoding="utf-8") as f:
+            with open(경로, "w", encoding="utf-8", newline="\r\n") as f:  # CRLF 규칙
                 json.dump(실제값, f, ensure_ascii=False, indent=1, sort_keys=True)
                 f.write("\n")
             if os.environ.get("UPDATE_GOLDEN") != "1":

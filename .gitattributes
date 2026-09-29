@@ -1,3 +1,17 @@
-# git 훅은 sh로 실행되므로 Windows에서도 줄 끝을 LF로 유지한다
+# 줄끝 규칙: 저장소의 모든 텍스트 파일은 CRLF로 저장한다 (CLAUDE.md "줄끝").
+# git이 줄끝을 변환하지 않게 해서, 저장소에 든 바이트 = 내려받은 파일 바이트가 되게
+# 한다 - 각자 컴퓨터의 core.autocrlf 설정이나 GitHub 웹 업로드와 무관하게 같다.
+# 규칙은 tests/test_repo_hygiene.py가 검사하고 `python tools/fix_eol.py`가 고친다.
+* -text
+
+# 이미지/폰트는 이진 파일(diff/병합 안 함)
+*.webp binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ttf binary
+*.otf binary
+
+# 예외: git 훅은 sh로 실행되므로 LF를 유지한다
 # (CRLF면 "/bin/sh^M: bad interpreter" 오류로 훅이 실행되지 않는다).
 .githooks/* text eol=lf

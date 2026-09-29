@@ -27,10 +27,8 @@
 - **R0 알려진 버그 정리** (리팩터링 아님, 동작 변경 커밋으로 따로)
   `quest_system.py` 빈 모듈화, `equipment_system` 안 쓰는 import 확인.
   → `.memory/active-issues/known-bugs.md`
-- **R0.5 줄끝 통일** - 추적 파일 중 CRLF 116개, LF 29개가 섞여 있다(웹 업로드/Windows 편집).
-  `.gitattributes`에 `* text=auto eol=lf`(또는 crlf, 사용자가 Windows라면 결정 필요) 후
-  `git add --renormalize .`를 **단독 커밋**으로. 이후 리팩터링 diff가 줄끝 때문에 파일 전체로
-  보이는 일을 막는다. 그 커밋은 `.git-blame-ignore-revs`에 등록.
+- ~~R0.5 줄끝 통일~~ **완료 2026-09-29** - 전부 CRLF(사용자 결정), `.githooks/`만 LF.
+  CRLF 116 / LF 29 → 35개 파일 변환. `* -text`로 git 변환 없음, 테스트로 강제.
 - **R1 이름 오타 정리** - `formet` → `format`(8개 파일), `accesery` → `accessory`(4개 파일).
   파일 12개 이름 변경 + 참조 50개 파일. 순수 기계적 변경이라 골든 불변이 확실해야 함.
   세이브 JSON에 모듈명이 들어가는지 먼저 확인(들어가면 호환 처리 필요).
