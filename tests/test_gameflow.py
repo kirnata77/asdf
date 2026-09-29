@@ -58,13 +58,8 @@ def test_세이브_불러오기_왕복(임시_세이브폴더):
     assert (임시_세이브폴더 / "slot_1.json").exists()
 
     불러옴 = gf.게임_불러오기(1)
-    # 현재 동작: 새 캐릭터에는 "전직" 키가 없고, 불러오기의 구버전 호환 처리가
-    # 전직=None을 채운다(.memory/active-issues/known-bugs.md). 그 차이만 빼면 같다.
-    for 캐릭터 in 상태["파티"]["파티원"]:
-        assert "전직" not in 캐릭터
-    for 캐릭터 in 불러옴["파티"]["파티원"]:
-        assert 캐릭터.pop("전직") is None
-    assert 불러옴["파티"] == 상태["파티"]
+    assert all(캐릭터["전직"] is None for 캐릭터 in 상태["파티"]["파티원"])
+    assert 불러옴["파티"] == 상태["파티"]  # 새 캐릭터와 불러온 캐릭터가 모양까지 같다
     assert 불러옴["진행도"] == 상태["진행도"]
     assert 불러옴["소지품"] == 상태["소지품"]
 
