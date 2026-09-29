@@ -2,9 +2,8 @@
 # 공용 정의 / 퍽 양식
 # =====================
 # perks_class_XX.py 파일들의 공통 구조를 모아둔 참고용 파일이다. 실제
-# 데이터는 없다. (2026-09-28 재작성 - 원본이 레벨업 테이블 양식으로 잘못
-# 덮여 있어서, 실제 퍽 파일 6개와 character_levelup_system.py /
-# gameflow.py의 퍽 처리 코드를 읽고 새로 정리했다.)
+# 데이터는 없다. 실제 퍽 파일 6개와 character_levelup_system.py /
+# gameflow.py의 퍽 처리 코드를 기준으로 정리했다.
 #
 # 퍽으로 얻는 스킬의 상세 정의는 job_skill_XX.py의 "스킬목록"에,
 # 퍽으로 얻는 특성의 상세 정의는 job_ability_XX.py의 "특성목록"에 둔다.
