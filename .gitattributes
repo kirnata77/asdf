@@ -1,0 +1,3 @@
+# git 훅은 sh로 실행되므로 Windows에서도 줄 끝을 LF로 유지한다
+# (CRLF면 "/bin/sh^M: bad interpreter" 오류로 훅이 실행되지 않는다).
+.githooks/* text eol=lf
