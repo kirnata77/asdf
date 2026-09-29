@@ -136,7 +136,6 @@
     "town_formet": "game.data.town.town_formet",
 
     # game/system/
-    "main_system": "game.system.main_system",
     "equipment_system": "game.system.equipment_system",
     "dice_utils": "game.system.dice_utils",
     "effect_engine": "game.system.effect_engine",
@@ -145,7 +144,6 @@
     "party_system": "game.system.party_system",
     "player_system": "game.system.player_system",
     "save_system": "game.system.save_system",
-    "ui_system": "game.system.ui_system",
     "shop_system": "game.system.shop_system",
     "quest_system": "game.system.quest_system",
     "town_system": "game.system.town_system",
@@ -155,23 +153,7 @@
     "combat_system": "game.system.combat_system",
     "skill_system": "game.system.skill_system",
 
-    # game/UI/
-    "ui_main": "game.UI.ui_main",
-    "ui_battle": "game.UI.ui_battle",
-    "ui_party": "game.UI.ui_party",
-    "ui_party_management": "game.UI.ui_party_management",
-    "ui_status": "game.UI.ui_status",
-    "ui_skill": "game.UI.ui_skill",
-    "ui_town": "game.UI.ui_town",
-    "ui_dungeon": "game.UI.ui_dungeon",
-    "ui_item": "game.UI.ui_item",
-    "ui_fild": "game.UI.ui_fild",
-    "ui_character_creation": "game.UI.ui_character_creation",
-    "ui_shop": "game.UI.ui_shop",
-    "ui_character": "game.UI.ui_character",
-    "ui_player": "game.UI.ui_player",
-
-    # game/screens/ (Kivy 화면 - 예전 최상위 screens.py를 6개로 나눔, 2026-09-29)
+    # game/screens/ (Kivy 화면)
     "screens_common": "game.screens.screens_common",
     "screens_menu": "game.screens.screens_menu",
     "screens_town": "game.screens.screens_town",
@@ -197,7 +179,6 @@
 # └── game/
 #     ├── data/            (직업/몬스터/맵 등 게임 콘텐츠 데이터)
 #     ├── system/          (전투/스킬 등 로직)
-#     ├── UI/              (tkinter 화면 - 지금 실행 흐름에서는 쓰지 않음)
 #     ├── screens/         (Kivy 화면 6개 - screens_common/menu/town/
 #     │                     dungeon/battle/party.py, main.py가 가져온다)
 #     ├── saves/           (세이브 파일)
