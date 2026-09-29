@@ -1,0 +1,60 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build-apk.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          pip install --upgrade pip
+          pip install buildozer cython
+
+      - name: Cache buildozer downloads (Android SDK/NDK)
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+
+      - name: Build debug APK
+        run: |
+          # yes가 라이선스 질문에 자동으로 답한다. 빌드가 끝나 yes가 SIGPIPE로
+          # 끝나는 것을 실패로 보지 않도록 pipefail을 끈다.
+          set +o pipefail
+          yes | buildozer -v android debug
+          ls -l bin/*.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dnfmobile-apk
+          path: bin/*.apk
+
+      - name: Publish APK to the latest-apk release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest-apk --yes --cleanup-tag || true
+          gh release create latest-apk bin/*.apk --target "$GITHUB_SHA" --title "최신 APK (debug)" --notes "커밋 $GITHUB_SHA 에서 빌드한 디버그 APK"
