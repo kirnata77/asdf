@@ -1,0 +1,597 @@
+# =====================
+# 마을 화면 - 마을, 모험단, 마을 이동 목록, 상점
+# =====================
+# screens.py를 6개로 나눈 것 중 하나(2026-09-29). 화면 이름(ScreenManager
+# name)과 화면 사이 이동은 예전과 같다 - main.py가 여섯 파일의 화면을 등록한다.
+
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.uix.screenmanager import Screen
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.popup import Popup
+from kivy.uix.image import Image
+
+import gameflow
+from game.screens.screens_common import (
+    _기본_초상화_코드, _버튼_높이, _버튼_폰트크기, _이미지버튼, _초상화선택팝업, _캐릭터이미지_경로,
+    _에셋_경로, _도트_필터,
+)
+
+
+# =====================================================
+# 4. 마을 화면
+# =====================================================
+
+class 마을화면(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        루트 = BoxLayout(orientation="vertical", padding=16, spacing=10)
+
+        # 위에서부터 마을 이름 한 줄 → 파티 4명 → 마을 배경 그림 → 메시지
+        # → 버튼 → 타이틀 버튼 (사용자 확정, 2026-09-29). 보유 골드는
+        # 마을 화면에 표시하지 않는다.
+        self.마을명라벨 = Label(text="", size_hint=(1, 0.05), halign="left", valign="middle")
+        self.마을명라벨.bind(size=lambda *_: setattr(
+            self.마을명라벨, "text_size", self.마을명라벨.size,
+        ))
+        루트.add_widget(self.마을명라벨)
+
+        self.파티라벨 = Label(text="", size_hint=(1, 0.17), halign="left", valign="top")
+        self.파티라벨.bind(size=lambda *_: setattr(
+            self.파티라벨, "text_size", self.파티라벨.size,
+        ))
+        루트.add_widget(self.파티라벨)
+
+        # 배경 그림은 화면 폭에 맞추고 높이는 그림 비율대로 정한다(그림이
+        # 없으면 높이 0으로 접힌다).
+        self.배경그림 = Image(allow_stretch=True, keep_ratio=True, size_hint=(1, None), height=0)
+        self.배경그림.bind(width=self._배경높이_맞추기, texture=self._배경높이_맞추기)
+        _도트_필터(self.배경그림)
+        루트.add_widget(self.배경그림)
+
+        self.메시지라벨 = Label(text="", size_hint=(1, 0.07))
+        루트.add_widget(self.메시지라벨)
+
+        버튼그리드 = GridLayout(cols=2, size_hint=(1, 0.42), spacing=8)
+
+        휴식버튼 = Button(text="휴식 (HP/MP 전체 회복)")
+        휴식버튼.bind(on_release=self._휴식)
+        버튼그리드.add_widget(휴식버튼)
+
+        던전버튼 = Button(text="던전 이동")
+        던전버튼.bind(on_release=self._던전이동)
+        버튼그리드.add_widget(던전버튼)
+
+        파티버튼 = Button(text="파티")
+        파티버튼.bind(on_release=self._파티_클릭)
+        버튼그리드.add_widget(파티버튼)
+
+        모험단버튼 = Button(text="모험단")
+        모험단버튼.bind(on_release=self._모험단_클릭)
+        버튼그리드.add_widget(모험단버튼)
+
+        마을이동버튼 = Button(text="마을 이동")
+        마을이동버튼.bind(on_release=self._마을이동)
+        버튼그리드.add_widget(마을이동버튼)
+
+        저장버튼 = Button(text="저장하기")
+        저장버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "저장목록"))
+        버튼그리드.add_widget(저장버튼)
+
+        상점버튼 = Button(text="상점")
+        상점버튼.bind(on_release=self._상점_클릭)
+        버튼그리드.add_widget(상점버튼)
+
+        npc버튼 = Button(text="NPC (미구현)", disabled=True)
+        버튼그리드.add_widget(npc버튼)
+
+        창고버튼 = Button(text="창고 (미구현)", disabled=True)
+        버튼그리드.add_widget(창고버튼)
+
+        루트.add_widget(버튼그리드)
+
+        타이틀버튼 = Button(text="타이틀로 돌아가기", size_hint=(1, 0.12))
+        타이틀버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "메인메뉴"))
+        루트.add_widget(타이틀버튼)
+
+        self.add_widget(루트)
+
+    def 갱신(self):
+        앱 = App.get_running_app()
+        게임상태 = 앱.게임상태
+        if 게임상태 is None:
+            return
+
+        마을정보 = gameflow.현재_마을정보(게임상태)
+        self.마을명라벨.text = f"[ {마을정보['마을명']} ]"
+
+        경로 = _에셋_경로("town", 마을정보.get("배경이미지"))
+        self.배경그림.source = 경로 or ""
+        self._배경높이_맞추기()
+
+        줄들 = []
+        for 캐릭터 in 게임상태["파티"]["파티원"]:
+            줄들.append(
+                f"{캐릭터['캐릭터명']} ({gameflow.캐릭터_직업표시(캐릭터)})  Lv.{캐릭터['레벨']}  "
+                f"HP {캐릭터['현재HP']}/{gameflow.캐릭터_최대HP(게임상태, 캐릭터)}  "
+                f"MP {캐릭터['현재MP']}/{gameflow.캐릭터_최대MP(게임상태, 캐릭터)}"
+            )
+        self.파티라벨.text = "\n".join(줄들)
+        self.메시지라벨.text = ""
+
+    def _배경높이_맞추기(self, *args):
+        텍스처 = self.배경그림.texture
+        if self.배경그림.source and 텍스처 is not None and 텍스처.width:
+            self.배경그림.height = self.배경그림.width * 텍스처.height / 텍스처.width
+        else:
+            self.배경그림.height = 0
+
+    def on_pre_enter(self, *args):
+        self.갱신()
+
+    def _휴식(self, *args):
+        앱 = App.get_running_app()
+        gameflow.휴식(앱.게임상태)
+        self.갱신()
+        self.메시지라벨.text = "파티 전원이 휴식을 취해 HP/MP를 모두 회복했습니다."
+
+    def _던전이동(self, *args):
+        self.manager.current = "던전목록"
+
+    def _마을이동(self, *args):
+        self.manager.current = "마을이동목록"
+
+    def _파티_클릭(self, *args):
+        self.manager.get_screen("파티관리").복귀화면 = "마을"
+        self.manager.current = "파티관리"
+
+    def _상점_클릭(self, *args):
+        self.manager.get_screen("상점").복귀화면 = "마을"
+        self.manager.current = "상점"
+
+    def _모험단_클릭(self, *args):
+        self.manager.current = "모험단"
+
+# =====================================================
+# 3-1. 모험단 화면 (ui_player.py "플레이어화면" 포팅 + 모험단 프로필)
+# =====================================================
+# 파티 전체가 공유하는 값(플레이어 레벨/소지금)과 파티원 목록을 보여주던
+# 기존 tkinter판 "플레이어화면"(모험가 버튼)에, 던전에서 표시할 SD
+# 초상화를 고르는 "모험단 프로필" 항목을 새로 추가했다(2026-09-23).
+
+class 모험단화면(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._현재코드 = _기본_초상화_코드
+
+        루트 = BoxLayout(orientation="vertical", padding=16, spacing=10)
+
+        루트.add_widget(Label(
+            text="모험단", size_hint=(1, 0.06), font_size=32, bold=True,
+        ))
+
+        self.정보라벨 = Label(text="", size_hint=(1, 0.1), halign="left", valign="top")
+        self.정보라벨.bind(size=lambda *_: setattr(
+            self.정보라벨, "text_size", self.정보라벨.size,
+        ))
+        루트.add_widget(self.정보라벨)
+
+        # 파티원별 "캐릭터 초상화"(직업 기반, 성별만 터치로 토글) - 플레이어
+        # 초상화(아래)와는 완전히 별개다(2026-09-23).
+        캐릭터초상화틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.34), spacing=4)
+        캐릭터초상화틀.add_widget(Label(
+            text="파티원 초상화 (터치하면 성별 변경)", size_hint=(1, 0.18),
+        ))
+        self.파티원행 = BoxLayout(orientation="horizontal", spacing=8, size_hint=(1, 0.82))
+        캐릭터초상화틀.add_widget(self.파티원행)
+        루트.add_widget(캐릭터초상화틀)
+
+        프로필틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.38), spacing=4)
+        프로필틀.add_widget(Label(
+            text="던전 지도용 플레이어 초상화 (터치하면 이미지 변경)", size_hint=(1, 0.15),
+        ))
+        self.프로필버튼 = _이미지버튼(size_hint=(1, 0.85), allow_stretch=True)
+        self.프로필버튼.bind(on_release=self._프로필_클릭)
+        프로필틀.add_widget(self.프로필버튼)
+        루트.add_widget(프로필틀)
+
+        뒤로버튼 = Button(text="◀ 마을로", size_hint=(1, 0.12))
+        뒤로버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "마을"))
+        루트.add_widget(뒤로버튼)
+
+        self.add_widget(루트)
+
+    def 갱신(self):
+        앱 = App.get_running_app()
+        게임상태 = 앱.게임상태
+        if 게임상태 is None:
+            return
+
+        골드 = gameflow.상점_보유골드(게임상태)
+        self.정보라벨.text = (
+            f"레벨  {게임상태['진행도']['플레이어레벨']}\n소지금  {골드}G"
+        )
+
+        self.파티원행.clear_widgets()
+        파티원목록 = 게임상태["파티"]["파티원"]
+        if 파티원목록:
+            for 캐릭터 in 파티원목록:
+                self.파티원행.add_widget(self._캐릭터_카드(캐릭터))
+        else:
+            self.파티원행.add_widget(Label(text="(파티원 없음)"))
+
+        self._현재코드 = 게임상태.get("선택된초상화", _기본_초상화_코드)
+        self.프로필버튼.source = _캐릭터이미지_경로(self._현재코드)
+
+    def _캐릭터_카드(self, 캐릭터):
+        """파티원 한 명의 이름/직업 + 직업 기반 초상화(터치하면 성별
+        토글) 카드 위젯을 만든다."""
+        칸 = BoxLayout(orientation="vertical", spacing=2)
+        이름라벨 = Label(
+            text=f"{캐릭터['캐릭터명']}\n{캐릭터.get('직업') or '무직업'}",
+            size_hint=(1, 0.3), halign="center", valign="middle", font_size=16,
+        )
+        이름라벨.bind(size=lambda inst, *_: setattr(inst, "text_size", inst.size))
+        칸.add_widget(이름라벨)
+
+        초상화버튼 = _이미지버튼(
+            source=_캐릭터이미지_경로(gameflow.초상화_코드(캐릭터)),
+            size_hint=(1, 0.7), allow_stretch=True,
+        )
+        초상화버튼.bind(on_release=lambda *args, c=캐릭터: self._성별_토글(c))
+        칸.add_widget(초상화버튼)
+        return 칸
+
+    def _성별_토글(self, 캐릭터):
+        새성별 = "f" if 캐릭터.get("성별", "m") == "m" else "m"
+        gameflow.캐릭터_성별_설정(캐릭터, 새성별)
+        self.갱신()
+
+    def on_pre_enter(self, *args):
+        self.갱신()
+
+    def _프로필_클릭(self, *args):
+        _초상화선택팝업(
+            현재선택=self._현재코드, 선택콜백=self._초상화_변경,
+        ).open()
+
+    def _초상화_변경(self, 코드):
+        앱 = App.get_running_app()
+        gameflow.초상화_설정(앱.게임상태, 코드)
+        self.갱신()
+
+# =====================================================
+# 4-0. 마을 이동 목록 화면 (마을 -> 다른 마을로 이동)
+# =====================================================
+
+class 마을이동목록화면(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        루트 = BoxLayout(orientation="vertical", padding=16, spacing=10)
+        루트.add_widget(Label(text="마을 이동", font_size=40, size_hint=(1, 0.12)))
+
+        self.목록틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.68), spacing=8)
+        루트.add_widget(self.목록틀)
+
+        self.안내라벨 = Label(text="", size_hint=(1, 0.1))
+        루트.add_widget(self.안내라벨)
+
+        뒤로버튼 = Button(text="뒤로", size_hint=(1, 0.1))
+        뒤로버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "마을"))
+        루트.add_widget(뒤로버튼)
+
+        self.add_widget(루트)
+
+    def on_pre_enter(self, *args):
+        self.갱신()
+
+    def 갱신(self):
+        self.목록틀.clear_widgets()
+        앱 = App.get_running_app()
+        게임상태 = 앱.게임상태
+        현재마을명 = 게임상태["진행도"]["현재마을"]
+        마을목록 = gameflow.이동가능마을목록(게임상태)
+
+        표시할목록 = [마을 for 마을 in 마을목록 if 마을["마을명"] != 현재마을명]
+        if not 표시할목록:
+            self.안내라벨.text = "지금 이동할 수 있는 다른 마을이 없습니다."
+            return
+        self.안내라벨.text = ""
+
+        for 마을 in 표시할목록:
+            버튼 = Button(text=마을["마을명"], size_hint=(1, None), height=56)
+            버튼.bind(on_release=lambda inst, m=마을["마을명"]: self._선택(m))
+            self.목록틀.add_widget(버튼)
+
+    def _선택(self, 마을명):
+        앱 = App.get_running_app()
+        gameflow.마을_이동(앱.게임상태, 마을명)
+        self.manager.get_screen("마을").갱신()
+        self.manager.current = "마을"
+
+# =====================================================
+# 4-2. 상점 화면 (shop_system.py 연동 - 마을 -> 상점)
+# =====================================================
+# 원본 tkinter판 ui_shop.py(상점팝업)와 같은 단계 구성을 Kivy 화면으로
+# 옮겼다: 메인(구매/판매/나가기) -> 대분류(장비/소모품/재료) -> 탭(부위/
+# 종류) -> 개별 아이템 목록(구매/판매, 수량 -/+ 스테퍼, "자세히 보기"
+# 팝업). 실제 거래 로직은 전부 gameflow.상점_*() -> shop_system.py에
+# 있고, 이 클래스는 화면 단계 전환과 위젯 생성만 한다. 재료 탭은
+# ui_shop.py와 마찬가지로 아직 미구현이라 안내 문구만 보여준다.
+
+class 상점화면(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.복귀화면 = "마을"
+
+        루트 = BoxLayout(orientation="vertical", padding=12, spacing=8)
+
+        머리 = BoxLayout(orientation="horizontal", size_hint=(1, 0.1))
+        머리.add_widget(Label(text="상점", font_size=32, halign="left"))
+        self.골드라벨 = Label(text="")
+        머리.add_widget(self.골드라벨)
+        루트.add_widget(머리)
+
+        self.내용틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.8), spacing=6)
+        루트.add_widget(self.내용틀)
+
+        self.안내라벨 = Label(text="", size_hint=(1, 0.1))
+        루트.add_widget(self.안내라벨)
+
+        self.add_widget(루트)
+
+    def on_pre_enter(self, *args):
+        self.안내라벨.text = ""
+        self._골드_갱신()
+        self._메인_그리기()
+
+    def _골드_갱신(self):
+        앱 = App.get_running_app()
+        self.골드라벨.text = f"보유 골드: {gameflow.상점_보유골드(앱.게임상태)}G"
+
+    def _비우기(self):
+        self.내용틀.clear_widgets()
+
+    # -------------------------------------------------
+    # 단계 1: 구매 / 판매 / 나가기
+    # -------------------------------------------------
+
+    def _메인_그리기(self):
+        self._비우기()
+        self.안내라벨.text = ""
+
+        구매버튼 = Button(text="구매", font_size=_버튼_폰트크기)
+        구매버튼.bind(on_release=lambda *_: self._대분류_그리기("구매"))
+        self.내용틀.add_widget(구매버튼)
+
+        판매버튼 = Button(text="판매", font_size=_버튼_폰트크기)
+        판매버튼.bind(on_release=lambda *_: self._대분류_그리기("판매"))
+        self.내용틀.add_widget(판매버튼)
+
+        나가기버튼 = Button(text="나가기", font_size=_버튼_폰트크기)
+        나가기버튼.bind(on_release=self._나가기)
+        self.내용틀.add_widget(나가기버튼)
+
+    def _나가기(self, *args):
+        self.manager.current = self.복귀화면
+
+    # -------------------------------------------------
+    # 단계 2: 대분류(장비 / 소모품 / 재료)
+    # -------------------------------------------------
+
+    def _대분류_그리기(self, 모드):
+        self._비우기()
+
+        상단 = BoxLayout(orientation="horizontal", size_hint=(1, None), height=_버튼_높이)
+        뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
+        뒤로버튼.bind(on_release=lambda *_: self._메인_그리기())
+        상단.add_widget(뒤로버튼)
+        상단.add_widget(Label(text=모드, size_hint=(0.68, 1)))
+        self.내용틀.add_widget(상단)
+
+        for 대분류 in gameflow.shop_system.대분류_목록:
+            버튼 = Button(text=대분류)
+            if 대분류 == "재료":
+                버튼.bind(on_release=lambda *_, m=모드: self._재료_그리기(m))
+            else:
+                버튼.bind(on_release=lambda *_, m=모드, d=대분류: self._탭목록_그리기(m, d))
+            self.내용틀.add_widget(버튼)
+
+    def _재료_그리기(self, 모드):
+        self._비우기()
+        상단 = BoxLayout(orientation="horizontal", size_hint=(1, None), height=_버튼_높이)
+        뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
+        뒤로버튼.bind(on_release=lambda *_, m=모드: self._대분류_그리기(m))
+        상단.add_widget(뒤로버튼)
+        self.내용틀.add_widget(상단)
+        self.내용틀.add_widget(Label(text="아직 구현되지 않았습니다."))
+
+    # -------------------------------------------------
+    # 단계 3: 탭(부위 / 종류) + 단계 4: 개별 아이템 목록
+    # -------------------------------------------------
+
+    def _탭목록_그리기(self, 모드, 대분류):
+        self._비우기()
+
+        상단 = BoxLayout(orientation="horizontal", size_hint=(1, None), height=_버튼_높이)
+        뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
+        뒤로버튼.bind(on_release=lambda *_: self._대분류_그리기(모드))
+        상단.add_widget(뒤로버튼)
+        상단.add_widget(Label(text=f"{모드} - {대분류}", size_hint=(0.68, 1)))
+        self.내용틀.add_widget(상단)
+
+        탭스크롤 = ScrollView(size_hint=(1, None), height=_버튼_높이, do_scroll_y=False)
+        탭버튼틀 = BoxLayout(orientation="horizontal", size_hint=(None, 1), spacing=4)
+        탭버튼틀.bind(minimum_width=탭버튼틀.setter("width"))
+        탭스크롤.add_widget(탭버튼틀)
+        self.내용틀.add_widget(탭스크롤)
+
+        목록스크롤 = ScrollView(size_hint=(1, 1))
+        목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=4)
+        목록틀.bind(minimum_height=목록틀.setter("height"))
+        목록스크롤.add_widget(목록틀)
+        self.내용틀.add_widget(목록스크롤)
+
+        탭목록 = gameflow.상점_탭목록(대분류)
+        for 탭이름 in 탭목록:
+            탭버튼 = Button(text=탭이름, size_hint=(None, 1), width=140)
+            탭버튼.bind(
+                on_release=lambda inst, m=모드, d=대분류, t=탭이름, 목록틀=목록틀:
+                self._아이템목록_그리기(m, d, t, 목록틀)
+            )
+            탭버튼틀.add_widget(탭버튼)
+
+        if 탭목록:
+            self._아이템목록_그리기(모드, 대분류, 탭목록[0], 목록틀)
+
+    def _아이템목록_그리기(self, 모드, 대분류, 탭, 목록틀):
+        목록틀.clear_widgets()
+        앱 = App.get_running_app()
+        게임상태 = 앱.게임상태
+
+        if 모드 == "구매":
+            마을정보 = gameflow.현재_마을정보(게임상태)
+            항목목록 = [
+                (아이템, gameflow.shop_system.최대_구매수량)
+                for 아이템 in gameflow.상점_구매목록(
+                    게임상태, 대분류, 탭, 마을정보.get("상점판매목록"),
+                )
+            ]
+            빈문구 = "팔고 있는 물건이 없습니다."
+        else:
+            항목목록 = gameflow.상점_판매목록(게임상태, 대분류, 탭)
+            빈문구 = "팔 수 있는 물건이 없습니다."
+
+        if not 항목목록:
+            목록틀.add_widget(Label(text=빈문구, size_hint=(1, None), height=40))
+            return
+
+        for 아이템, 최대수량 in 항목목록:
+            목록틀.add_widget(
+                self._행_생성(모드, 대분류, 탭, 아이템, 최대수량, 목록틀)
+            )
+
+    def _행_생성(self, 모드, 대분류, 탭, 아이템, 최대수량, 목록틀):
+        단가 = 아이템["가격"] if 모드 == "구매" else gameflow.shop_system.판매가(아이템)
+
+        행 = BoxLayout(orientation="horizontal", size_hint=(1, None), height=56, spacing=4)
+
+        이름라벨 = Label(text=아이템["이름"], size_hint=(0.3, 1), halign="left", font_size=22)
+        이름라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
+        행.add_widget(이름라벨)
+
+        자세히버튼 = Button(text="자세히", size_hint=(0.16, 1))
+        자세히버튼.bind(on_release=lambda *_, a=아이템: self._자세히보기(a))
+        행.add_widget(자세히버튼)
+
+        단가라벨 = Label(text=f"{단가}G", size_hint=(0.14, 1), font_size=22)
+        행.add_widget(단가라벨)
+
+        수량상태 = {"값": 1}
+
+        감소버튼 = Button(text="-", size_hint=(0.1, 1))
+        수량라벨 = Label(text="1", size_hint=(0.08, 1))
+        증가버튼 = Button(text="+", size_hint=(0.1, 1))
+
+        def 감소(*_):
+            if 수량상태["값"] > 1:
+                수량상태["값"] -= 1
+                수량라벨.text = str(수량상태["값"])
+
+        def 증가(*_):
+            if 수량상태["값"] < 최대수량:
+                수량상태["값"] += 1
+                수량라벨.text = str(수량상태["값"])
+
+        감소버튼.bind(on_release=감소)
+        증가버튼.bind(on_release=증가)
+        행.add_widget(감소버튼)
+        행.add_widget(수량라벨)
+        행.add_widget(증가버튼)
+
+        거래버튼 = Button(text=모드, size_hint=(0.12, 1))
+        거래버튼.bind(
+            on_release=lambda *_, a=아이템: self._거래_클릭(
+                모드, 대분류, 탭, a["이름"], 수량상태, 목록틀,
+            )
+        )
+        행.add_widget(거래버튼)
+
+        return 행
+
+    # -------------------------------------------------
+    # 거래 처리
+    # -------------------------------------------------
+
+    def _거래_클릭(self, 모드, 대분류, 탭, 이름, 수량상태, 목록틀):
+        앱 = App.get_running_app()
+        게임상태 = 앱.게임상태
+        수량 = 수량상태["값"]
+
+        try:
+            if 모드 == "구매":
+                마을정보 = gameflow.현재_마을정보(게임상태)
+                금액 = gameflow.상점_구매(
+                    게임상태, 대분류, 탭, 이름, 수량,
+                    상점판매목록=마을정보.get("상점판매목록"),
+                )
+                self.안내라벨.text = f"{이름} {수량}개를 {금액}G에 샀습니다."
+            else:
+                금액 = gameflow.상점_판매(게임상태, 대분류, 탭, 이름, 수량)
+                self.안내라벨.text = f"{이름} {수량}개를 {금액}G에 팔았습니다."
+        except ValueError as 오류:
+            self.안내라벨.text = str(오류)
+            return
+
+        self._골드_갱신()
+        # 판매는 보유 수량이 바뀌므로, 구매/판매 둘 다 목록을 다시 그려
+        # (품절/재고 변화를) 반영한다.
+        self._아이템목록_그리기(모드, 대분류, 탭, 목록틀)
+
+    # -------------------------------------------------
+    # 자세히 보기 팝업
+    # -------------------------------------------------
+
+    _상세_제외키 = {"이름"}
+
+    def _자세히보기(self, 아이템):
+        본문 = BoxLayout(orientation="vertical", spacing=6, padding=12)
+
+        스크롤 = ScrollView(size_hint=(1, 1))
+        내용틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=4)
+        내용틀.bind(minimum_height=내용틀.setter("height"))
+        스크롤.add_widget(내용틀)
+        본문.add_widget(스크롤)
+
+        for 키, 값 in 아이템.items():
+            if 키 in self._상세_제외키 or 값 in (None, 0, "", {}, []):
+                continue
+            라벨 = Label(
+                text=f"{키}: {self._값_문자열(값)}", size_hint=(1, None), height=32,
+                halign="left",
+            )
+            라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
+            내용틀.add_widget(라벨)
+
+        닫기버튼 = Button(text="닫기", size_hint=(1, None), height=_버튼_높이)
+        본문.add_widget(닫기버튼)
+
+        팝업 = Popup(
+            title=아이템["이름"], content=본문, size_hint=(0.85, 0.75), auto_dismiss=False,
+        )
+        닫기버튼.bind(on_release=lambda *_: 팝업.dismiss())
+        팝업.open()
+
+    @staticmethod
+    def _값_문자열(값):
+        if isinstance(값, dict):
+            return ", ".join(
+                f"{k} {v:+d}" if isinstance(v, int) else f"{k} {v}"
+                for k, v in 값.items()
+            )
+        if isinstance(값, (list, tuple)):
+            return ", ".join(str(v) for v in 값)
+        return str(값)
