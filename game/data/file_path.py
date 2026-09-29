@@ -196,12 +196,10 @@
 #     │   └── town/       마을 배경 그림 (asset_town_*.webp)
 #     │                      asset_town_elvengard.webp   엘븐가드 (720x350)
 #     │                      asset_town_hendonmyre.webp  헨돈마이어 (720x342)
-#     ├── mobile_apk_build_notes.md
 #     └── __init__.py
 #
 # 주의: assets/font/ 안에는 폰트 파일(.ttf/.otf)만 둔다. 문서·노트
-# 파일(mobile_apk_build_notes.md 등)은 에셋이 아니므로 여기 두지 않고
-# game/ 바로 아래에 둔다.
+# 파일은 에셋이 아니므로 저장소 최상위 docs/에 둔다.
 #
 # 폰트 관련 배경(한글 깨짐 문제 및 등록 코드)은
-# mobile_apk_build_notes.md 참고.
+# docs/mobile_apk_build_notes.md 참고.

@@ -1,5 +1,9 @@
 # 모바일 APK 빌드 노트
 
+> **주의: 2026-09-16 기준 기록이고 일부 낡았으며 끝이 잘려 있다.** 지금은 GitHub
+> Actions(`.github/workflows/build-apk.yml`)가 APK를 빌드한다. 낡은 부분 목록은
+> `.memory/active-issues/known-bugs.md`의 "문서" 절. (원래 위치: `game/`)
+
 작업 위치(클라우드 프로토타입): `/home/claude/dnf_mobile` (Kivy 이식판).
 실제 프로젝트 경로: `Z:\백업\코딩연습\game` (파일 배치는 `file_path.py` 참고).
 
