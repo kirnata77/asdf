@@ -1,0 +1,30 @@
+name: Unzip uploaded archive
+
+on:
+  push:
+    paths:
+      - '.github/workflows/unzip.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unzip archive and remove it
+        run: |
+          set -euo pipefail
+          zip="코딩연습.zip"
+          unzip -l "$zip"
+          unzip -o -q "$zip" -x "game/screens/screens.py" "game/data/monster/monster_tier_01.py"
+          git rm -q -- "$zip"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git status --short | wc -l
+          git commit -q -m "Unzip $zip and remove the archive" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+          git push
