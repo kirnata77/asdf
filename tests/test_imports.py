@@ -7,11 +7,9 @@ import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# 알려진 문제 - .memory/active-issues/known-bugs.md. 고치면 strict xfail이
-# XPASS로 실패하므로 그때 이 목록에서 지운다.
-알려진_깨진모듈 = {
-    "game.system.quest_system": "파일 내용이 'test' 한 단어뿐이라 NameError",
-}
+# 알려진 문제로 import가 안 되는 모듈 - .memory/active-issues/known-bugs.md.
+# 여기 넣으면 strict xfail이 되고, 고치면 XPASS로 실패하므로 그때 지운다.
+알려진_깨진모듈 = {}
 
 
 def _헤드리스_모듈목록():

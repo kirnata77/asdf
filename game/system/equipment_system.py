@@ -12,8 +12,6 @@
 # 넘겨준다고 가정한다. 세트 정의(eq_02_armor_set.py 등)도 마찬가지로
 # 호출하는 쪽이 넘겨준다.
 
-from game.system import character_data_system as 캐릭터데이터
-
 # 방어구 슬롯 목록 (character_formet.py "장착장비" 기준).
 방어구_슬롯 = ["상의", "하의", "어깨", "벨트", "신발"]
 

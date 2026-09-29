@@ -24,6 +24,3 @@ select = ["E4", "E7", "E9", "F"]
 # 크래시 로그 훅(sys.excepthook)을 kivy import보다 먼저 걸어야 해서
 # import가 파일 중간에 있다 - 의도된 구조.
 "main.py" = ["E402"]
-# 알려진 문제 - .memory/active-issues/known-bugs.md 참고. 고치면 이 줄을 지운다.
-"game/system/quest_system.py" = ["F821"]
-"game/system/equipment_system.py" = ["F401"]

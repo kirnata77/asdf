@@ -13,7 +13,7 @@
 
 **믿으면 안 되는 것** ([`known-bugs.md`](.memory/active-issues/known-bugs.md)):
 **귀참을 쓰면 NameError**. 방어구 세트효과는 절대 안 걸린다(구성품 없음). 몬스터 18종은 HP 1로
-등장(데이터 "미정"). `quest_system.py` import 불가. 빌드 노트는 낡고 잘림.
+등장(데이터 "미정"). 빌드 노트는 낡고 잘림.
 **화면(kivy)은 테스트 범위 밖**, APK 빌드는 CI에서만 확인된다.
 
 ## 어디에 무엇이 있나
