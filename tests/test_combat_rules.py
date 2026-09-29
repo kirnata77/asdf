@@ -44,8 +44,10 @@ def test_수식_평가_문법(monkeypatch):
     assert cs.수식_평가("(차수+1)d6÷2", ctx) == 3 * 3 / 2
     assert cs.수식_평가("1d6", ctx, 치명타=True) == 6      # 치명타: 주사위 1개 추가
     assert cs.수식_평가("(0)d6+1", ctx) == 1               # 개수 0이면 0
+    assert cs.수식_평가("(귀신보유수)d8", dict(ctx, 귀신보유수=2)) == 3 * 2
+    assert cs.수식_평가("(귀신보유수)d8+1", ctx) == 1      # 없으면 0개
     with pytest.raises(ValueError, match="처리할 수 없는"):
-        cs.수식_평가("귀신보유수", ctx)
+        cs.수식_평가("미지의값", ctx)
 
 
 def test_무기공격력_굴림(monkeypatch):
