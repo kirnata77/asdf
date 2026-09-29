@@ -15,7 +15,8 @@ import random
 import pytest
 
 import gameflow as gf
-from game.system import combat_system as cs, skill_system as ss
+from game.system.combat import damage, flow, stats, status
+from game.system import skill_system as ss
 from tests import support
 from tests.test_combat_skills import 정리, 참가자_요약
 
@@ -49,7 +50,7 @@ def _아군(전투상태, n=0):
 
 def _차례(전투상태, 참가자):
     전투상태["현재턴"] = 전투상태["참가자"].index(참가자)
-    cs._턴_시작_처리(전투상태, 참가자)
+    flow._턴_시작_처리(전투상태, 참가자)
 
 
 def _라운드(상태, n):
@@ -61,13 +62,13 @@ def _라운드(상태, n):
 
 def _수치(전투상태, p):
     return {
-        "AC": cs.최종AC(전투상태, p), "방어력": cs.유효_방어력(전투상태, p),
-        "보호률": cs.유효_보호률(전투상태, p), "능력치": cs.유효_능력치(전투상태, p),
-        "이니셔티브": cs.유효_이니셔티브(전투상태, p), "우선도": cs.유효_우선도(전투상태, p),
-        "치명타범위": cs.유효_치명타범위(전투상태, p), "최대HP": cs.유효_최대HP(전투상태, p),
-        "평타보정": cs.평타_능력치_보정치(전투상태, p),
-        "변동": {k: cs.버프디버프_수치(전투상태, p, k) for k in 변동대상들},
-        "행동보너스": {k: cs.버프디버프_수치(전투상태, p, "행동보너스", 행동종류=k)
+        "AC": stats.최종AC(전투상태, p), "방어력": stats.유효_방어력(전투상태, p),
+        "보호률": stats.유효_보호률(전투상태, p), "능력치": stats.유효_능력치(전투상태, p),
+        "이니셔티브": stats.유효_이니셔티브(전투상태, p), "우선도": stats.유효_우선도(전투상태, p),
+        "치명타범위": damage.유효_치명타범위(전투상태, p), "최대HP": stats.유효_최대HP(전투상태, p),
+        "평타보정": stats.평타_능력치_보정치(전투상태, p),
+        "변동": {k: stats.버프디버프_수치(전투상태, p, k) for k in 변동대상들},
+        "행동보너스": {k: stats.버프디버프_수치(전투상태, p, "행동보너스", 행동종류=k)
                   for k in ("일반행동", "보조행동", "반응행동", "쇼타임행동")},
     }
 
@@ -81,9 +82,9 @@ def 상태이상_시나리오(이름):
     ss._상태이상_부여(전투상태, 적, 이름, 2, None)
     ss._상태이상_부여(전투상태, 아군, 이름, 2, None)
     기록 = {
-        "플래그": {k: [bool(cs.상태이상_플래그(전투상태, p, k)) for p in (적, 아군)] for k in 플래그들},
-        "행동제한": [cs.상태이상_행동제한(전투상태, p) for p in (적, 아군)],
-        "면역": [cs.상태이상_면역(전투상태, p, 이름) for p in (적, 아군)],
+        "플래그": {k: [bool(status.상태이상_플래그(전투상태, p, k)) for p in (적, 아군)] for k in 플래그들},
+        "행동제한": [status.상태이상_행동제한(전투상태, p) for p in (적, 아군)],
+        "면역": [status.상태이상_면역(전투상태, p, 이름) for p in (적, 아군)],
         "수치": [_수치(전투상태, p) for p in (적, 아군)],
     }
     로그시작 = len(전투상태["로그"])

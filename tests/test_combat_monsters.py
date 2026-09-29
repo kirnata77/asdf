@@ -12,7 +12,8 @@ import random
 import pytest
 
 import gameflow as gf
-from game.system import combat_system as cs, monster_ai
+from game.system.combat import flow, monster_actions, stats, traits
+from game.system import monster_ai
 from tests import support
 from tests.test_combat_skills import 정리, 참가자_요약
 
@@ -60,10 +61,10 @@ def 패턴_시나리오(monkeypatch, 이름, 패턴키, 패턴):
     monkeypatch.setattr(monster_ai, "행동_선택", lambda p: 패턴 if p is 몬스터 else 원래(p))
     기록 = {"시작로그": 정리(전투상태["로그"])}
     전투상태["현재턴"] = 전투상태["참가자"].index(몬스터)
-    cs._턴_시작_처리(전투상태, 몬스터)
+    flow._턴_시작_처리(전투상태, 몬스터)
     로그시작 = len(전투상태["로그"])
     try:
-        cs.몬스터_턴_실행(전투상태, 몬스터)
+        monster_actions.몬스터_턴_실행(전투상태, 몬스터)
     except Exception as e:  # noqa: BLE001
         기록["예외"] = f"{type(e).__name__}: {e}"
     기록["로그"] = 정리(전투상태["로그"][로그시작:])
@@ -86,11 +87,11 @@ def 칭호_비교(이름):
         전투상태 = 상태["전투상태"]
         m = _적(전투상태, 0)
         결과[str(칭호)] = {
-            "HP": m["현재HP"], "최대HP": cs.유효_최대HP(전투상태, m), "AC": cs.최종AC(전투상태, m),
-            "방어력": cs.유효_방어력(전투상태, m), "보호률": cs.유효_보호률(전투상태, m),
+            "HP": m["현재HP"], "최대HP": stats.유효_최대HP(전투상태, m), "AC": stats.최종AC(전투상태, m),
+            "방어력": stats.유효_방어력(전투상태, m), "보호률": stats.유효_보호률(전투상태, m),
             "이니셔티브": m["이니셔티브"], "우선도": m["우선도"],
-            "데미지보너스": cs.몬스터_데미지보너스(전투상태, m),
-            "칭호_데미지배율": cs.칭호_배율(전투상태, m, "데미지"),
+            "데미지보너스": monster_actions.몬스터_데미지보너스(전투상태, m),
+            "칭호_데미지배율": traits.칭호_배율(전투상태, m, "데미지"),
             "시작로그": 정리(전투상태["로그"]),
         }
     return 결과

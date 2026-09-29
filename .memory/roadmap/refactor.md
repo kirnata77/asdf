@@ -45,9 +45,10 @@
   (850~1211), 턴 순서(1212~), 명중/피해(1261~), 공격 실행(1547~), 턴 진행(1965~),
   반응특성(2044~), 소환수(2455~). `combat_system.py`는 재수출(re-export)만 남겨서
   gameflow/skill_system의 import가 안 깨지게 한 뒤, 호출부를 천천히 옮긴다.
-- **R5 호출부를 combat 패키지로 옮기고 skill_system ↔ combat 위임 정리** - gameflow/skill_system/tests가
-  아직 호환 모듈 `combat_system`을 쓴다. 모듈별로 직접 import로 바꾼 뒤 호환 모듈을 지운다.
-  skill_system의 위임 함수(효과정의_조회/자원_보유량/자원_소모/_기본_컨텍스트/_장전소모_처리)도 정리.
+- ~~R5 호출부를 combat 패키지로 옮기고 skill_system ↔ combat 위임 정리~~ **완료 2026-09-29** -
+  gameflow/skill_system/tests/tools가 `game.system.combat.<모듈>`을 직접 쓰고, 호환 모듈
+  `combat_system.py`와 skill_system의 순수 위임 함수 5개를 지웠다(`다음_턴`은 실제 동작이 있어 유지).
+  주석/docstring의 `combat_system.X` 언급도 `combat.<모듈>.X`로 바꿈. 골든 불변.
 - **R6 ruff format 적용** - 리팩터링이 끝난 파일부터. 서식만 바꾸는 커밋은 따로.
 
 ## 테스트 (R4 전 선행 조건) - 완료 2026-09-29

@@ -27,6 +27,7 @@ from kivy.clock import Clock  # noqa: E402
 from kivy.core.window import Window  # noqa: E402
 
 import gameflow as gf  # noqa: E402
+from game.system.combat import flow  # noqa: E402
 from tests import support  # noqa: E402
 
 스크린샷폴더 = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else "ui_smoke_shots")
@@ -96,7 +97,7 @@ class 스모크앱(main.DnfMobileApp):
         def 차례(이름):
             p = next(x for x in 전투상태["참가자"] if x["이름"] == 이름)
             전투상태["현재턴"] = 전투상태["참가자"].index(p)
-            gf.combat_system._턴_시작_처리(전투상태, p)
+            flow._턴_시작_처리(전투상태, p)
             return p
 
         for 이름 in ("마법사", "거너", "귀검사", "프리스트"):

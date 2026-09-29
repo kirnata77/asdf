@@ -1,5 +1,5 @@
 # 전투 시스템 - 수식 평가 - 데미지 문법/다이스/무기공격력.
-# (combat_system.py에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
+# (combat 패키지에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
 
 import re
 

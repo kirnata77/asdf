@@ -1,5 +1,5 @@
 # 전투 시스템 - 몬스터 특성/캐릭터 특성/칭호 수치와 발동(공격명중시/턴종료시/해제시/전투시작시).
-# (combat_system.py에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
+# (combat 패키지에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
 
 from game.system import dice_utils
 from game.system.combat import core, damage, formula, monster_actions, participants, stats, status
@@ -313,7 +313,7 @@ def _상태이상_효과_적용(전투상태, 시전자, 대상, 효과, 출처�
     "명중실패시효과"와 몬스터특성의 상태이상형 "효과"가 공용으로 쓴다.
 
     실제 상태이상 인스턴스 생성(중첩/부여버프 등)은 skill_system.py
-    쪽이 더 정교하게 하지만, combat_system.py는 그 파일을 부르지
+    쪽이 더 정교하게 하지만, combat 패키지는 그 파일을 부르지
     않는 구조(순환 참조 방지)라 여기서는 이름/지속턴만 반영하는
     최소 버전이다 - "내성"이 없으면(즉시 부여) 내성굴림 없이 건다."""
     if not isinstance(효과, dict) or 효과.get("종류") != "상태이상":

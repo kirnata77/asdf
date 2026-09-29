@@ -9,7 +9,8 @@ import random
 import pytest
 
 import gameflow as gf
-from game.system import combat_system, dice_utils
+from game.system.combat import flow
+from game.system import dice_utils
 from tests import support
 from tests.support import 보스_처치, 새게임, 성장, 연결로_나가기
 
@@ -478,4 +479,4 @@ def test_전투_참가자_조회():
     상태 = 새게임()
     gf._전투_시작(상태, ["고블린", "고블린"], 레벨=1, 차수=1)
     assert len(gf.적_목록(상태)) == 2 and len(gf.아군_목록(상태)) == 4
-    assert combat_system.현재_턴_참가자(상태["전투상태"]) is gf.현재_턴_참가자(상태)
+    assert flow.현재_턴_참가자(상태["전투상태"]) is gf.현재_턴_참가자(상태)

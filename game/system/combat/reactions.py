@@ -1,5 +1,5 @@
 # 전투 시스템 - 캐릭터 반응특성(회피/반격/피격시/공격후/전투시작 반응).
-# (combat_system.py에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
+# (combat 패키지에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
 
 import random
 import re

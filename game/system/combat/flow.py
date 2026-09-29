@@ -1,5 +1,5 @@
 # 전투 시스템 - 전투 흐름 - 전투 시작, 턴 시작/종료, 턴 순서, 다음 턴, 종료 판정, 전투 이탈.
-# (combat_system.py에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
+# (combat 패키지에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
 
 from game.system import dice_utils
 from game.system import equipment_system

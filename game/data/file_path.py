@@ -150,9 +150,8 @@
     "character_data_system": "game.system.character_data_system",
     "character_creation_system": "game.system.character_creation_system",
     "character_levelup_system": "game.system.character_levelup_system",
-    "combat_system": "game.system.combat_system",
 
-    # game/system/combat/ (전투 시스템 패키지 - R4에서 combat_system.py를 나눔)
+    # game/system/combat/ (전투 시스템 패키지 - R4에서 옛 combat_system.py를 나눔)
     "core": "game.system.combat.core",
     "formula": "game.system.combat.formula",
     "participants": "game.system.combat.participants",

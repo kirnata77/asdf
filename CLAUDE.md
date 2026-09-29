@@ -12,8 +12,8 @@ main.py            Kivy 앱 진입점, 화면 등록, 크래시 로그 훅
 gameflow.py        화면 <-> 로직/데이터 컨트롤러. 화면은 이 파일의 함수만 부른다
 game/screens/      Kivy 화면 (kivy 의존은 여기와 main.py에만)
 game/system/       전투, 스킬, 장비, 세이브 등 게임 로직
-  combat/            전투 시스템 패키지(모듈 목록은 combat/__init__.py). combat_system.py는
-                     예전 이름을 다시 내보내는 호환 모듈 - 새 코드는 combat.<모듈>을 직접 쓴다
+  combat/            전투 시스템 패키지 12개 모듈(목록은 combat/__init__.py). 쓰는 쪽은
+                     `from game.system.combat import flow, stats` 처럼 모듈을 직접 불러 쓴다
 game/data/         직업, 몬스터, 맵, 아이템 데이터(파이썬 딕셔너리)
                      file_path.py = 모든 모듈의 import 경로표 (테스트가 실제 파일과 대조)
 game/assets/       폰트, 이미지

@@ -13,7 +13,8 @@ import random
 import pytest
 
 import gameflow as gf
-from game.system import combat_system as cs, skill_system as ss
+from game.system.combat import flow, stats
+from game.system import skill_system as ss
 from tests import support
 
 전직 = {"귀검사": "웨펀마스터", "격투가": "스트라이커", "거너": "레인저",
@@ -79,7 +80,7 @@ def 전장_준비(직업, 시드):
 def 차례_주기(상태, 참가자):
     전투상태 = 상태["전투상태"]
     전투상태["현재턴"] = 전투상태["참가자"].index(참가자)
-    cs._턴_시작_처리(전투상태, 참가자)
+    flow._턴_시작_처리(전투상태, 참가자)
 
 
 def 준비됨_적용(상태, 시전자, 표적):
@@ -160,14 +161,14 @@ def test_귀참은_귀신_태그_스킬_수만큼_d8을_더한다():
     전투상태 = 상태["전투상태"]
     귀검사 = next(p for p in 전투상태["참가자"] if p["이름"] == "귀검사")
     # 정상 성장으로는 귀신 : 카잔을 배우지 못한다(known-bugs: 레벨3 "전부 습득" 목록에 없음)
-    assert cs.귀신보유수(전투상태, 귀검사) == 0
+    assert stats.귀신보유수(전투상태, 귀검사) == 0
     귀검사["원본"]["보유스킬"].append("귀신 : 카잔")
-    assert cs.귀신보유수(전투상태, 귀검사) == 1 == cs.기본_컨텍스트(전투상태, 귀검사)["귀신보유수"]
+    assert stats.귀신보유수(전투상태, 귀검사) == 1 == stats.기본_컨텍스트(전투상태, 귀검사)["귀신보유수"]
     귀검사["원본"]["보유스킬"].remove("귀신 : 카잔")
-    assert cs.귀신보유수(전투상태, 귀검사) == 0
+    assert stats.귀신보유수(전투상태, 귀검사) == 0
     몬스터 = next(p for p in 전투상태["참가자"] if p["진영"] == "적")
-    assert cs.귀신보유수(전투상태, 몬스터) == 0
-    assert cs.귀신보유수({"참가자": []}, 귀검사) == 0  # 스킬정의가 없으면 0
+    assert stats.귀신보유수(전투상태, 몬스터) == 0
+    assert stats.귀신보유수({"참가자": []}, 귀검사) == 0  # 스킬정의가 없으면 0
 
 
 def test_자원이_없으면_사용불가_있으면_소모():

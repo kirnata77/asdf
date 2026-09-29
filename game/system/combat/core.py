@@ -1,5 +1,5 @@
 # 전투 시스템 - 공용 - 전투 로그 기록, 차수.
-# (combat_system.py에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
+# (combat 패키지에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
 
 from game.system import character_data_system as 캐릭터데이터
 

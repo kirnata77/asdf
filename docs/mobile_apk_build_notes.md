@@ -84,7 +84,7 @@ buildozer가 SDK/NDK/Ant를 정상적으로 받아 빌드를 끝까지 마칠 �
    기반, 3슬롯, `game/saves/slot_N.json`에 저장된다.
 2. **4인 파티** - 파티 생성 화면에서 최대 4명까지 이름+직업을 정해 시작할
    수 있다(`party_system.py`의 `파티_최대인원 = 4`를 그대로 사용 -
-   combat_system.py/skill_system.py는 원래부터 다인원에 일반적으로
+   combat 패키지/skill_system.py는 원래부터 다인원에 일반적으로
    동작해서 전투 엔진 자체는 손댈 필요가 없었다).
 3. **5직업 전부** - 귀검사 외 격투가/거너/마법사/프리스트의 1차수 데이터
    (job_skill/job_level/job_ability/무기 목록)를 전부 이식했다. 레벨

@@ -10,7 +10,8 @@ import random
 import re
 
 import gameflow as gf
-from game.system import combat_system as cs, skill_system as ss
+from game.system.combat import flow
+from game.system import skill_system as ss
 from tests import support
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -48,7 +49,7 @@ def _차례(상태, 이름):
     전투상태 = 상태["전투상태"]
     p = next(x for x in 전투상태["참가자"] if x["이름"] == 이름)
     전투상태["현재턴"] = 전투상태["참가자"].index(p)
-    cs._턴_시작_처리(전투상태, p)
+    flow._턴_시작_처리(전투상태, p)
     return p
 
 

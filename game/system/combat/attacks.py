@@ -1,5 +1,5 @@
 # 전투 시스템 - 아군 일반공격.
-# (combat_system.py에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
+# (combat 패키지에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
 
 from game.system.combat import core, damage, formula, reactions, resources, stats, traits
 

@@ -1,5 +1,5 @@
 # 전투 시스템 - 몬스터 턴 - 패턴(공격/다중/자폭/버프/회복/내성)과 몬스터 소환수.
-# (combat_system.py에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
+# (combat 패키지에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
 
 import random
 
@@ -201,7 +201,7 @@ def _몬스터_수식값(전투상태, 몬스터참가자, 수식, 기본값=0):
 
 
 def _몬스터_버프_부여(전투상태, 대상, 이름, 지속턴):
-    """skill_system.이름있는효과_부여의 최소판(combat_system은
+    """skill_system.이름있는효과_부여의 최소판(combat 패키지는
     skill_system을 부르지 않는다). buff.py/debuff.py의 "중첩":True는
     인스턴스를 새로 추가, skill_effects.py 기술효과(소환:비명초 등)의
     "중첩":True는 기존 인스턴스 중첩+1, 그 외는 지속턴만 갱신한다.

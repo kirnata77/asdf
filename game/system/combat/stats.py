@@ -1,5 +1,5 @@
 # 전투 시스템 - 수치 집계 - 버프/디버프/장비/특성 반영 능력치, AC/방어력/보호률/최대HP, 이니셔티브/우선도, 수식 컨텍스트.
-# (combat_system.py에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
+# (combat 패키지에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
 
 from game.system import equipment_system
 from game.system.combat import core, formula, participants, status, traits
@@ -148,8 +148,7 @@ def 귀신보유수(전투상태, 참가자):
 
 def 기본_컨텍스트(전투상태, 참가자, 무기공격력필요=False):
     """수식_평가용 기본 컨텍스트(차수/추가공격/보정치/주문시전보정치/
-    능력치/[무기공격력])를 만든다. skill_system._기본_컨텍스트는 이제
-    이 함수를 그대로 위임 호출한다."""
+    능력치/[무기공격력])를 만든다. skill_system도 이 함수를 직접 쓴다."""
     컨텍스트 = {
         "차수": core.차수(참가자),
         "추가공격": 참가자.get("추가공격_사용가능", 0),

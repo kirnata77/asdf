@@ -1,5 +1,5 @@
 # 전투 시스템 - 효과 정의 조회와 자원(보유/소모/장전).
-# (combat_system.py에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
+# (combat 패키지에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
 
 from game.data.buff import buff
 from game.data.buff import debuff
