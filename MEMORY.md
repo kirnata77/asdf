@@ -10,6 +10,7 @@
 
 **다음:** **로드맵 R0~R6 전부 완료**(전투는 `game/system/combat/` 12개 모듈, 서식은 ruff format으로 통일).
 남은 것은 아래 사용자 결정 3건(데이터)과 PR #1 병합 여부.
+**코드 리뷰 완료, 버그 12건 미수정**([`docs/review_refactor_prep.md`](docs/review_refactor_prep.md)) - 권장 순서 B2/B3 -> B1(도망 규칙 결정 필요) -> B4/B8.
 R0의 데이터 결정 2건(몬스터 HP/AC 값, 카잔 습득)은 사용자 답 대기. 모든 단계는 골든 불변이 조건.
 
 **믿으면 안 되는 것** ([`known-bugs.md`](.memory/active-issues/known-bugs.md)):
