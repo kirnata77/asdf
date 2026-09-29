@@ -11,6 +11,7 @@ bin/
 .ruff_cache/
 .coverage
 htmlcov/
+ui_smoke_shots/
 
 # 세이브 파일 - 플레이 기록이라 코드와 함께 관리하지 않는다
 game/saves/

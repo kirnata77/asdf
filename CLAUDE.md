@@ -17,6 +17,7 @@ game/data/         직업, 몬스터, 맵, 아이템 데이터(파이썬 딕셔�
 game/assets/       폰트, 이미지
 tests/             헤드리스 테스트 + golden/*.json (kivy 없이 돈다, 아래 "테스트 지도")
 tools/check.py     완료 기준 게이트 (아래)
+tools/ui_smoke.py  화면 스모크(kivy + Xvfb, 스크린샷) - CI 밖, 화면 바꿀 때 직접
 tools/fix_eol.py   줄끝을 CRLF로 통일 (아래 "줄끝")
 docs/              빌드 노트 등 문서
 .memory/           작업 기억 (MEMORY.md가 색인)
@@ -25,9 +26,9 @@ docs/              빌드 노트 등 문서
 **계층은 한 방향이다: `screens` -> `gameflow` -> `system` -> `data`.**
 - `game/system/`, `game/data/`, `gameflow.py`는 **kivy를 import하지 않는다.** 그래서
   테스트가 화면 없이 돈다(`test_헤드리스_계층은_kivy에_의존하지_않는다`가 지킨다).
-- 화면은 `game.system`을 직접 부르지 않고 `gameflow`를 거친다.
-  (현재 예외 2곳: `screens_battle.py` -> `skill_system`, `screens_party.py` ->
-  `character_levelup_system`. 리팩터링 대상 - `.memory/roadmap/refactor.md`)
+- 화면은 `game.system`을 직접 부르지 않고 `gameflow`를 거친다(`gameflow.xxx_system.`
+  으로 우회하는 것도 금지). 화면에 필요한 조회는 gameflow의 "화면용 조회" 절에 함수로
+  추가한다. `test_화면은_game_system을_직접_쓰지_않는다`가 지킨다.
 - 모듈을 추가/이동/이름변경하면 `game/data/file_path.py`도 같은 커밋에서 고친다.
 
 원격 저장소: https://github.com/kirnata77/asdf (브랜치 `main`)
@@ -44,8 +45,10 @@ docs/              빌드 노트 등 문서
 2. **골든 파일(`tests/golden/`)이 바뀌었다면 이유를 커밋에 적는다.** 리팩터링은
    동작을 바꾸지 않는 것이 정의이므로 골든이 바뀌면 안 된다. 동작을 일부러
    바꾼 경우만 `UPDATE_GOLDEN=1 python -m pytest`로 다시 쓰고 diff를 설명한다.
-3. **화면(kivy) 변경은 테스트가 못 잡는다.** 직접 실행해서 확인하거나, 확인하지
-   못했으면 커밋 본문에 `NOT VERIFIED: 화면 동작은 실행해 보지 못함`이라고 쓴다.
+3. **화면(kivy) 변경은 tests/가 못 잡는다.** `python tools/ui_smoke.py`(리눅스는
+   `xvfb-run -a -s "-screen 0 720x1280x24"`를 앞에)로 실제 화면을 돌려 확인하고,
+   바꾼 동작이 스모크에 없으면 스모크에 단계를 추가한다. 못 돌렸으면 커밋 본문에
+   `NOT VERIFIED: 화면 동작은 실행해 보지 못함`이라고 쓴다.
 4. **기억 갱신** - `MEMORY.md`의 *Now*와 `.memory/`를 같은 커밋에서 고친다(아래).
 
 ## 테스트 지도
@@ -60,6 +63,7 @@ docs/              빌드 노트 등 문서
 | `test_combat_skills.py` | 스킬 62개 전수(기본/준비됨) | 골든 |
 | `test_combat_monsters.py` | 몬스터 29종의 고유 패턴 73개 + 보스 칭호 | 골든 |
 | `test_combat_effects.py` | 상태이상 20 / 버프 21 / 디버프 20 전수, 반응특성 10종 전투 | 골든 |
+| `test_screen_api.py` | 화면용 gameflow 창구, 화면 -> system 직접 호출 금지 | 값 + 규칙 |
 | `test_imports.py`, `test_repo_hygiene.py` | 모듈 import, file_path.py, CRLF | 규칙 |
 
 - 공용 도우미는 `tests/support.py`(자동 전투, 강제 승리/패배, 경로 걷기, 결정적 성장).

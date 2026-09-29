@@ -389,7 +389,7 @@ class 상점화면(Screen):
         상단.add_widget(Label(text=모드, size_hint=(0.68, 1)))
         self.내용틀.add_widget(상단)
 
-        for 대분류 in gameflow.shop_system.대분류_목록:
+        for 대분류 in gameflow.상점_대분류목록:
             버튼 = Button(text=대분류)
             if 대분류 == "재료":
                 버튼.bind(on_release=lambda *_, m=모드: self._재료_그리기(m))
@@ -452,7 +452,7 @@ class 상점화면(Screen):
         if 모드 == "구매":
             마을정보 = gameflow.현재_마을정보(게임상태)
             항목목록 = [
-                (아이템, gameflow.shop_system.최대_구매수량)
+                (아이템, gameflow.상점_최대구매수량)
                 for 아이템 in gameflow.상점_구매목록(
                     게임상태, 대분류, 탭, 마을정보.get("상점판매목록"),
                 )
@@ -472,7 +472,7 @@ class 상점화면(Screen):
             )
 
     def _행_생성(self, 모드, 대분류, 탭, 아이템, 최대수량, 목록틀):
-        단가 = 아이템["가격"] if 모드 == "구매" else gameflow.shop_system.판매가(아이템)
+        단가 = 아이템["가격"] if 모드 == "구매" else gameflow.상점_판매가(아이템)
 
         행 = BoxLayout(orientation="horizontal", size_hint=(1, None), height=56, spacing=4)
 

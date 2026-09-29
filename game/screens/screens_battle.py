@@ -21,7 +21,6 @@ from kivy.metrics import dp
 from kivy.graphics import Color, Line
 
 import gameflow
-from game.system import skill_system
 from game.screens.screens_common import (
     _캐릭터이미지_경로, _에셋_경로, _도트_필터,
 )
@@ -453,10 +452,9 @@ class 전투화면(Screen):
             스킬데이터 = 스킬데이터모음.get(이름)
             if 스킬데이터 is None:
                 continue
-            검사용 = dict(스킬데이터, _이름=이름)
-            가능, _ = skill_system.사용_가능여부(게임상태["전투상태"], 참가자, 검사용)
+            가능, _ = gameflow.스킬_사용_가능여부(게임상태, 참가자, 이름)
             # 휴식당횟수가 있는 스킬은 남은 횟수를 붙여 보여준다.
-            남은정보 = skill_system.휴식_남은횟수(게임상태["전투상태"], 참가자, 검사용)
+            남은정보 = gameflow.스킬_휴식_남은횟수(게임상태, 참가자, 이름)
             표시 = f"{이름} ({남은정보[0]}/{남은정보[1]})" if 남은정보 else 이름
             항목목록.append((이름, 스킬데이터, 가능, 표시))
 
@@ -471,19 +469,8 @@ class 전투화면(Screen):
         self.안내라벨.text = "일반공격할 대상을 선택하세요."
 
     def _실제_타겟(self, 스킬데이터):
-        """스킬의 실제 타겟 종류. 분할공격은 1단계, 지속공격은 그 상세의
-        "타겟"을 보고, 조건부효과의 "타겟" 오버라이드(은탄 등)가 지금
-        충족되면 그 값을 쓴다 - skill_system.스킬_실행과 같은 판정."""
-        타겟 = (스킬데이터.get("타겟")
-              or (스킬데이터.get("공격단계1") or {}).get("타겟")
-              or (스킬데이터.get("지속공격") or {}).get("타겟"))
-        앱 = App.get_running_app()
-        전투상태 = 앱.게임상태["전투상태"]
-        참가자 = gameflow.현재_턴_참가자(앱.게임상태)
-        오버라이드 = skill_system.조건부효과_평가(
-            전투상태, 참가자, None, 스킬데이터.get("조건부효과", []),
-        )
-        return 오버라이드.get("타겟") or 타겟
+        """스킬의 실제 타겟 종류(gameflow.스킬_실제_타겟 참고)."""
+        return gameflow.스킬_실제_타겟(App.get_running_app().게임상태, 스킬데이터)
 
     def _스킬_클릭(self, 이름, 스킬데이터):
         타겟 = self._실제_타겟(스킬데이터)
@@ -499,10 +486,7 @@ class 전투화면(Screen):
         elif 타겟 == "적반복지정":
             # 타격 횟수만큼 적을 차례로 누른다. 다 고르면 실행.
             앱 = App.get_running_app()
-            횟수 = max(1, skill_system._정수_평가(
-                스킬데이터.get("공격횟수", 1), 앱.게임상태["전투상태"],
-                gameflow.현재_턴_참가자(앱.게임상태),
-            ))
+            횟수 = max(1, gameflow.현재참가자_수치(앱.게임상태, 스킬데이터.get("공격횟수", 1)))
             self.선택모드 = ("반복지정", 이름, 횟수, [])
             self.안내라벨.text = f"'{이름}' 대상을 {횟수}번 선택하세요 (1/{횟수})."
         else:
@@ -542,8 +526,7 @@ class 전투화면(Screen):
         _, 이름, 횟수, 목록 = self.선택모드
         앱 = App.get_running_app()
         스킬데이터 = 앱.게임상태["스킬데이터모음"][이름]
-        전투상태 = 앱.게임상태["전투상태"]
-        if gameflow.combat_system.상태이상_플래그(전투상태, 적참가자, "지정불가"):
+        if gameflow.지정불가_상태인가(앱.게임상태, 적참가자):
             self.안내라벨.text = f"{적참가자['이름']}은(는) 지정할 수 없는 상태입니다."
             return
         이미 = sum(1 for p in 목록 if p is 적참가자)
@@ -552,7 +535,7 @@ class 전투화면(Screen):
             return
         제한 = 스킬데이터.get("대상당피격제한")
         if 제한 is not None:
-            제한 = skill_system._정수_평가(제한, 전투상태, gameflow.현재_턴_참가자(앱.게임상태))
+            제한 = gameflow.현재참가자_수치(앱.게임상태, 제한)
             if 이미 >= 제한:
                 self.안내라벨.text = f"한 적은 최대 {제한}번까지 고를 수 있습니다."
                 return

@@ -37,7 +37,7 @@
 - ~~R2 gameflow 직업 레지스트리 데이터화~~ **완료 2026-09-29** (import 25줄 -> 표 5줄, 레지스트리 지문 동일, 골든 불변). - 54~135행의 직업별 import 반복을
   `{직업: (분류번호, 파일접미사)}` 표 + `importlib` 한 번으로. 직업 추가가 한 줄이 되게.
   (`importlib`은 이미 전직 레지스트리에서 쓰고 있음, 82행)
-- **R3 화면 → system 직접 호출 없애기** - `screens_battle.py`(skill_system, 비공개
+- ~~R3 화면 → system 직접 호출 없애기~~ **완료 2026-09-29** (gameflow "화면용 조회" 8개, 정적 규칙 테스트, ui_smoke로 실행 확인). - `screens_battle.py`(skill_system, 비공개
   `_정수_평가` 포함), `screens_party.py`(character_levelup_system)를 gameflow 함수로.
   화면 변경이므로 실행 확인 필요.
 - **R4 combat_system 분할** (테스트 선행 조건 충족) - 이미 있는 절 경계대로 `game/system/combat/` 패키지로:

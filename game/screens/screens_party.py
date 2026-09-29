@@ -18,7 +18,6 @@ from kivy.metrics import dp
 from kivy.utils import escape_markup
 
 import gameflow
-from game.system import character_levelup_system as 캐릭터레벨업
 from game.screens.screens_common import (
     _HP색, _MP색, _강조색, _게이지, _둥근상자, _카드_배경색, _카드_쓰러짐색, _캐릭터이미지_경로, _평면버튼, _흐린글자색,
 )
@@ -234,7 +233,7 @@ class 파티관리화면(Screen):
     def _능력치배분_팝업(self, 캐릭터, 배분점수, 확인콜백):
         배분 = {이름: 0 for 이름 in self._능력치_목록}
         투자가능 = {
-            이름: 캐릭터레벨업.약점스탯_투자가능(캐릭터, 이름)
+            이름: gameflow.약점스탯_투자가능(캐릭터, 이름)
             for 이름 in self._능력치_목록
         }
 
