@@ -49,7 +49,8 @@
   gameflow/skill_system/tests/tools가 `game.system.combat.<모듈>`을 직접 쓰고, 호환 모듈
   `combat_system.py`와 skill_system의 순수 위임 함수 5개를 지웠다(`다음_턴`은 실제 동작이 있어 유지).
   주석/docstring의 `combat_system.X` 언급도 `combat.<모듈>.X`로 바꿈. 골든 불변.
-- **R6 ruff format 적용** - 리팩터링이 끝난 파일부터. 서식만 바꾸는 커밋은 따로.
+- ~~R6 ruff format 적용~~ **완료 2026-09-29** - 135개 파일 서식만 바꾼 커밋(`7905c80`, AST 동일,
+  blame 무시 등록), 게이트에 `ruff format --check`, CI ruff 0.16.9 고정.
 
 ## 테스트 (R4 전 선행 조건) - 완료 2026-09-29
 

@@ -39,9 +39,9 @@ docs/              빌드 노트 등 문서
 
 한 작업을 끝냈다고 하려면 다음을 모두 만족해야 한다:
 
-1. **`python tools/check.py` 통과** - compileall + `ruff check` + `pytest` +
+1. **`python tools/check.py` 통과** - compileall + `ruff check` + `ruff format --check` + `pytest` +
    **커버리지 하한**(game/system + gameflow.py, `COVERAGE_FLOOR` = 90%, 현재 94%).
-   도구 설치: `pip install pytest ruff pytest-cov`. CI(`.github/workflows/check.yml`)도
+   도구 설치: `pip install pytest pytest-cov ruff==0.16.9`(CI와 같은 버전). CI(`.github/workflows/check.yml`)도
    모든 push/PR에서 같은 명령을 돌린다.
    **로직을 추가/변경하면 테스트도 같이 추가한다** - 어디에 넣을지는 아래 "테스트 지도".
 2. **골든 파일(`tests/golden/`)이 바뀌었다면 이유를 커밋에 적는다.** 리팩터링은
@@ -95,7 +95,8 @@ docs/              빌드 노트 등 문서
 - **예외는 `.githooks/` 하나** - sh가 실행하므로 LF여야 한다.
 - git은 줄끝을 변환하지 않는다(`.gitattributes`의 `* -text`). 저장소 바이트 = 받은 파일
   바이트이므로, 각자의 `core.autocrlf` 설정과 무관하다.
-- **커밋 전에 `python tools/fix_eol.py`** - LF가 섞인 파일을 CRLF로 바꾼다.
+- **커밋 전에 `python -m ruff format .` 그리고 `python tools/fix_eol.py`** - 서식을 맞추고
+  LF가 섞인 파일을 CRLF로 바꾼다(ruff format도 `line-ending = "cr-lf"`로 CRLF를 쓴다).
   위반은 게이트(`tests/test_repo_hygiene.py`)와 CI가 잡는다.
 - 파이썬 스크립트로 파일을 고칠 때는 `open(..., newline="")`로 읽고 써서 줄끝을 보존한다.
 - 줄끝 통일 커밋은 `.git-blame-ignore-revs`에 등록돼 있다:
