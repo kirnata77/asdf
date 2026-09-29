@@ -151,6 +151,21 @@
     "character_creation_system": "game.system.character_creation_system",
     "character_levelup_system": "game.system.character_levelup_system",
     "combat_system": "game.system.combat_system",
+
+    # game/system/combat/ (전투 시스템 패키지 - R4에서 combat_system.py를 나눔)
+    "core": "game.system.combat.core",
+    "formula": "game.system.combat.formula",
+    "participants": "game.system.combat.participants",
+    "traits": "game.system.combat.traits",
+    "status": "game.system.combat.status",
+    "stats": "game.system.combat.stats",
+    "resources": "game.system.combat.resources",
+    "damage": "game.system.combat.damage",
+    "attacks": "game.system.combat.attacks",
+    "monster_actions": "game.system.combat.monster_actions",
+    "reactions": "game.system.combat.reactions",
+    "flow": "game.system.combat.flow",
+
     "skill_system": "game.system.skill_system",
 
     # game/screens/ (Kivy 화면)

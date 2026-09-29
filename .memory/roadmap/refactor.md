@@ -40,12 +40,14 @@
 - ~~R3 화면 → system 직접 호출 없애기~~ **완료 2026-09-29** (gameflow "화면용 조회" 8개, 정적 규칙 테스트, ui_smoke로 실행 확인). - `screens_battle.py`(skill_system, 비공개
   `_정수_평가` 포함), `screens_party.py`(character_levelup_system)를 gameflow 함수로.
   화면 변경이므로 실행 확인 필요.
-- **R4 combat_system 분할** (테스트 선행 조건 충족) - 이미 있는 절 경계대로 `game/system/combat/` 패키지로:
+- ~~R4 combat_system 분할~~ **완료 2026-09-29** - 12개 모듈(core/formula/participants/traits/status/stats/resources/damage/attacks/monster_actions/reactions/flow), 117개 정의 AST 동일, 주석 278줄 보존, 골든 불변. 아래는 원래 계획: - 이미 있는 절 경계대로 `game/system/combat/` 패키지로:
   수식 평가(126~), 참가자 인스턴스(222~), 특성/칭호 반영(432~849), 상태이상/버프 집계
   (850~1211), 턴 순서(1212~), 명중/피해(1261~), 공격 실행(1547~), 턴 진행(1965~),
   반응특성(2044~), 소환수(2455~). `combat_system.py`는 재수출(re-export)만 남겨서
   gameflow/skill_system의 import가 안 깨지게 한 뒤, 호출부를 천천히 옮긴다.
-- **R5 skill_system ↔ combat_system 위임 정리** - R4 이후.
+- **R5 호출부를 combat 패키지로 옮기고 skill_system ↔ combat 위임 정리** - gameflow/skill_system/tests가
+  아직 호환 모듈 `combat_system`을 쓴다. 모듈별로 직접 import로 바꾼 뒤 호환 모듈을 지운다.
+  skill_system의 위임 함수(효과정의_조회/자원_보유량/자원_소모/_기본_컨텍스트/_장전소모_처리)도 정리.
 - **R6 ruff format 적용** - 리팩터링이 끝난 파일부터. 서식만 바꾸는 커밋은 따로.
 
 ## 테스트 (R4 전 선행 조건) - 완료 2026-09-29
