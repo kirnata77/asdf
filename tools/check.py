@@ -24,12 +24,27 @@ COVERAGE_FLOOR = 90
 
 PYTEST = [sys.executable, "-m", "pytest"]
 if importlib.util.find_spec("pytest_cov") is not None:
-    PYTEST += ["--cov=game.system", "--cov=gameflow", "--cov-branch",
-               "--cov-report=term:skip-covered", f"--cov-fail-under={COVERAGE_FLOOR}"]
+    PYTEST += [
+        "--cov=game.system",
+        "--cov=gameflow",
+        "--cov-branch",
+        "--cov-report=term:skip-covered",
+        f"--cov-fail-under={COVERAGE_FLOOR}",
+    ]
 
 STEPS = [
-    ("compileall", [sys.executable, "-m", "compileall", "-q",
-                    "-x", r"[\\/](\.buildozer|bin|\.git)[\\/]", "."]),
+    (
+        "compileall",
+        [
+            sys.executable,
+            "-m",
+            "compileall",
+            "-q",
+            "-x",
+            r"[\\/](\.buildozer|bin|\.git)[\\/]",
+            ".",
+        ],
+    ),
     ("ruff check", [sys.executable, "-m", "ruff", "check", "."]),
     ("pytest", PYTEST),
 ]
@@ -43,7 +58,9 @@ def main():
             continue
         print(f"== {name}")
         if name == "pytest" and "--cov-branch" not in cmd:
-            print("   (pytest-cov 없음 - 커버리지 하한 검사를 건너뜀: pip install pytest-cov)")
+            print(
+                "   (pytest-cov 없음 - 커버리지 하한 검사를 건너뜀: pip install pytest-cov)"
+            )
         result = subprocess.run(cmd, cwd=ROOT)
         if result.returncode != 0:
             failed.append(name)

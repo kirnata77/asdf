@@ -20,10 +20,8 @@
 # 깊숙한곳과 같은 단계). 보스 이름은 미정.
 
 맵정보 = {
-
     "지도명": "포이즌 선더랜드",
     "상세지역": ["아라드", "벨마이어 공국 북부"],
-
     "지도": [
         "XXX#XXXXXXXXXXXXXXXXXXXXXXX",
         "XXOOOOXXXXXXXOOXXXXXXXOOXXX",
@@ -33,7 +31,6 @@
         "XOOXOXXXXXXOOOOOXXXXXXXXXOX",
         "XXXXXXXXXXXXXXXXXXXXXXXXXXX",
     ],
-
     "오브젝트": {
         (25, 3): {
             "분류": "이벤트",
@@ -51,14 +48,12 @@
             "클리어시": "통행가능화",
         },
     },
-
     "연결지역": {
         (3, 0): {
             "연결맵": "map_01A_D05_thunderland",
             "진입좌표": (3, 6),
         },
     },
-
     "인카운트": {
         "출현그룹": [
             {
@@ -79,5 +74,4 @@
             "걸음당증가율": 0.1,
         },
     },
-
 }

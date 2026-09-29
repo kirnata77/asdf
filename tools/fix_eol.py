@@ -14,22 +14,47 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # 텍스트로 취급할 확장자/파일명. 이미지(.webp 등)/폰트는 건드리지 않는다.
-TEXT_EXTS = {".py", ".md", ".json", ".yml", ".yaml", ".toml", ".spec", ".txt",
-             ".kv", ".cfg", ".ini", ".csv"}
+TEXT_EXTS = {
+    ".py",
+    ".md",
+    ".json",
+    ".yml",
+    ".yaml",
+    ".toml",
+    ".spec",
+    ".txt",
+    ".kv",
+    ".cfg",
+    ".ini",
+    ".csv",
+}
 TEXT_NAMES = {".gitignore", ".gitattributes", ".git-blame-ignore-revs"}
 
 # 저장소 파일이 아닌 폴더(빌드/캐시/세이브/로컬 설정)와 LF 예외 폴더
-SKIP_DIRS = {".git", ".buildozer", "bin", "__pycache__", ".pytest_cache",
-             ".ruff_cache", ".claude", "venv", ".venv", ".githooks"}
+SKIP_DIRS = {
+    ".git",
+    ".buildozer",
+    "bin",
+    "__pycache__",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".claude",
+    "venv",
+    ".venv",
+    ".githooks",
+}
 SKIP_PATHS = {os.path.join("game", "saves")}
 
 
 def text_files():
     for folder, dirs, files in os.walk(ROOT):
         rel = os.path.relpath(folder, ROOT)
-        dirs[:] = sorted(d for d in dirs
-                         if d not in SKIP_DIRS
-                         and os.path.normpath(os.path.join(rel, d)) not in SKIP_PATHS)
+        dirs[:] = sorted(
+            d
+            for d in dirs
+            if d not in SKIP_DIRS
+            and os.path.normpath(os.path.join(rel, d)) not in SKIP_PATHS
+        )
         for name in sorted(files):
             if name in TEXT_NAMES or os.path.splitext(name)[1].lower() in TEXT_EXTS:
                 yield os.path.join(folder, name)

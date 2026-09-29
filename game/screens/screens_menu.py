@@ -18,49 +18,72 @@ from kivy.metrics import dp
 
 import gameflow
 from game.screens.screens_common import (
-    _강조색, _둥근상자, _버튼_높이, _버튼_폰트크기, _카드_배경색, _캐릭터이미지_경로, _평면버튼, _흐린글자색, 설정_불러오기, 설정_저장,
+    _강조색,
+    _둥근상자,
+    _버튼_높이,
+    _버튼_폰트크기,
+    _카드_배경색,
+    _캐릭터이미지_경로,
+    _평면버튼,
+    _흐린글자색,
+    설정_불러오기,
+    설정_저장,
 )
 
 
 # =====================================================
 # 0. 메인 메뉴
 
+
 class 메인메뉴화면(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         레이아웃 = BoxLayout(orientation="vertical", padding=24, spacing=14)
 
-        레이아웃.add_widget(Label(
-            text="던전앤파이터 모바일 프로토타입",
-            font_size=48, size_hint=(1, 0.3),
-        ))
+        레이아웃.add_widget(
+            Label(
+                text="던전앤파이터 모바일 프로토타입",
+                font_size=48,
+                size_hint=(1, 0.3),
+            )
+        )
 
         버튼틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.7), spacing=10)
 
         새시작버튼 = Button(
-            text="새로운 시작", font_size=_버튼_폰트크기,
-            size_hint_y=None, height=_버튼_높이,
+            text="새로운 시작",
+            font_size=_버튼_폰트크기,
+            size_hint_y=None,
+            height=_버튼_높이,
         )
-        새시작버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "파티생성"))
+        새시작버튼.bind(
+            on_release=lambda *_: setattr(self.manager, "current", "파티생성")
+        )
         버튼틀.add_widget(새시작버튼)
 
         self.불러오기버튼 = Button(
-            text="불러오기", font_size=_버튼_폰트크기,
-            size_hint_y=None, height=_버튼_높이,
+            text="불러오기",
+            font_size=_버튼_폰트크기,
+            size_hint_y=None,
+            height=_버튼_높이,
         )
         self.불러오기버튼.bind(on_release=self._불러오기)
         버튼틀.add_widget(self.불러오기버튼)
 
         옵션버튼 = Button(
-            text="옵션", font_size=_버튼_폰트크기,
-            size_hint_y=None, height=_버튼_높이,
+            text="옵션",
+            font_size=_버튼_폰트크기,
+            size_hint_y=None,
+            height=_버튼_높이,
         )
         옵션버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "옵션"))
         버튼틀.add_widget(옵션버튼)
 
         종료버튼 = Button(
-            text="게임 종료", font_size=_버튼_폰트크기,
-            size_hint_y=None, height=_버튼_높이,
+            text="게임 종료",
+            font_size=_버튼_폰트크기,
+            size_hint_y=None,
+            height=_버튼_높이,
         )
         종료버튼.bind(on_release=lambda *_: App.get_running_app().stop())
         버튼틀.add_widget(종료버튼)
@@ -77,6 +100,7 @@ class 메인메뉴화면(Screen):
     def _불러오기(self, *args):
         self.manager.current = "불러오기목록"
 
+
 # =====================================================
 # 1. 파티 생성 화면 (최대 4인)
 # =====================================================
@@ -85,6 +109,7 @@ class 메인메뉴화면(Screen):
 # 카드 - 왼쪽 직업 초상화, 가운데 이름 입력·직업 선택·그 직업의 시작
 # HP/MP/능력치 미리보기, 오른쪽 참여 토글(1번은 필수). 참여하지 않는 칸은
 # 흐리게 표시하고 입력을 막는다.
+
 
 class 파티생성화면(Screen):
     _능력치_목록 = ["근력", "민첩", "건강", "지능", "지혜", "매력"]
@@ -97,11 +122,22 @@ class 파티생성화면(Screen):
         루트 = BoxLayout(orientation="vertical", padding=dp(12), spacing=dp(10))
 
         머리 = BoxLayout(orientation="vertical", size_hint=(1, None), height=dp(64))
-        제목 = Label(text="파티 구성", font_size="26sp", bold=True, halign="left", valign="bottom")
+        제목 = Label(
+            text="파티 구성",
+            font_size="26sp",
+            bold=True,
+            halign="left",
+            valign="bottom",
+        )
         제목.bind(size=lambda inst, size: setattr(inst, "text_size", size))
         머리.add_widget(제목)
-        부제 = Label(text="1~4명 · 이름을 비워두면 직업 이름으로 시작합니다",
-                   font_size="13sp", color=_흐린글자색, halign="left", valign="top")
+        부제 = Label(
+            text="1~4명 · 이름을 비워두면 직업 이름으로 시작합니다",
+            font_size="13sp",
+            color=_흐린글자색,
+            halign="left",
+            valign="top",
+        )
         부제.bind(size=lambda inst, size: setattr(inst, "text_size", size))
         머리.add_widget(부제)
         루트.add_widget(머리)
@@ -111,16 +147,28 @@ class 파티생성화면(Screen):
             목록틀.add_widget(self._카드_생성(i))
         루트.add_widget(목록틀)
 
-        self.안내라벨 = Label(text="", size_hint=(1, None), height=dp(28),
-                          font_size="13sp", color=_흐린글자색)
+        self.안내라벨 = Label(
+            text="",
+            size_hint=(1, None),
+            height=dp(28),
+            font_size="13sp",
+            color=_흐린글자색,
+        )
         루트.add_widget(self.안내라벨)
 
-        버튼줄 = BoxLayout(orientation="horizontal", spacing=dp(10),
-                        size_hint=(1, None), height=dp(56))
-        뒤로버튼 = _평면버튼("뒤로", (0.3, 0.31, 0.35, 1), font_size="16sp", size_hint=(0.35, 1))
-        뒤로버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "메인메뉴"))
+        버튼줄 = BoxLayout(
+            orientation="horizontal", spacing=dp(10), size_hint=(1, None), height=dp(56)
+        )
+        뒤로버튼 = _평면버튼(
+            "뒤로", (0.3, 0.31, 0.35, 1), font_size="16sp", size_hint=(0.35, 1)
+        )
+        뒤로버튼.bind(
+            on_release=lambda *_: setattr(self.manager, "current", "메인메뉴")
+        )
         버튼줄.add_widget(뒤로버튼)
-        시작버튼 = _평면버튼("모험 시작", _강조색, font_size="16sp", bold=True, size_hint=(0.65, 1))
+        시작버튼 = _평면버튼(
+            "모험 시작", _강조색, font_size="16sp", bold=True, size_hint=(0.65, 1)
+        )
         시작버튼.bind(on_release=self._시작)
         버튼줄.add_widget(시작버튼)
         루트.add_widget(버튼줄)
@@ -136,48 +184,79 @@ class 파티생성화면(Screen):
         return self._미리보기_캐시[직업]
 
     def _카드_생성(self, i):
-        카드 = _둥근상자(_카드_배경색, orientation="horizontal", padding=dp(10), spacing=dp(10))
+        카드 = _둥근상자(
+            _카드_배경색, orientation="horizontal", padding=dp(10), spacing=dp(10)
+        )
         슬롯 = {"번호": i, "카드": 카드}
 
-        초상틀 = _둥근상자((0.2, 0.21, 0.25, 1), 반지름=10, size_hint=(0.24, 1), padding=dp(4))
+        초상틀 = _둥근상자(
+            (0.2, 0.21, 0.25, 1), 반지름=10, size_hint=(0.24, 1), padding=dp(4)
+        )
         슬롯["초상"] = Image(allow_stretch=True, keep_ratio=True)
         초상틀.add_widget(슬롯["초상"])
         카드.add_widget(초상틀)
 
         가운데 = BoxLayout(orientation="vertical", size_hint=(0.54, 1), spacing=dp(5))
         슬롯["가운데"] = 가운데
-        번호라벨 = Label(text=f"[b]{i + 1}번 파티원[/b]" + ("  [size=12sp][color=9ea6b3]필수[/color][/size]" if i == 0 else ""),
-                     markup=True, font_size="15sp", halign="left", valign="middle", size_hint=(1, 0.2))
+        번호라벨 = Label(
+            text=f"[b]{i + 1}번 파티원[/b]"
+            + ("  [size=12sp][color=9ea6b3]필수[/color][/size]" if i == 0 else ""),
+            markup=True,
+            font_size="15sp",
+            halign="left",
+            valign="middle",
+            size_hint=(1, 0.2),
+        )
         번호라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
         가운데.add_widget(번호라벨)
 
         입력줄 = BoxLayout(orientation="horizontal", spacing=dp(6), size_hint=(1, 0.3))
         슬롯["이름입력"] = TextInput(
-            text="", hint_text="이름", multiline=False, font_size="15sp",
-            background_normal="", background_active="", background_disabled_normal="",
+            text="",
+            hint_text="이름",
+            multiline=False,
+            font_size="15sp",
+            background_normal="",
+            background_active="",
+            background_disabled_normal="",
             background_color=(0.2, 0.21, 0.25, 1),
-            foreground_color=(1, 1, 1, 1), hint_text_color=(0.5, 0.52, 0.57, 1),
-            cursor_color=(1, 1, 1, 1), padding=(dp(8), dp(8)), size_hint=(0.5, 1),
+            foreground_color=(1, 1, 1, 1),
+            hint_text_color=(0.5, 0.52, 0.57, 1),
+            cursor_color=(1, 1, 1, 1),
+            padding=(dp(8), dp(8)),
+            size_hint=(0.5, 1),
         )
         입력줄.add_widget(슬롯["이름입력"])
         슬롯["직업스피너"] = Spinner(
-            text=gameflow.직업목록[0], values=gameflow.직업목록, font_size="15sp",
-            background_normal="", background_disabled_normal="",
-            background_color=(0.3, 0.31, 0.35, 1), size_hint=(0.5, 1),
+            text=gameflow.직업목록[0],
+            values=gameflow.직업목록,
+            font_size="15sp",
+            background_normal="",
+            background_disabled_normal="",
+            background_color=(0.3, 0.31, 0.35, 1),
+            size_hint=(0.5, 1),
         )
         슬롯["직업스피너"].bind(text=lambda inst, 값, 슬=슬롯: self._카드_갱신(슬))
         입력줄.add_widget(슬롯["직업스피너"])
         가운데.add_widget(입력줄)
 
-        슬롯["자원라벨"] = Label(text="", markup=True, font_size="12sp", halign="left",
-                             valign="middle", size_hint=(1, 0.14))
+        슬롯["자원라벨"] = Label(
+            text="",
+            markup=True,
+            font_size="12sp",
+            halign="left",
+            valign="middle",
+            size_hint=(1, 0.14),
+        )
         슬롯["자원라벨"].bind(size=lambda inst, size: setattr(inst, "text_size", size))
         가운데.add_widget(슬롯["자원라벨"])
 
         능력치판 = GridLayout(cols=3, size_hint=(1, 0.36))
         슬롯["능력치칸"] = {}
         for 이름 in self._능력치_목록:
-            칸 = Label(text="", markup=True, font_size="12sp", halign="left", valign="middle")
+            칸 = Label(
+                text="", markup=True, font_size="12sp", halign="left", valign="middle"
+            )
             칸.bind(size=lambda inst, size: setattr(inst, "text_size", size))
             능력치판.add_widget(칸)
             슬롯["능력치칸"][이름] = 칸
@@ -187,11 +266,24 @@ class 파티생성화면(Screen):
         오른쪽 = BoxLayout(orientation="vertical", size_hint=(0.22, 1))
         if i == 0:
             슬롯["참여토글"] = None
-            오른쪽.add_widget(_평면버튼("참여", _강조색, font_size="14sp", bold=True, disabled=True,
-                                   disabled_color=(1, 1, 1, 1)))
+            오른쪽.add_widget(
+                _평면버튼(
+                    "참여",
+                    _강조색,
+                    font_size="14sp",
+                    bold=True,
+                    disabled=True,
+                    disabled_color=(1, 1, 1, 1),
+                )
+            )
         else:
-            토글 = ToggleButton(text="참여", font_size="14sp", background_normal="",
-                              background_down="", background_color=(0.2, 0.21, 0.25, 1))
+            토글 = ToggleButton(
+                text="참여",
+                font_size="14sp",
+                background_normal="",
+                background_down="",
+                background_color=(0.2, 0.21, 0.25, 1),
+            )
             토글.bind(state=lambda inst, 값, 슬=슬롯: self._카드_갱신(슬))
             슬롯["참여토글"] = 토글
             오른쪽.add_widget(토글)
@@ -214,8 +306,10 @@ class 파티생성화면(Screen):
         미리 = self._미리보기(직업)
         슬롯["초상"].source = _캐릭터이미지_경로(gameflow.초상화_코드(미리))
         슬롯["초상"].color = (1, 1, 1, 1) if 참여 else (0.35, 0.35, 0.35, 1)
-        슬롯["자원라벨"].text = (f"[color=e05555]HP {미리['기본최대HP']}[/color]    "
-                             f"[color=6fa0ff]MP {미리['기본최대MP']}[/color]")
+        슬롯["자원라벨"].text = (
+            f"[color=e05555]HP {미리['기본최대HP']}[/color]    "
+            f"[color=6fa0ff]MP {미리['기본최대MP']}[/color]"
+        )
         for 이름, 칸 in 슬롯["능력치칸"].items():
             칸.text = f"[color=9ea6b3]{이름}[/color] {미리[이름]}"
         슬롯["이름입력"].disabled = not 참여
@@ -234,9 +328,11 @@ class 파티생성화면(Screen):
         self.manager.get_screen("마을").갱신()
         self.manager.current = "마을"
 
+
 # =====================================================
 # 2. 불러오기 / 저장 슬롯 목록 (공용 레이아웃, 동작만 다름)
 # =====================================================
+
 
 class _슬롯목록화면(Screen):
     """세이브 슬롯 목록을 보여주는 화면의 공용 뼈대. 불러오기목록화면
@@ -261,7 +357,9 @@ class _슬롯목록화면(Screen):
         루트.add_widget(self.안내라벨)
 
         뒤로버튼 = Button(text="뒤로", size_hint=(1, 0.1))
-        뒤로버튼.bind(on_release=lambda *_: setattr(self.manager, "current", self.돌아갈화면))
+        뒤로버튼.bind(
+            on_release=lambda *_: setattr(self.manager, "current", self.돌아갈화면)
+        )
         루트.add_widget(뒤로버튼)
 
         self.add_widget(루트)
@@ -272,7 +370,9 @@ class _슬롯목록화면(Screen):
     def 갱신(self):
         self.목록틀.clear_widgets()
         for 요약 in gameflow.전체_세이브_요약():
-            줄 = BoxLayout(orientation="horizontal", size_hint=(1, None), height=56, spacing=8)
+            줄 = BoxLayout(
+                orientation="horizontal", size_hint=(1, None), height=56, spacing=8
+            )
 
             if 요약.get("비어있음"):
                 설명 = f"{요약['슬롯번호']}번 슬롯 - (비어 있음)"
@@ -329,34 +429,50 @@ class 저장목록화면(_슬롯목록화면):
         self.안내라벨.text = f"{슬롯번호}번 슬롯에 저장했습니다."
         self.갱신()
 
+
 # =====================================================
 # 3. 옵션 (반응 자동 사용 - 설정 저장은 screens_common)
 # =====================================================
+
 
 class 옵션화면(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         설정 = 설정_불러오기()
         루트 = BoxLayout(orientation="vertical", padding=24, spacing=14)
-        루트.add_widget(Label(
-            text="옵션",
-            font_size=44, size_hint=(1, 0.2),
-        ))
+        루트.add_widget(
+            Label(
+                text="옵션",
+                font_size=44,
+                size_hint=(1, 0.2),
+            )
+        )
         설정틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.6), spacing=8)
-        self.반응자동버튼 = ToggleButton(size_hint=(1, None), height=dp(56),
-                                  state="down" if 설정.get("반응자동") else "normal")
+        self.반응자동버튼 = ToggleButton(
+            size_hint=(1, None),
+            height=dp(56),
+            state="down" if 설정.get("반응자동") else "normal",
+        )
         self.반응자동버튼.bind(state=self._반응자동_변경)
         설정틀.add_widget(self.반응자동버튼)
-        설명 = Label(text="끄면 전투 중 반응행동을 쓰는 반응(회피/반격/피해감소 등)마다 "
-                        "사용할지 묻는 창이 뜹니다. 켜면 묻지 않고 자동으로 사용합니다.",
-                   font_size="13sp", size_hint=(1, None), height=dp(64), halign="left", valign="top")
+        설명 = Label(
+            text="끄면 전투 중 반응행동을 쓰는 반응(회피/반격/피해감소 등)마다 "
+            "사용할지 묻는 창이 뜹니다. 켜면 묻지 않고 자동으로 사용합니다.",
+            font_size="13sp",
+            size_hint=(1, None),
+            height=dp(64),
+            halign="left",
+            valign="top",
+        )
         설명.bind(size=lambda inst, size: setattr(inst, "text_size", size))
         설정틀.add_widget(설명)
         설정틀.add_widget(Widget())
         루트.add_widget(설정틀)
         self._반응자동_변경(self.반응자동버튼, self.반응자동버튼.state)
         뒤로버튼 = Button(text="뒤로", size_hint=(1, 0.2))
-        뒤로버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "메인메뉴"))
+        뒤로버튼.bind(
+            on_release=lambda *_: setattr(self.manager, "current", "메인메뉴")
+        )
         루트.add_widget(뒤로버튼)
         self.add_widget(루트)
 

@@ -42,10 +42,14 @@ def golden():
                 json.dump(실제값, f, ensure_ascii=False, indent=1, sort_keys=True)
                 f.write("\n")
             if os.environ.get("UPDATE_GOLDEN") != "1":
-                pytest.fail(f"골든 파일이 없어 새로 만들었다: {경로} - 내용을 확인하고 커밋할 것")
+                pytest.fail(
+                    f"골든 파일이 없어 새로 만들었다: {경로} - 내용을 확인하고 커밋할 것"
+                )
             return
         with open(경로, encoding="utf-8") as f:
             기대값 = json.load(f)
-        assert 실제값 == 기대값, f"{이름}: 골든과 다르다 (의도한 변경이면 UPDATE_GOLDEN=1)"
+        assert 실제값 == 기대값, (
+            f"{이름}: 골든과 다르다 (의도한 변경이면 UPDATE_GOLDEN=1)"
+        )
 
     return _비교

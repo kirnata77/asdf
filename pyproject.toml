@@ -13,6 +13,10 @@ addopts = "-q"
 target-version = "py311"
 extend-exclude = [".buildozer", "bin"]
 
+[tool.ruff.format]
+# 저장소 규칙: 모든 텍스트 파일은 CRLF (CLAUDE.md "줄끝").
+line-ending = "cr-lf"
+
 [tool.ruff.lint]
 # E4/E7/E9/F(문법 오류, 정의 안 된 이름, 안 쓰는 import 등)만 쓴다. ruff 버전마다
 # 기본 규칙이 달라서(0.16부터 기본값이 넓어짐) 명시적으로 고정한다.

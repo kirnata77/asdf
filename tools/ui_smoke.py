@@ -32,7 +32,12 @@ from tests import support  # noqa: E402
 
 스크린샷폴더 = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else "ui_smoke_shots")
 결과 = {"단계": [], "오류": None}
-전직 = {"귀검사": "웨펀마스터", "거너": "레인저", "마법사": "엘리멘탈마스터", "프리스트": "크루세이더"}
+전직 = {
+    "귀검사": "웨펀마스터",
+    "거너": "레인저",
+    "마법사": "엘리멘탈마스터",
+    "프리스트": "크루세이더",
+}
 
 
 def _찍기(이름):
@@ -53,7 +58,9 @@ class 스모크앱(main.DnfMobileApp):
 
     def _다음(self, _dt):
         try:
-            Clock.schedule_once(self._다음, next(self._단계))  # 단계 사이에 화면을 그리게 기다린다
+            Clock.schedule_once(
+                self._다음, next(self._단계)
+            )  # 단계 사이에 화면을 그리게 기다린다
         except StopIteration:
             self.stop()
         except Exception:  # noqa: BLE001
@@ -62,7 +69,9 @@ class 스모크앱(main.DnfMobileApp):
 
     def _단계들(self):
         random.seed(3)
-        상태 = support.새게임([("", "귀검사"), ("", "거너"), ("", "마법사"), ("", "프리스트")])
+        상태 = support.새게임(
+            [("", "귀검사"), ("", "거너"), ("", "마법사"), ("", "프리스트")]
+        )
         for c in 상태["파티"]["파티원"]:
             support.성장(상태, c, 10, 전직=전직[c["직업"]])
         gf.파티_최대치로_회복(상태)
@@ -81,7 +90,9 @@ class 스모크앱(main.DnfMobileApp):
         결과["단계"].append("상점 구매/판매 목록")
 
         매니저.current = "파티관리"
-        매니저.get_screen("파티관리")._능력치배분_팝업(상태["파티"]["파티원"][0], 2, lambda 배분: None)
+        매니저.get_screen("파티관리")._능력치배분_팝업(
+            상태["파티"]["파티원"][0], 2, lambda 배분: None
+        )
         yield 0.5
         _찍기("stat_popup")
         _팝업_닫기()
@@ -107,7 +118,9 @@ class 스모크앱(main.DnfMobileApp):
             for 스킬 in p["원본"]["보유스킬"]:
                 데이터 = 상태["스킬데이터모음"][스킬]
                 assert 전투._실제_타겟(데이터) == gf.스킬_실제_타겟(상태, 데이터), 스킬
-            결과["단계"].append(f"{이름} 스킬 팝업/실제 타겟 {len(p['원본']['보유스킬'])}개")
+            결과["단계"].append(
+                f"{이름} 스킬 팝업/실제 타겟 {len(p['원본']['보유스킬'])}개"
+            )
         yield 0.5
         _찍기("battle_skill_popup")
         _팝업_닫기()
@@ -133,5 +146,9 @@ if __name__ == "__main__":
         print("OK  ", 단계)
     if 결과["오류"]:
         print(결과["오류"])
-    print(json.dumps({"스크린샷": 스크린샷폴더, "성공": 결과["오류"] is None}, ensure_ascii=False))
+    print(
+        json.dumps(
+            {"스크린샷": 스크린샷폴더, "성공": 결과["오류"] is None}, ensure_ascii=False
+        )
+    )
     sys.exit(1 if 결과["오류"] else 0)

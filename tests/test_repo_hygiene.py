@@ -17,4 +17,6 @@ def test_git_훅은_LF():
     훅폴더 = os.path.join(fix_eol.ROOT, ".githooks")
     for 이름 in os.listdir(훅폴더):
         with open(os.path.join(훅폴더, 이름), "rb") as f:
-            assert b"\r\n" not in f.read(), f".githooks/{이름}이 CRLF - sh가 실행하지 못한다"
+            assert b"\r\n" not in f.read(), (
+                f".githooks/{이름}이 CRLF - sh가 실행하지 못한다"
+            )

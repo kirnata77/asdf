@@ -19,7 +19,6 @@
 파일경로 = {
     # game/data/ 최상위
     "file_path": "game.data.file_path",
-
     # game/data/job_skill/
     "job_skill_010m_ghost_swordsman": "game.data.job_skill.job_skill_010m_ghost_swordsman",
     "job_skill_011m_weapon_master": "game.data.job_skill.job_skill_011m_weapon_master",
@@ -33,7 +32,6 @@
     "job_skill_051f_crusader": "game.data.job_skill.job_skill_051f_crusader",
     "job_skill_format": "game.data.job_skill.job_skill_format",
     "job_skill_0000": "game.data.job_skill.job_skill_0000",
-
     # game/data/job_level/
     "job_level_010m_ghost_swordsman": "game.data.job_level.job_level_010m_ghost_swordsman",
     "job_level_011m_weapon_master": "game.data.job_level.job_level_011m_weapon_master",
@@ -46,7 +44,6 @@
     "job_level_050f_priest": "game.data.job_level.job_level_050f_priest",
     "job_level_051f_crusader": "game.data.job_level.job_level_051f_crusader",
     "job_level_format": "game.data.job_level.job_level_format",
-
     # game/data/perks/
     "perks_class_0000": "game.data.perks.perks_class_0000",
     "perks_class_010m": "game.data.perks.perks_class_010m",
@@ -55,14 +52,12 @@
     "perks_class_040f": "game.data.perks.perks_class_040f",
     "perks_class_050f": "game.data.perks.perks_class_050f",
     "perks_class_format": "game.data.perks.perks_class_format",
-
     # game/data/buff/
     "buff": "game.data.buff.buff",
     "debuff": "game.data.buff.debuff",
     "skill_effects": "game.data.buff.skill_effects",
     "status_effects": "game.data.buff.status_effects",
     "summon_00": "game.data.buff.summon_00",
-
     # game/data/ability/
     "job_ability_010m": "game.data.ability.job_ability_010m",
     "job_ability_020f": "game.data.ability.job_ability_020f",
@@ -71,7 +66,6 @@
     "job_ability_050f": "game.data.ability.job_ability_050f",
     "job_ability_format": "game.data.ability.job_ability_format",
     "job_ability_0000": "game.data.ability.job_ability_0000",
-
     # game/data/monster/
     "monster_race_goblin": "game.data.monster.monster_race_goblin",
     "monster_race_tau": "game.data.monster.monster_race_tau",
@@ -82,7 +76,6 @@
     "monster_ability": "game.data.monster.monster_ability",
     "monster_title": "game.data.monster.monster_title",
     "monster_drop": "game.data.monster.monster_drop",
-
     # game/data/equipment/
     "eq_01_weapon_010": "game.data.equipment.eq_01_weapon_010",
     "eq_01_weapon_020": "game.data.equipment.eq_01_weapon_020",
@@ -105,17 +98,14 @@
     "eq_04_special_09_subequipment": "game.data.equipment.eq_04_special_09_subequipment",
     "eq_04_special_set": "game.data.equipment.eq_04_special_set",
     "eq_02_armor_02_bottom": "game.data.equipment.eq_02_armor_02_bottom",
-
     # game/data/item/
     "item_potion": "game.data.item.item_potion",
     "item_consumable": "game.data.item.item_consumable",
     "item_materials": "game.data.item.item_materials",
     "item_quest": "game.data.item.item_quest",
-
     # game/data/character/
     "character_format": "game.data.character.character_format",
     "player_format": "game.data.character.player_format",
-
     # game/data/MAP/
     "map_format": "game.data.MAP.map_format",
     "map_utils": "game.data.MAP.map_utils",
@@ -129,12 +119,10 @@
     "map_01A_D08_grakquarak": "game.data.MAP.map_01A_D08_grakquarak",
     "map_01A_D09_blazing_grakquarak": "game.data.MAP.map_01A_D09_blazing_grakquarak",
     "map_01A_D10_shadow_thunderland": "game.data.MAP.map_01A_D10_shadow_thunderland",
-
     # game/data/town/
     "town_01A_T01_Elvengard": "game.data.town.town_01A_T01_Elvengard",
     "town_01A_T02_hendonmyre": "game.data.town.town_01A_T02_hendonmyre",
     "town_format": "game.data.town.town_format",
-
     # game/system/
     "equipment_system": "game.system.equipment_system",
     "dice_utils": "game.system.dice_utils",
@@ -150,7 +138,6 @@
     "character_data_system": "game.system.character_data_system",
     "character_creation_system": "game.system.character_creation_system",
     "character_levelup_system": "game.system.character_levelup_system",
-
     # game/system/combat/ (전투 시스템 패키지 - R4에서 옛 combat_system.py를 나눔)
     "core": "game.system.combat.core",
     "formula": "game.system.combat.formula",
@@ -164,9 +151,7 @@
     "monster_actions": "game.system.combat.monster_actions",
     "reactions": "game.system.combat.reactions",
     "flow": "game.system.combat.flow",
-
     "skill_system": "game.system.skill_system",
-
     # game/screens/ (Kivy 화면)
     "screens_common": "game.screens.screens_common",
     "screens_menu": "game.screens.screens_menu",

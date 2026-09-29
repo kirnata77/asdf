@@ -25,18 +25,29 @@ def test_화면은_game_system을_직접_쓰지_않는다():
                 continue
             경로 = os.path.join(ROOT, 폴더, 파일)
             for 줄번호, 줄 in enumerate(open(경로, encoding="utf-8"), 1):
-                if re.search(r"(from|import)\s+game\.system|gameflow\.\w+_system\b", 줄):
+                if re.search(
+                    r"(from|import)\s+game\.system|gameflow\.\w+_system\b", 줄
+                ):
                     위반.append(f"{폴더}/{파일}:{줄번호}: {줄.strip()}")
-    for 줄번호, 줄 in enumerate(open(os.path.join(ROOT, "main.py"), encoding="utf-8"), 1):
+    for 줄번호, 줄 in enumerate(
+        open(os.path.join(ROOT, "main.py"), encoding="utf-8"), 1
+    ):
         if re.search(r"(from|import)\s+game\.system", 줄):
             위반.append(f"main.py:{줄번호}: {줄.strip()}")
     assert not 위반, "화면 -> gameflow -> system 계층 위반:\n" + "\n".join(위반)
 
 
-def _전투(구성=(("", "귀검사"), ("", "거너"), ("", "마법사"), ("", "프리스트")), 레벨=10):
+def _전투(
+    구성=(("", "귀검사"), ("", "거너"), ("", "마법사"), ("", "프리스트")), 레벨=10
+):
     random.seed(3)
     상태 = support.새게임(list(구성))
-    전직 = {"귀검사": "웨펀마스터", "거너": "레인저", "마법사": "엘리멘탈마스터", "프리스트": "크루세이더"}
+    전직 = {
+        "귀검사": "웨펀마스터",
+        "거너": "레인저",
+        "마법사": "엘리멘탈마스터",
+        "프리스트": "크루세이더",
+    }
     for c in 상태["파티"]["파티원"]:
         support.성장(상태, c, 레벨, 전직=전직[c["직업"]] if 레벨 >= 6 else None)
     gf.파티_최대치로_회복(상태)
@@ -94,8 +105,13 @@ def test_현재참가자_수치와_지정불가():
     상태 = _전투()
     마법사 = _차례(상태, "마법사")
     공격횟수 = 상태["스킬데이터모음"]["썬더콜링"]["공격횟수"]
-    assert gf.현재참가자_수치(상태, 공격횟수) == ss._정수_평가(공격횟수, 상태["전투상태"], 마법사)
-    assert gf.현재참가자_수치(상태, None) == 1 and gf.현재참가자_수치(상태, None, 기본값=0) == 0
+    assert gf.현재참가자_수치(상태, 공격횟수) == ss._정수_평가(
+        공격횟수, 상태["전투상태"], 마법사
+    )
+    assert (
+        gf.현재참가자_수치(상태, None) == 1
+        and gf.현재참가자_수치(상태, None, 기본값=0) == 0
+    )
     assert gf.현재참가자_수치(상태, "2+차수") == 4  # 레벨 10 = 2차수
     적 = next(x for x in 상태["전투상태"]["참가자"] if x["진영"] == "적")
     assert gf.지정불가_상태인가(상태, 적) is False
