@@ -6,3 +6,6 @@
 
 # R6: ruff format 적용 (서식만, AST 동일)
 7905c809e071ebc32e2380ef9f184217b34fbea7
+
+# LF 전환 (CRLF -> LF, 줄끝만 + 줄끝 규칙 몇 줄)
+93327a809a313bb4374aa4375b27dccb20c1ace9
