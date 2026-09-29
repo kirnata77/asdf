@@ -1,0 +1,30 @@
+name: Check
+
+# 모든 push/PR에서 완료 기준(DoD) 게이트를 돌린다. 로컬의
+# `python tools/check.py`와 같은 명령이다(커버리지 하한 포함). kivy는 설치하지 않는다 -
+# tests/는 gameflow 이하 헤드리스 로직만 검사한다.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # buildozer 빌드(build-apk.yml)와 같은 버전
+          python-version: '3.11'
+
+      - name: Install tools
+        run: pip install pytest pytest-cov ruff==0.16.9  # ruff 버전 고정: 서식 결과가 버전마다 다르다
+
+      - name: DoD gate
+        run: python tools/check.py

@@ -69,7 +69,9 @@ def _이미지_원경로(코드):
     # 이 파일은 game/screens/ 안에 있으므로 한 단계 위(game/)의 assets를 쓴다.
     return os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "assets", "character", 파일명,
+        "assets",
+        "character",
+        파일명,
     )
 
 
@@ -101,7 +103,9 @@ def _에셋_경로(폴더, 파일명):
         return None
     경로 = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "assets", 폴더, 파일명,
+        "assets",
+        폴더,
+        파일명,
     )
     return 경로 if os.path.isfile(경로) else None
 
@@ -109,9 +113,11 @@ def _에셋_경로(폴더, 파일명):
 def _도트_필터(이미지위젯):
     """도트 이미지를 크게 늘려도 번지지 않게 텍스처 확대 필터를
     nearest로 둔다(텍스처가 나중에 로드돼도 적용되게 bind까지 건다)."""
+
     def 적용(inst, 텍스처):
         if 텍스처 is not None:
             텍스처.mag_filter = "nearest"
+
     이미지위젯.bind(texture=적용)
     적용(이미지위젯, 이미지위젯.texture)
 
@@ -119,17 +125,16 @@ def _도트_필터(이미지위젯):
 class _이미지버튼(ButtonBehavior, Image):
     """터치 가능한 이미지 - "플레이어 초상화" 그리드 팝업 썸네일,
     모험단 프로필의 캐릭터별 성별 토글, 전투화면 그래픽 박스에 쓴다."""
+
     pass
 
 
 class _초상화선택팝업(Popup):
-    """"플레이어 초상화"(던전 지도 표시용, 직업과 무관)를 65장 그리드
+    """ "플레이어 초상화"(던전 지도 표시용, 직업과 무관)를 65장 그리드
     에서 고르는 팝업."""
 
     def __init__(self, 현재선택, 선택콜백, **kwargs):
-        super().__init__(
-            title="플레이어 초상화 선택", size_hint=(0.95, 0.9), **kwargs
-        )
+        super().__init__(title="플레이어 초상화 선택", size_hint=(0.95, 0.9), **kwargs)
         self._선택콜백 = 선택콜백
 
         스크롤 = ScrollView()
@@ -143,7 +148,9 @@ class _초상화선택팝업(Popup):
                     continue
                 버튼 = _이미지버튼(
                     source=_캐릭터이미지_경로(코드),
-                    size_hint_y=None, height=dp(90), allow_stretch=True,
+                    size_hint_y=None,
+                    height=dp(90),
+                    allow_stretch=True,
                 )
                 버튼.bind(on_release=lambda inst, c=코드: self._선택(c))
                 격자.add_widget(버튼)
@@ -154,6 +161,7 @@ class _초상화선택팝업(Popup):
     def _선택(self, 코드):
         self._선택콜백(코드)
         self.dismiss()
+
 
 # =====================================================
 # 메인메뉴/파티생성 화면에서 쓰는 버튼·입력칸 크기를 여기 상수로 모아둔다.
@@ -170,9 +178,12 @@ _입력_폰트크기 = 36
 # (반응 자동 사용) 하나. 앱 데이터 폴더의 설정.json에 저장한다.
 # -----------------------------------------------------
 
+
 def _설정_경로():
     앱 = App.get_running_app()
-    폴더 = getattr(앱, "user_data_dir", None) or os.path.dirname(os.path.abspath(__file__))
+    폴더 = getattr(앱, "user_data_dir", None) or os.path.dirname(
+        os.path.abspath(__file__)
+    )
     return os.path.join(폴더, "설정.json")
 
 
@@ -199,6 +210,7 @@ def 설정_저장(키, 값):
             json.dump(설정, 파일, ensure_ascii=False)
     except Exception:
         pass
+
 
 # 파티 화면 디자인: 파티원마다 넓은 카드 한 장 - 왼쪽 초상화,
 # 가운데 이름·직업·레벨 / HP·MP 게이지 / 능력치 3×2, 오른쪽 [레벨업][상세보기].
@@ -252,5 +264,10 @@ class _게이지(Widget):
 
 def _평면버튼(글, 색, **kwargs):
     """기본 회색 입체 배경 대신 단색 배경 버튼."""
-    return Button(text=글, background_normal="", background_disabled_normal="",
-                  background_color=색, **kwargs)
+    return Button(
+        text=글,
+        background_normal="",
+        background_disabled_normal="",
+        background_color=색,
+        **kwargs,
+    )

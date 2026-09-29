@@ -1,7 +1,7 @@
 # =====================
 # 어둠의 선더랜드 (소형지도)
 # =====================
-# map_formet.py 양식을 따른다.
+# map_format.py 양식을 따른다.
 #
 # 다른 가지던전들과 같은 뼈대를 한 칸 더 늘려서, 요청대로 가로 4칸
 # (5x5 방 4개)로 만들었다. 선더랜드(map_01A_D05_thunderland) 입구의
@@ -21,10 +21,8 @@
 # 비중으로 몬스터를 섞었다. 보스 이름은 미정.
 
 맵정보 = {
-
     "지도명": "어둠의 선더랜드",
     "상세지역": ["아라드", "벨마이어 공국 북부"],
-
     "지도": [
         "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
         "XXOOOXXXXXXOOOXOXXXXXXOOXOXXXXXXOXOOX",
@@ -34,7 +32,6 @@
         "XOOOXOXXXXXOOOOOXXXXXOOOOXXXXXXOOOXOX",
         "XXX#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
     ],
-
     "오브젝트": {
         (35, 3): {
             "분류": "이벤트",
@@ -52,14 +49,12 @@
             "클리어시": "통행가능화",
         },
     },
-
     "연결지역": {
         (3, 6): {
             "연결맵": "map_01A_D05_thunderland",
             "진입좌표": (3, 0),
         },
     },
-
     "인카운트": {
         "출현그룹": [
             {
@@ -80,5 +75,4 @@
             "걸음당증가율": 0.1,
         },
     },
-
 }

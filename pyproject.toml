@@ -1,0 +1,30 @@
+# 도구 설정 전용 파일이다. 앱은 buildozer.spec으로 빌드하므로 여기에는
+# 패키지 메타데이터/의존성을 두지 않는다(APK에 들어가는 것은 kivy뿐).
+# 개발용 도구 설치: pip install pytest ruff
+
+[tool.pytest.ini_options]
+# 저장소 최상위를 import 경로에 넣어 `import gameflow`, `import game...`이
+# 설치 없이 바로 되게 한다.
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py311"
+extend-exclude = [".buildozer", "bin"]
+
+[tool.ruff.format]
+# 저장소 규칙: 모든 텍스트 파일은 LF (CLAUDE.md "줄끝").
+line-ending = "lf"
+
+[tool.ruff.lint]
+# E4/E7/E9/F(문법 오류, 정의 안 된 이름, 안 쓰는 import 등)만 쓴다. ruff 버전마다
+# 기본 규칙이 달라서(0.16부터 기본값이 넓어짐) 명시적으로 고정한다.
+select = ["E4", "E7", "E9", "F"]
+# 서식은 ruff format으로 통일했다(R6) - tools/check.py가 `ruff format --check`로 검사한다.
+# 서식 결과가 ruff 버전마다 조금씩 달라서 CI는 ruff 버전을 고정한다(.github/workflows/check.yml).
+
+[tool.ruff.lint.per-file-ignores]
+# 크래시 로그 훅(sys.excepthook)을 kivy import보다 먼저 걸어야 해서
+# import가 파일 중간에 있다 - 의도된 구조.
+"main.py" = ["E402"]

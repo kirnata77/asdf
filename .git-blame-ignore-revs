@@ -1,0 +1,11 @@
+# git blame에서 건너뛸 커밋 (줄끝만 바꾼 커밋 등)
+# 켜기: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# 모든 텍스트 파일 CRLF 변환 (내용 변경 없음)
+1644c57e0c99eeec1223af8ecb5d1908bafad3ba
+
+# R6: ruff format 적용 (서식만, AST 동일)
+7905c809e071ebc32e2380ef9f184217b34fbea7
+
+# LF 전환 (CRLF -> LF, 줄끝만 + 줄끝 규칙 몇 줄)
+93327a809a313bb4374aa4375b27dccb20c1ace9

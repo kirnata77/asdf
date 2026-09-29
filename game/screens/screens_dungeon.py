@@ -18,7 +18,8 @@ from kivy.graphics import Color, Rectangle, Ellipse
 
 import gameflow
 from game.screens.screens_common import (
-    _캐릭터이미지_경로, _에셋_경로,
+    _캐릭터이미지_경로,
+    _에셋_경로,
 )
 
 
@@ -69,7 +70,7 @@ def _좌표해시(x, y, 시드):
 
 
 def _흙길_여부(x, y, 시드):
-    """"O" 칸에 흙길을 깔지 정한다. 굵은 격자의 해시값을 부드럽게
+    """ "O" 칸에 흙길을 깔지 정한다. 굵은 격자의 해시값을 부드럽게
     이어서(값 노이즈) 흙길이 낱개로 흩어지지 않고 듬성듬성 덩어리지게
     하고, 칸마다 약간의 흔들림을 더해 경계를 자연스럽게 만든다."""
     크기 = _흙길_덩어리크기
@@ -170,7 +171,12 @@ class 던전맵위젯(Widget):
 
     def _다시그리기(self, *args):
         self.canvas.clear()
-        if self.그리드 is None or self.위치 is None or self.width <= 0 or self.height <= 0:
+        if (
+            self.그리드 is None
+            or self.위치 is None
+            or self.width <= 0
+            or self.height <= 0
+        ):
             return
 
         # 맵 전체를 위젯 크기에 맞춰 축소하는 대신, 플레이어를 중심으로
@@ -202,19 +208,41 @@ class 던전맵위젯(Widget):
                     문자 = self._칸_문자(맵x, 맵y)
                     바닥 = None
                     if 문자 == "O":
-                        바닥 = 흙길 if (흙길 is not None and _흙길_여부(맵x, 맵y, self._흙길시드)) else 풀밭
-                    elif 문자 in _높은타일_기호 and self._타일(_높은타일_기호[문자]) is not None:
+                        바닥 = (
+                            흙길
+                            if (
+                                흙길 is not None
+                                and _흙길_여부(맵x, 맵y, self._흙길시드)
+                            )
+                            else 풀밭
+                        )
+                    elif (
+                        문자 in _높은타일_기호
+                        and self._타일(_높은타일_기호[문자]) is not None
+                    ):
                         바닥 = 풀밭
-                    오브젝트타일 = self._오브젝트_타일(맵x, 맵y) if 문자 == "@" else None
+                    오브젝트타일 = (
+                        self._오브젝트_타일(맵x, 맵y) if 문자 == "@" else None
+                    )
                     if 오브젝트타일 is not None and 풀밭 is not None:
                         바닥 = 풀밭
                     if 바닥 is not None:
                         Color(1, 1, 1, 1)
                         Rectangle(texture=바닥, pos=칸위치(화면x, 화면y), size=칸크기)
                         if 오브젝트타일 is not None:
-                            Rectangle(texture=오브젝트타일, pos=칸위치(화면x, 화면y), size=칸크기)
+                            Rectangle(
+                                texture=오브젝트타일,
+                                pos=칸위치(화면x, 화면y),
+                                size=칸크기,
+                            )
                     else:
-                        Color(*(_맵밖_색 if 문자 is None else _칸_색.get(문자, _기본_칸_색)))
+                        Color(
+                            *(
+                                _맵밖_색
+                                if 문자 is None
+                                else _칸_색.get(문자, _기본_칸_색)
+                            )
+                        )
                         Rectangle(pos=칸위치(화면x, 화면y), size=칸크기)
 
             # 2단계 - 나무/게이트(세로 2칸). 윗줄부터 차례로 그려서 아래쪽
@@ -230,9 +258,13 @@ class 던전맵위젯(Widget):
                     if 아래절반 is None:
                         continue
                     if 화면y < _뷰포트_크기:
-                        Rectangle(texture=아래절반, pos=칸위치(화면x, 화면y), size=칸크기)
+                        Rectangle(
+                            texture=아래절반, pos=칸위치(화면x, 화면y), size=칸크기
+                        )
                     if 화면y >= 1:
-                        Rectangle(texture=위절반, pos=칸위치(화면x, 화면y - 1), size=칸크기)
+                        Rectangle(
+                            texture=위절반, pos=칸위치(화면x, 화면y - 1), size=칸크기
+                        )
 
             # 플레이어는 항상 뷰포트 정중앙 칸(반칸, 반칸)에 그린다.
             # 모험단 프로필 이미지가 있으면 그 이미지를, 없으면(파일이
@@ -252,9 +284,11 @@ class 던전맵위젯(Widget):
                 Color(1, 0.15, 0.15, 1)
                 Ellipse(pos=플레이어위치, size=플레이어크기)
 
+
 # =====================================================
 # 4-1. 던전 목록 화면 (마을 -> 던전 사이에 들어가는 선택 화면)
 # =====================================================
+
 
 class 던전목록화면(Screen):
     def __init__(self, **kwargs):
@@ -300,9 +334,11 @@ class 던전목록화면(Screen):
         self.manager.get_screen("던전").갱신()
         self.manager.current = "던전"
 
+
 # =====================================================
 # 5. 던전 이동 화면
 # =====================================================
+
 
 class 던전화면(Screen):
     def __init__(self, **kwargs):
@@ -312,11 +348,19 @@ class 던전화면(Screen):
         루트 = BoxLayout(orientation="vertical", padding=16, spacing=8)
 
         self.상태라벨 = Label(
-            text="", size_hint=(1, 0.14), halign="left", valign="top", font_size=26,
+            text="",
+            size_hint=(1, 0.14),
+            halign="left",
+            valign="top",
+            font_size=26,
         )
-        self.상태라벨.bind(size=lambda *_: setattr(
-            self.상태라벨, "text_size", self.상태라벨.size,
-        ))
+        self.상태라벨.bind(
+            size=lambda *_: setattr(
+                self.상태라벨,
+                "text_size",
+                self.상태라벨.size,
+            )
+        )
         루트.add_widget(self.상태라벨)
 
         self.지도위젯 = 던전맵위젯(size_hint=(1, 0.36))
@@ -375,7 +419,8 @@ class 던전화면(Screen):
         줄들.append(f"위치 {던전상태['위치']}  걸음수 {던전상태['걸음수']}")
         self.상태라벨.text = "\n".join(줄들)
         self.지도위젯.갱신(
-            던전상태["그리드"], 던전상태["위치"],
+            던전상태["그리드"],
+            던전상태["위치"],
             게임상태.get("선택된초상화"),
             던전상태.get("던전파일명"),
             던전상태["맵정보"].get("오브젝트"),
@@ -434,7 +479,9 @@ class 던전화면(Screen):
             self.manager.current = "전투"
             return
         elif 결과["결과"] == "미지원":
-            self.메시지라벨.text = 결과.get("설명") or "여긴 아직 아무 일도 일어나지 않습니다."
+            self.메시지라벨.text = (
+                결과.get("설명") or "여긴 아직 아무 일도 일어나지 않습니다."
+            )
         else:
             self.메시지라벨.text = "몬스터 데이터가 없어 전투를 시작할 수 없습니다."
 

@@ -6,18 +6,20 @@ import sys
 import traceback
 import datetime
 
+
 # -----------------------------------------------------
 # 임시 디버그용: 화면(Loading...)이 뜨자마자 바로 꺼지는 건, 앱이 아직
 # Kivy 화면을 띄우기도 전 - 즉 아래 import/초기화 단계에서 예외가 나서
 # 죽는 경우다. 이 시점의 예외는 Kivy의 ExceptionManager(이 파일 아래쪽)로는
-#못 잡는다(그건 화면이 뜬 다음, 이벤트 루프 안에서 난 예외만 잡음).
+# 못 잡는다(그건 화면이 뜬 다음, 이벤트 루프 안에서 난 예외만 잡음).
 # 대신 파이썬이 처리 못 한 예외를 마지막에 항상 거치는 sys.excepthook을
 # 덮어써서, 어떤 단계에서 죽든 오류 내용을 폰 Download 폴더에 파일로
 # 남긴다. USB/adb 없이(회사 PC라 연결 불가) 원인을 확인하기 위한
 # 안전장치이며, 원인이 확인되면 이 블록은 제거해도 된다.
 def _크래시로그_저장(exc_type, exc_value, exc_tb):
     오류내용 = (
-        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n"
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        + "\n"
         + "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
     )
     print(오류내용)
@@ -47,7 +49,11 @@ from kivy.uix.screenmanager import ScreenManager, NoTransition
 # 텍스트에도 자동으로 fn_regular를 대신 쓴다(볼드 느낌은 안 나지만 글자는
 # 정상 표시된다).
 _폰트_경로 = os.path.join(
-    os.path.dirname(__file__), "game", "assets", "font", "NanumGothic-Diet.ttf",
+    os.path.dirname(__file__),
+    "game",
+    "assets",
+    "font",
+    "NanumGothic-Diet.ttf",
 )
 LabelBase.register(name="Roboto", fn_regular=_폰트_경로)
 
@@ -67,7 +73,11 @@ from kivy.uix.button import Button
 
 def _오류_팝업_띄우기(내용):
     라벨 = Label(
-        text=내용, size_hint_y=None, halign="left", valign="top", font_size=12,
+        text=내용,
+        size_hint_y=None,
+        halign="left",
+        valign="top",
+        font_size=12,
     )
     라벨.bind(
         texture_size=lambda inst, size: setattr(inst, "height", size[1]),
@@ -90,7 +100,8 @@ def _오류_팝업_띄우기(내용):
 
     Popup(
         title="오류 발생 - 아래 버튼으로 복사해서 공유해 주세요",
-        content=본문, size_hint=(0.95, 0.9),
+        content=본문,
+        size_hint=(0.95, 0.9),
     ).open()
 
 
@@ -109,7 +120,11 @@ ExceptionManager.add_handler(_오류처리기())
 
 # 화면은 game/screens/ 아래 6개 파일로 나뉘어 있다.
 from game.screens.screens_menu import (
-    메인메뉴화면, 파티생성화면, 불러오기목록화면, 저장목록화면, 옵션화면,
+    메인메뉴화면,
+    파티생성화면,
+    불러오기목록화면,
+    저장목록화면,
+    옵션화면,
 )
 from game.screens.screens_town import 마을화면, 마을이동목록화면, 상점화면, 모험단화면
 from game.screens.screens_dungeon import 던전목록화면, 던전화면

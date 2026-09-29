@@ -21,9 +21,10 @@ from kivy.metrics import dp
 from kivy.graphics import Color, Line
 
 import gameflow
-from game.system import skill_system
 from game.screens.screens_common import (
-    _캐릭터이미지_경로, _에셋_경로, _도트_필터,
+    _캐릭터이미지_경로,
+    _에셋_경로,
+    _도트_필터,
 )
 
 
@@ -53,8 +54,10 @@ def _가운데정렬_채우기(틀, 위젯목록):
         틀.add_widget(위젯)
         틀.add_widget(Widget(size_hint_x=_간격_비율))
 
+
 # 상태/그래픽/배경 박스 테두리 색 - 전부 흰색 테두리로 통일한다.
 _박스_테두리색 = (1, 1, 1, 1)
+
 
 class _테두리박스(ButtonBehavior, BoxLayout):
     """테두리를 그리는 상자. 전투화면의 적/아군 상태 박스, 그래픽 박스,
@@ -72,7 +75,10 @@ class _테두리박스(ButtonBehavior, BoxLayout):
 
     def _다시그리기(self, *args):
         self._테두리.rectangle = (
-            self.x + 1, self.y + 1, max(self.width - 2, 0), max(self.height - 2, 0),
+            self.x + 1,
+            self.y + 1,
+            max(self.width - 2, 0),
+            max(self.height - 2, 0),
         )
 
     def 현재턴_표시(self, 켜짐):
@@ -80,7 +86,7 @@ class _테두리박스(ButtonBehavior, BoxLayout):
 
 
 class _스킬선택팝업(Popup):
-    """"스킬" 버튼을 누르면 뜨는 목록 팝업(액션 버튼 5칸 고정 레이아웃이라
+    """ "스킬" 버튼을 누르면 뜨는 목록 팝업(액션 버튼 5칸 고정 레이아웃이라
     화면에 스킬 목록을 펼칠 자리가 없다)."""
 
     def __init__(self, 항목목록, 선택콜백, **kwargs):
@@ -88,7 +94,9 @@ class _스킬선택팝업(Popup):
         self.선택콜백 = 선택콜백
 
         스크롤 = ScrollView()
-        목록틀 = BoxLayout(orientation="vertical", spacing=6, padding=6, size_hint_y=None)
+        목록틀 = BoxLayout(
+            orientation="vertical", spacing=6, padding=6, size_hint_y=None
+        )
         목록틀.bind(minimum_height=목록틀.setter("height"))
 
         for 이름, 스킬데이터, 가능, *나머지 in 항목목록:
@@ -104,6 +112,7 @@ class _스킬선택팝업(Popup):
         self.선택콜백(이름, 스킬데이터)
         self.dismiss()
 
+
 class 전투화면(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -115,28 +124,44 @@ class 전투화면(Screen):
         # 적 상태 박스(최대 5칸) - 이름/HP/MP. 현재 턴이면 테두리가
         # 굵어진다. 5마리보다 적으면 칸 사이 간격이 넓어져 가운데로 모인다
         # (GridLayout 대신 스페이서를 둔 BoxLayout).
-        self.적상태틀 = BoxLayout(orientation="horizontal", size_hint=(1, 0.13), spacing=4)
+        self.적상태틀 = BoxLayout(
+            orientation="horizontal", size_hint=(1, 0.13), spacing=4
+        )
         루트.add_widget(self.적상태틀)
 
         # 전투 배경(배경 이미지는 아직 없어 비워둠) + 그래픽 - 위 칸(5)엔
         # 적 그래픽, 아래 칸(4)엔 아군 그래픽.
         self.배경틀 = _테두리박스(
-            _박스_테두리색, 기본두께=1, size_hint=(1, 0.33), spacing=4, padding=4,
+            _박스_테두리색,
+            기본두께=1,
+            size_hint=(1, 0.33),
+            spacing=4,
+            padding=4,
         )
-        self.적그래픽행 = BoxLayout(orientation="horizontal", size_hint=(1, 0.55), spacing=4)
+        self.적그래픽행 = BoxLayout(
+            orientation="horizontal", size_hint=(1, 0.55), spacing=4
+        )
         self.배경틀.add_widget(self.적그래픽행)
-        self.아군그래픽행 = GridLayout(cols=_아군슬롯_최대, size_hint=(1, 0.45), spacing=4)
+        self.아군그래픽행 = GridLayout(
+            cols=_아군슬롯_최대, size_hint=(1, 0.45), spacing=4
+        )
         self.배경틀.add_widget(self.아군그래픽행)
         루트.add_widget(self.배경틀)
 
         # 아군 상태 박스(최대 4칸).
-        self.아군상태틀 = GridLayout(cols=_아군슬롯_최대, size_hint=(1, 0.13), spacing=4)
+        self.아군상태틀 = GridLayout(
+            cols=_아군슬롯_최대, size_hint=(1, 0.13), spacing=4
+        )
         루트.add_widget(self.아군상태틀)
 
         # 전투 로그 - 아군 상태 박스와 액션 버튼 사이에 배치.
         로그스크롤 = ScrollView(size_hint=(1, 0.17))
         self.로그라벨 = Label(
-            text="", size_hint_y=None, halign="left", valign="top", font_size=20,
+            text="",
+            size_hint_y=None,
+            halign="left",
+            valign="top",
+            font_size=20,
         )
         self.로그라벨.bind(
             texture_size=lambda inst, size: setattr(inst, "height", size[1]),
@@ -184,8 +209,9 @@ class 전투화면(Screen):
         # 던전에서 전투가 시작되며 미뤄 둔 전투시작 반응(패스티스트 건)을 먼저
         # 처리한다(반응 선택 팝업을 띄워야 하므로 전투 화면에서 처리).
         if gameflow.전투시작_반응_대기중(게임상태):
-            self._엔진_실행(lambda: gameflow.전투시작_반응_처리(게임상태),
-                          lambda _: self.갱신())
+            self._엔진_실행(
+                lambda: gameflow.전투시작_반응_처리(게임상태), lambda _: self.갱신()
+            )
             return
 
         if gameflow.전투_종료됨(게임상태):
@@ -264,7 +290,9 @@ class 전투화면(Screen):
         def 열기(dt):
             게임상태 = App.get_running_app().게임상태
             self._표시_갱신(게임상태)
-            self._반응_팝업(참가자, 후보, 상황, lambda 번호: (결과.update(값=번호), 이벤트.set()))
+            self._반응_팝업(
+                참가자, 후보, 상황, lambda 번호: (결과.update(값=번호), 이벤트.set())
+            )
 
         Clock.schedule_once(열기)
         이벤트.wait()
@@ -276,8 +304,13 @@ class 전투화면(Screen):
         상황라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
         본문.add_widget(상황라벨)
         반응행동 = 참가자.get("행동자원", {}).get("반응행동", 0)
-        팝업 = Popup(title=f"반응 - {참가자['이름']} (반응행동 {반응행동})", content=본문,
-                   size_hint=(0.92, None), height=dp(200 + 64 * len(후보)), auto_dismiss=False)
+        팝업 = Popup(
+            title=f"반응 - {참가자['이름']} (반응행동 {반응행동})",
+            content=본문,
+            size_hint=(0.92, None),
+            height=dp(200 + 64 * len(후보)),
+            auto_dismiss=False,
+        )
 
         def 선택(번호):
             팝업.dismiss(animation=False)
@@ -285,12 +318,25 @@ class 전투화면(Screen):
 
         목록 = BoxLayout(orientation="vertical", spacing=dp(6))
         for 번호, (이름, 설명) in enumerate(후보):
-            버튼 = Button(text=f"{이름}  -  {설명}", halign="center", valign="middle",
-                        background_normal="", background_color=(0.22, 0.56, 0.86, 1))
-            버튼.bind(size=lambda inst, size: setattr(inst, "text_size", (size[0] - dp(12), None)))
+            버튼 = Button(
+                text=f"{이름}  -  {설명}",
+                halign="center",
+                valign="middle",
+                background_normal="",
+                background_color=(0.22, 0.56, 0.86, 1),
+            )
+            버튼.bind(
+                size=lambda inst, size: setattr(
+                    inst, "text_size", (size[0] - dp(12), None)
+                )
+            )
             버튼.bind(on_release=lambda inst, n=번호: 선택(n))
             목록.add_widget(버튼)
-        안함 = Button(text="사용 안 함", background_normal="", background_color=(0.3, 0.31, 0.35, 1))
+        안함 = Button(
+            text="사용 안 함",
+            background_normal="",
+            background_color=(0.3, 0.31, 0.35, 1),
+        )
         안함.bind(on_release=lambda *_: 선택(None))
         목록.add_widget(안함)
         본문.add_widget(목록)
@@ -303,10 +349,12 @@ class 전투화면(Screen):
         그래픽박스목록 = []
         for 적 in 적목록:
             상태박스 = _테두리박스(_박스_테두리색, size_hint_x=_박스_비율)
-            상태박스.add_widget(self._중앙정렬_라벨(
-                f"{적['이름']}\nHP {적['현재HP']}  MP {적['현재MP']}"
-                + ("" if 적["생존"] else "\n(쓰러짐)")
-            ))
+            상태박스.add_widget(
+                self._중앙정렬_라벨(
+                    f"{적['이름']}\nHP {적['현재HP']}  MP {적['현재MP']}"
+                    + ("" if 적["생존"] else "\n(쓰러짐)")
+                )
+            )
             상태박스.disabled = not 적["생존"]
             상태박스.bind(on_release=lambda inst, p=적: self._대상_선택(p))
             상태박스.현재턴_표시(적 is 현재참가자)
@@ -342,11 +390,13 @@ class 전투화면(Screen):
             아군 = 아군목록[i]
             상태박스 = _테두리박스(_박스_테두리색)
             상태 = "" if 아군["생존"] else "\n(쓰러짐)"
-            상태박스.add_widget(self._중앙정렬_라벨(
-                f"{아군['이름']}\n"
-                f"HP {아군['현재HP']}/{gameflow.캐릭터_최대HP(게임상태, 아군['원본'])}\n"
-                f"MP {아군['현재MP']}/{gameflow.캐릭터_최대MP(게임상태, 아군['원본'])}{상태}"
-            ))
+            상태박스.add_widget(
+                self._중앙정렬_라벨(
+                    f"{아군['이름']}\n"
+                    f"HP {아군['현재HP']}/{gameflow.캐릭터_최대HP(게임상태, 아군['원본'])}\n"
+                    f"MP {아군['현재MP']}/{gameflow.캐릭터_최대MP(게임상태, 아군['원본'])}{상태}"
+                )
+            )
             # 아군단일 스킬 대상 선택용.
             상태박스.bind(on_release=lambda inst, p=아군: self._아군_선택(p))
             상태박스.현재턴_표시(아군 is 현재참가자)
@@ -379,8 +429,10 @@ class 전투화면(Screen):
             if not 판정.get("성공"):
                 return f"[반응:{항목['반응']}] {항목.get('공격자', '?')} -> {항목.get('대상', '?')}: 빗나감"
             치명 = " (치명타!)" if 판정.get("치명타") else ""
-            return (f"[반응:{항목['반응']}] {항목.get('공격자', '?')} -> "
-                    f"{항목.get('대상', '?')}: {항목.get('피해', 0)} 피해{치명}")
+            return (
+                f"[반응:{항목['반응']}] {항목.get('공격자', '?')} -> "
+                f"{항목.get('대상', '?')}: {항목.get('피해', 0)} 피해{치명}"
+            )
         if "타격" in 항목 and "총피해" in 항목:
             명중수 = sum(1 for t in 항목["타격"] if t.get("판정", {}).get("성공"))
             return (
@@ -415,7 +467,9 @@ class 전투화면(Screen):
 
         행1 = BoxLayout(orientation="horizontal", spacing=4)
         일반공격버튼 = Button(text="일반공격")
-        일반공격버튼.disabled = not (아군차례 and 참가자["행동자원"].get("일반행동", 0) > 0)
+        일반공격버튼.disabled = not (
+            아군차례 and 참가자["행동자원"].get("일반행동", 0) > 0
+        )
         일반공격버튼.bind(on_release=lambda *_: self._일반공격_클릭())
         행1.add_widget(일반공격버튼)
 
@@ -443,7 +497,7 @@ class 전투화면(Screen):
         self.액션틀.add_widget(턴넘기기버튼)
 
     def _스킬_버튼_클릭(self, 참가자):
-        """"스킬" 버튼 - 보유 스킬 목록을 팝업(_스킬선택팝업)으로 띄운다."""
+        """ "스킬" 버튼 - 보유 스킬 목록을 팝업(_스킬선택팝업)으로 띄운다."""
         앱 = App.get_running_app()
         게임상태 = 앱.게임상태
         스킬데이터모음 = 게임상태["스킬데이터모음"]
@@ -453,10 +507,9 @@ class 전투화면(Screen):
             스킬데이터 = 스킬데이터모음.get(이름)
             if 스킬데이터 is None:
                 continue
-            검사용 = dict(스킬데이터, _이름=이름)
-            가능, _ = skill_system.사용_가능여부(게임상태["전투상태"], 참가자, 검사용)
+            가능, _ = gameflow.스킬_사용_가능여부(게임상태, 참가자, 이름)
             # 휴식당횟수가 있는 스킬은 남은 횟수를 붙여 보여준다.
-            남은정보 = skill_system.휴식_남은횟수(게임상태["전투상태"], 참가자, 검사용)
+            남은정보 = gameflow.스킬_휴식_남은횟수(게임상태, 참가자, 이름)
             표시 = f"{이름} ({남은정보[0]}/{남은정보[1]})" if 남은정보 else 이름
             항목목록.append((이름, 스킬데이터, 가능, 표시))
 
@@ -471,19 +524,8 @@ class 전투화면(Screen):
         self.안내라벨.text = "일반공격할 대상을 선택하세요."
 
     def _실제_타겟(self, 스킬데이터):
-        """스킬의 실제 타겟 종류. 분할공격은 1단계, 지속공격은 그 상세의
-        "타겟"을 보고, 조건부효과의 "타겟" 오버라이드(은탄 등)가 지금
-        충족되면 그 값을 쓴다 - skill_system.스킬_실행과 같은 판정."""
-        타겟 = (스킬데이터.get("타겟")
-              or (스킬데이터.get("공격단계1") or {}).get("타겟")
-              or (스킬데이터.get("지속공격") or {}).get("타겟"))
-        앱 = App.get_running_app()
-        전투상태 = 앱.게임상태["전투상태"]
-        참가자 = gameflow.현재_턴_참가자(앱.게임상태)
-        오버라이드 = skill_system.조건부효과_평가(
-            전투상태, 참가자, None, 스킬데이터.get("조건부효과", []),
-        )
-        return 오버라이드.get("타겟") or 타겟
+        """스킬의 실제 타겟 종류(gameflow.스킬_실제_타겟 참고)."""
+        return gameflow.스킬_실제_타겟(App.get_running_app().게임상태, 스킬데이터)
 
     def _스킬_클릭(self, 이름, 스킬데이터):
         타겟 = self._실제_타겟(스킬데이터)
@@ -492,17 +534,18 @@ class 전투화면(Screen):
             self.안내라벨.text = f"'{이름}' 사용 대상을 선택하세요."
         elif 타겟 == "적3체":
             self.선택모드 = ("스킬", 이름)
-            self.안내라벨.text = f"'{이름}' 중심 대상을 선택하세요 (양옆 1체씩 함께 맞습니다)."
+            self.안내라벨.text = (
+                f"'{이름}' 중심 대상을 선택하세요 (양옆 1체씩 함께 맞습니다)."
+            )
         elif 타겟 == "아군단일":
             self.선택모드 = ("스킬아군", 이름)
             self.안내라벨.text = f"'{이름}'을(를) 사용할 아군을 선택하세요."
         elif 타겟 == "적반복지정":
             # 타격 횟수만큼 적을 차례로 누른다. 다 고르면 실행.
             앱 = App.get_running_app()
-            횟수 = max(1, skill_system._정수_평가(
-                스킬데이터.get("공격횟수", 1), 앱.게임상태["전투상태"],
-                gameflow.현재_턴_참가자(앱.게임상태),
-            ))
+            횟수 = max(
+                1, gameflow.현재참가자_수치(앱.게임상태, 스킬데이터.get("공격횟수", 1))
+            )
             self.선택모드 = ("반복지정", 이름, 횟수, [])
             self.안내라벨.text = f"'{이름}' 대상을 {횟수}번 선택하세요 (1/{횟수})."
         else:
@@ -536,14 +579,13 @@ class 전투화면(Screen):
             self._스킬_실행(이름, 적참가자)
 
     def _반복지정_선택(self, 적참가자):
-        """"적반복지정" 스킬의 대상을 한 번 추가한다. 은신(지정불가) 대상은
+        """ "적반복지정" 스킬의 대상을 한 번 추가한다. 은신(지정불가) 대상은
         고를 수 없고, "중복지정가능"이 False면 같은 적을 두 번 고를 수 없으며,
         "대상당피격제한"이 있으면 그 횟수를 넘길 수 없다."""
         _, 이름, 횟수, 목록 = self.선택모드
         앱 = App.get_running_app()
         스킬데이터 = 앱.게임상태["스킬데이터모음"][이름]
-        전투상태 = 앱.게임상태["전투상태"]
-        if gameflow.combat_system.상태이상_플래그(전투상태, 적참가자, "지정불가"):
+        if gameflow.지정불가_상태인가(앱.게임상태, 적참가자):
             self.안내라벨.text = f"{적참가자['이름']}은(는) 지정할 수 없는 상태입니다."
             return
         이미 = sum(1 for p in 목록 if p is 적참가자)
@@ -552,14 +594,16 @@ class 전투화면(Screen):
             return
         제한 = 스킬데이터.get("대상당피격제한")
         if 제한 is not None:
-            제한 = skill_system._정수_평가(제한, 전투상태, gameflow.현재_턴_참가자(앱.게임상태))
+            제한 = gameflow.현재참가자_수치(앱.게임상태, 제한)
             if 이미 >= 제한:
                 self.안내라벨.text = f"한 적은 최대 {제한}번까지 고를 수 있습니다."
                 return
         목록.append(적참가자)
         if len(목록) < 횟수:
-            self.안내라벨.text = (f"'{이름}' 대상을 선택하세요 ({len(목록) + 1}/{횟수}) - "
-                             f"고른 대상: {', '.join(p['이름'] for p in 목록)}")
+            self.안내라벨.text = (
+                f"'{이름}' 대상을 선택하세요 ({len(목록) + 1}/{횟수}) - "
+                f"고른 대상: {', '.join(p['이름'] for p in 목록)}"
+            )
             return
         self.선택모드 = None
         self._스킬_실행(이름, 목록[0], 지정대상목록=list(목록))
@@ -570,11 +614,15 @@ class 전투화면(Screen):
 
     def _스킬_실행(self, 이름, 대상, 지정대상목록=None):
         앱 = App.get_running_app()
-        self._오류표시_실행(lambda: gameflow.아군_스킬사용(
-            앱.게임상태, 이름, 대상, 지정대상목록=지정대상목록))
+        self._오류표시_실행(
+            lambda: gameflow.아군_스킬사용(
+                앱.게임상태, 이름, 대상, 지정대상목록=지정대상목록
+            )
+        )
 
     def _오류표시_실행(self, 작업):
         """ValueError(자원 부족 등)는 안내 문구로 보여주고 화면은 그대로 둔다."""
+
         def 감싼작업():
             try:
                 return 작업(), None
@@ -616,7 +664,9 @@ class 전투화면(Screen):
         본문.add_widget(확인라벨)
         본문.add_widget(버튼틀)
 
-        팝업 = Popup(title="도망", content=본문, size_hint=(0.7, 0.35), auto_dismiss=False)
+        팝업 = Popup(
+            title="도망", content=본문, size_hint=(0.7, 0.35), auto_dismiss=False
+        )
         예버튼.bind(on_release=lambda *_: self._도망_확인(팝업))
         아니오버튼.bind(on_release=lambda *_: 팝업.dismiss())
         팝업.open()
@@ -624,7 +674,9 @@ class 전투화면(Screen):
     def _도망_확인(self, 팝업):
         팝업.dismiss()
         앱 = App.get_running_app()
-        self._엔진_실행(lambda: gameflow.아군_도망시도(앱.게임상태), lambda _: self.갱신())
+        self._엔진_실행(
+            lambda: gameflow.아군_도망시도(앱.게임상태), lambda _: self.갱신()
+        )
 
     # -------------------------------------------------
     # 전투 종료

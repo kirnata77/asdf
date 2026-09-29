@@ -15,14 +15,21 @@ from kivy.uix.image import Image
 
 import gameflow
 from game.screens.screens_common import (
-    _기본_초상화_코드, _버튼_높이, _버튼_폰트크기, _이미지버튼, _초상화선택팝업, _캐릭터이미지_경로,
-    _에셋_경로, _도트_필터,
+    _기본_초상화_코드,
+    _버튼_높이,
+    _버튼_폰트크기,
+    _이미지버튼,
+    _초상화선택팝업,
+    _캐릭터이미지_경로,
+    _에셋_경로,
+    _도트_필터,
 )
 
 
 # =====================================================
 # 4. 마을 화면
 # =====================================================
+
 
 class 마을화면(Screen):
     def __init__(self, **kwargs):
@@ -32,21 +39,33 @@ class 마을화면(Screen):
         # 위에서부터 마을 이름 한 줄 → 파티 4명 → 마을 배경 그림 → 메시지
         # → 버튼 → 타이틀 버튼. 보유 골드는
         # 마을 화면에 표시하지 않는다.
-        self.마을명라벨 = Label(text="", size_hint=(1, 0.05), halign="left", valign="middle")
-        self.마을명라벨.bind(size=lambda *_: setattr(
-            self.마을명라벨, "text_size", self.마을명라벨.size,
-        ))
+        self.마을명라벨 = Label(
+            text="", size_hint=(1, 0.05), halign="left", valign="middle"
+        )
+        self.마을명라벨.bind(
+            size=lambda *_: setattr(
+                self.마을명라벨,
+                "text_size",
+                self.마을명라벨.size,
+            )
+        )
         루트.add_widget(self.마을명라벨)
 
         self.파티라벨 = Label(text="", size_hint=(1, 0.17), halign="left", valign="top")
-        self.파티라벨.bind(size=lambda *_: setattr(
-            self.파티라벨, "text_size", self.파티라벨.size,
-        ))
+        self.파티라벨.bind(
+            size=lambda *_: setattr(
+                self.파티라벨,
+                "text_size",
+                self.파티라벨.size,
+            )
+        )
         루트.add_widget(self.파티라벨)
 
         # 배경 그림은 화면 폭에 맞추고 높이는 그림 비율대로 정한다(그림이
         # 없으면 높이 0으로 접힌다).
-        self.배경그림 = Image(allow_stretch=True, keep_ratio=True, size_hint=(1, None), height=0)
+        self.배경그림 = Image(
+            allow_stretch=True, keep_ratio=True, size_hint=(1, None), height=0
+        )
         self.배경그림.bind(width=self._배경높이_맞추기, texture=self._배경높이_맞추기)
         _도트_필터(self.배경그림)
         루트.add_widget(self.배경그림)
@@ -77,7 +96,9 @@ class 마을화면(Screen):
         버튼그리드.add_widget(마을이동버튼)
 
         저장버튼 = Button(text="저장하기")
-        저장버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "저장목록"))
+        저장버튼.bind(
+            on_release=lambda *_: setattr(self.manager, "current", "저장목록")
+        )
         버튼그리드.add_widget(저장버튼)
 
         상점버튼 = Button(text="상점")
@@ -93,7 +114,9 @@ class 마을화면(Screen):
         루트.add_widget(버튼그리드)
 
         타이틀버튼 = Button(text="타이틀로 돌아가기", size_hint=(1, 0.12))
-        타이틀버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "메인메뉴"))
+        타이틀버튼.bind(
+            on_release=lambda *_: setattr(self.manager, "current", "메인메뉴")
+        )
         루트.add_widget(타이틀버튼)
 
         self.add_widget(루트)
@@ -154,11 +177,13 @@ class 마을화면(Screen):
     def _모험단_클릭(self, *args):
         self.manager.current = "모험단"
 
+
 # =====================================================
 # 3-1. 모험단 화면
 # =====================================================
 # 파티 전체가 공유하는 값(플레이어 레벨/소지금)과 파티원 목록, 그리고
 # 던전에서 표시할 SD 초상화를 고르는 "모험단 프로필"을 보여준다.
+
 
 class 모험단화면(Screen):
     def __init__(self, **kwargs):
@@ -167,30 +192,49 @@ class 모험단화면(Screen):
 
         루트 = BoxLayout(orientation="vertical", padding=16, spacing=10)
 
-        루트.add_widget(Label(
-            text="모험단", size_hint=(1, 0.06), font_size=32, bold=True,
-        ))
+        루트.add_widget(
+            Label(
+                text="모험단",
+                size_hint=(1, 0.06),
+                font_size=32,
+                bold=True,
+            )
+        )
 
         self.정보라벨 = Label(text="", size_hint=(1, 0.1), halign="left", valign="top")
-        self.정보라벨.bind(size=lambda *_: setattr(
-            self.정보라벨, "text_size", self.정보라벨.size,
-        ))
+        self.정보라벨.bind(
+            size=lambda *_: setattr(
+                self.정보라벨,
+                "text_size",
+                self.정보라벨.size,
+            )
+        )
         루트.add_widget(self.정보라벨)
 
         # 파티원별 "캐릭터 초상화"(직업 기반, 성별만 터치로 토글) - 플레이어
         # 초상화(아래)와는 완전히 별개다.
-        캐릭터초상화틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.34), spacing=4)
-        캐릭터초상화틀.add_widget(Label(
-            text="파티원 초상화 (터치하면 성별 변경)", size_hint=(1, 0.18),
-        ))
-        self.파티원행 = BoxLayout(orientation="horizontal", spacing=8, size_hint=(1, 0.82))
+        캐릭터초상화틀 = BoxLayout(
+            orientation="vertical", size_hint=(1, 0.34), spacing=4
+        )
+        캐릭터초상화틀.add_widget(
+            Label(
+                text="파티원 초상화 (터치하면 성별 변경)",
+                size_hint=(1, 0.18),
+            )
+        )
+        self.파티원행 = BoxLayout(
+            orientation="horizontal", spacing=8, size_hint=(1, 0.82)
+        )
         캐릭터초상화틀.add_widget(self.파티원행)
         루트.add_widget(캐릭터초상화틀)
 
         프로필틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.38), spacing=4)
-        프로필틀.add_widget(Label(
-            text="던전 지도용 플레이어 초상화 (터치하면 이미지 변경)", size_hint=(1, 0.15),
-        ))
+        프로필틀.add_widget(
+            Label(
+                text="던전 지도용 플레이어 초상화 (터치하면 이미지 변경)",
+                size_hint=(1, 0.15),
+            )
+        )
         self.프로필버튼 = _이미지버튼(size_hint=(1, 0.85), allow_stretch=True)
         self.프로필버튼.bind(on_release=self._프로필_클릭)
         프로필틀.add_widget(self.프로필버튼)
@@ -230,14 +274,18 @@ class 모험단화면(Screen):
         칸 = BoxLayout(orientation="vertical", spacing=2)
         이름라벨 = Label(
             text=f"{캐릭터['캐릭터명']}\n{캐릭터.get('직업') or '무직업'}",
-            size_hint=(1, 0.3), halign="center", valign="middle", font_size=16,
+            size_hint=(1, 0.3),
+            halign="center",
+            valign="middle",
+            font_size=16,
         )
         이름라벨.bind(size=lambda inst, *_: setattr(inst, "text_size", inst.size))
         칸.add_widget(이름라벨)
 
         초상화버튼 = _이미지버튼(
             source=_캐릭터이미지_경로(gameflow.초상화_코드(캐릭터)),
-            size_hint=(1, 0.7), allow_stretch=True,
+            size_hint=(1, 0.7),
+            allow_stretch=True,
         )
         초상화버튼.bind(on_release=lambda *args, c=캐릭터: self._성별_토글(c))
         칸.add_widget(초상화버튼)
@@ -253,7 +301,8 @@ class 모험단화면(Screen):
 
     def _프로필_클릭(self, *args):
         _초상화선택팝업(
-            현재선택=self._현재코드, 선택콜백=self._초상화_변경,
+            현재선택=self._현재코드,
+            선택콜백=self._초상화_변경,
         ).open()
 
     def _초상화_변경(self, 코드):
@@ -261,9 +310,11 @@ class 모험단화면(Screen):
         gameflow.초상화_설정(앱.게임상태, 코드)
         self.갱신()
 
+
 # =====================================================
 # 4-0. 마을 이동 목록 화면 (마을 -> 다른 마을로 이동)
 # =====================================================
+
 
 class 마을이동목록화면(Screen):
     def __init__(self, **kwargs):
@@ -310,6 +361,7 @@ class 마을이동목록화면(Screen):
         self.manager.get_screen("마을").갱신()
         self.manager.current = "마을"
 
+
 # =====================================================
 # 4-2. 상점 화면 (shop_system.py 연동 - 마을 -> 상점)
 # =====================================================
@@ -318,6 +370,7 @@ class 마을이동목록화면(Screen):
 # 팝업). 실제 거래 로직은 전부 gameflow.상점_*() -> shop_system.py에
 # 있고, 이 클래스는 화면 단계 전환과 위젯 생성만 한다. 재료 탭은 아직
 # 미구현이라 안내 문구만 보여준다.
+
 
 class 상점화면(Screen):
     def __init__(self, **kwargs):
@@ -382,24 +435,30 @@ class 상점화면(Screen):
     def _대분류_그리기(self, 모드):
         self._비우기()
 
-        상단 = BoxLayout(orientation="horizontal", size_hint=(1, None), height=_버튼_높이)
+        상단 = BoxLayout(
+            orientation="horizontal", size_hint=(1, None), height=_버튼_높이
+        )
         뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
         뒤로버튼.bind(on_release=lambda *_: self._메인_그리기())
         상단.add_widget(뒤로버튼)
         상단.add_widget(Label(text=모드, size_hint=(0.68, 1)))
         self.내용틀.add_widget(상단)
 
-        for 대분류 in gameflow.shop_system.대분류_목록:
+        for 대분류 in gameflow.상점_대분류목록:
             버튼 = Button(text=대분류)
             if 대분류 == "재료":
                 버튼.bind(on_release=lambda *_, m=모드: self._재료_그리기(m))
             else:
-                버튼.bind(on_release=lambda *_, m=모드, d=대분류: self._탭목록_그리기(m, d))
+                버튼.bind(
+                    on_release=lambda *_, m=모드, d=대분류: self._탭목록_그리기(m, d)
+                )
             self.내용틀.add_widget(버튼)
 
     def _재료_그리기(self, 모드):
         self._비우기()
-        상단 = BoxLayout(orientation="horizontal", size_hint=(1, None), height=_버튼_높이)
+        상단 = BoxLayout(
+            orientation="horizontal", size_hint=(1, None), height=_버튼_높이
+        )
         뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
         뒤로버튼.bind(on_release=lambda *_, m=모드: self._대분류_그리기(m))
         상단.add_widget(뒤로버튼)
@@ -413,7 +472,9 @@ class 상점화면(Screen):
     def _탭목록_그리기(self, 모드, 대분류):
         self._비우기()
 
-        상단 = BoxLayout(orientation="horizontal", size_hint=(1, None), height=_버튼_높이)
+        상단 = BoxLayout(
+            orientation="horizontal", size_hint=(1, None), height=_버튼_높이
+        )
         뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
         뒤로버튼.bind(on_release=lambda *_: self._대분류_그리기(모드))
         상단.add_widget(뒤로버튼)
@@ -436,8 +497,9 @@ class 상점화면(Screen):
         for 탭이름 in 탭목록:
             탭버튼 = Button(text=탭이름, size_hint=(None, 1), width=140)
             탭버튼.bind(
-                on_release=lambda inst, m=모드, d=대분류, t=탭이름, 목록틀=목록틀:
-                self._아이템목록_그리기(m, d, t, 목록틀)
+                on_release=lambda inst, m=모드, d=대분류, t=탭이름, 목록틀=목록틀: (
+                    self._아이템목록_그리기(m, d, t, 목록틀)
+                )
             )
             탭버튼틀.add_widget(탭버튼)
 
@@ -452,9 +514,12 @@ class 상점화면(Screen):
         if 모드 == "구매":
             마을정보 = gameflow.현재_마을정보(게임상태)
             항목목록 = [
-                (아이템, gameflow.shop_system.최대_구매수량)
+                (아이템, gameflow.상점_최대구매수량)
                 for 아이템 in gameflow.상점_구매목록(
-                    게임상태, 대분류, 탭, 마을정보.get("상점판매목록"),
+                    게임상태,
+                    대분류,
+                    탭,
+                    마을정보.get("상점판매목록"),
                 )
             ]
             빈문구 = "팔고 있는 물건이 없습니다."
@@ -467,16 +532,18 @@ class 상점화면(Screen):
             return
 
         for 아이템, 최대수량 in 항목목록:
-            목록틀.add_widget(
-                self._행_생성(모드, 대분류, 탭, 아이템, 최대수량, 목록틀)
-            )
+            목록틀.add_widget(self._행_생성(모드, 대분류, 탭, 아이템, 최대수량, 목록틀))
 
     def _행_생성(self, 모드, 대분류, 탭, 아이템, 최대수량, 목록틀):
-        단가 = 아이템["가격"] if 모드 == "구매" else gameflow.shop_system.판매가(아이템)
+        단가 = 아이템["가격"] if 모드 == "구매" else gameflow.상점_판매가(아이템)
 
-        행 = BoxLayout(orientation="horizontal", size_hint=(1, None), height=56, spacing=4)
+        행 = BoxLayout(
+            orientation="horizontal", size_hint=(1, None), height=56, spacing=4
+        )
 
-        이름라벨 = Label(text=아이템["이름"], size_hint=(0.3, 1), halign="left", font_size=22)
+        이름라벨 = Label(
+            text=아이템["이름"], size_hint=(0.3, 1), halign="left", font_size=22
+        )
         이름라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
         행.add_widget(이름라벨)
 
@@ -512,7 +579,12 @@ class 상점화면(Screen):
         거래버튼 = Button(text=모드, size_hint=(0.12, 1))
         거래버튼.bind(
             on_release=lambda *_, a=아이템: self._거래_클릭(
-                모드, 대분류, 탭, a["이름"], 수량상태, 목록틀,
+                모드,
+                대분류,
+                탭,
+                a["이름"],
+                수량상태,
+                목록틀,
             )
         )
         행.add_widget(거래버튼)
@@ -532,7 +604,11 @@ class 상점화면(Screen):
             if 모드 == "구매":
                 마을정보 = gameflow.현재_마을정보(게임상태)
                 금액 = gameflow.상점_구매(
-                    게임상태, 대분류, 탭, 이름, 수량,
+                    게임상태,
+                    대분류,
+                    탭,
+                    이름,
+                    수량,
                     상점판매목록=마을정보.get("상점판매목록"),
                 )
                 self.안내라벨.text = f"{이름} {수량}개를 {금액}G에 샀습니다."
@@ -567,7 +643,9 @@ class 상점화면(Screen):
             if 키 in self._상세_제외키 or 값 in (None, 0, "", {}, []):
                 continue
             라벨 = Label(
-                text=f"{키}: {self._값_문자열(값)}", size_hint=(1, None), height=32,
+                text=f"{키}: {self._값_문자열(값)}",
+                size_hint=(1, None),
+                height=32,
                 halign="left",
             )
             라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
@@ -577,7 +655,10 @@ class 상점화면(Screen):
         본문.add_widget(닫기버튼)
 
         팝업 = Popup(
-            title=아이템["이름"], content=본문, size_hint=(0.85, 0.75), auto_dismiss=False,
+            title=아이템["이름"],
+            content=본문,
+            size_hint=(0.85, 0.75),
+            auto_dismiss=False,
         )
         닫기버튼.bind(on_release=lambda *_: 팝업.dismiss())
         팝업.open()

@@ -19,7 +19,6 @@
 파일경로 = {
     # game/data/ 최상위
     "file_path": "game.data.file_path",
-
     # game/data/job_skill/
     "job_skill_010m_ghost_swordsman": "game.data.job_skill.job_skill_010m_ghost_swordsman",
     "job_skill_011m_weapon_master": "game.data.job_skill.job_skill_011m_weapon_master",
@@ -33,7 +32,6 @@
     "job_skill_051f_crusader": "game.data.job_skill.job_skill_051f_crusader",
     "job_skill_format": "game.data.job_skill.job_skill_format",
     "job_skill_0000": "game.data.job_skill.job_skill_0000",
-
     # game/data/job_level/
     "job_level_010m_ghost_swordsman": "game.data.job_level.job_level_010m_ghost_swordsman",
     "job_level_011m_weapon_master": "game.data.job_level.job_level_011m_weapon_master",
@@ -45,8 +43,7 @@
     "job_level_041f_elemental_master": "game.data.job_level.job_level_041f_elemental_master",
     "job_level_050f_priest": "game.data.job_level.job_level_050f_priest",
     "job_level_051f_crusader": "game.data.job_level.job_level_051f_crusader",
-    "job_level_formet": "game.data.job_level.job_level_formet",
-
+    "job_level_format": "game.data.job_level.job_level_format",
     # game/data/perks/
     "perks_class_0000": "game.data.perks.perks_class_0000",
     "perks_class_010m": "game.data.perks.perks_class_010m",
@@ -55,14 +52,12 @@
     "perks_class_040f": "game.data.perks.perks_class_040f",
     "perks_class_050f": "game.data.perks.perks_class_050f",
     "perks_class_format": "game.data.perks.perks_class_format",
-
     # game/data/buff/
     "buff": "game.data.buff.buff",
     "debuff": "game.data.buff.debuff",
     "skill_effects": "game.data.buff.skill_effects",
     "status_effects": "game.data.buff.status_effects",
     "summon_00": "game.data.buff.summon_00",
-
     # game/data/ability/
     "job_ability_010m": "game.data.ability.job_ability_010m",
     "job_ability_020f": "game.data.ability.job_ability_020f",
@@ -71,53 +66,48 @@
     "job_ability_050f": "game.data.ability.job_ability_050f",
     "job_ability_format": "game.data.ability.job_ability_format",
     "job_ability_0000": "game.data.ability.job_ability_0000",
-
     # game/data/monster/
     "monster_race_goblin": "game.data.monster.monster_race_goblin",
     "monster_race_tau": "game.data.monster.monster_race_tau",
     "monster_race_lugaru": "game.data.monster.monster_race_lugaru",
     "monster_race_human": "game.data.monster.monster_race_human",
     "monster_race_zombie": "game.data.monster.monster_race_zombie",
-    "monster_formet": "game.data.monster.monster_formet",
+    "monster_format": "game.data.monster.monster_format",
     "monster_ability": "game.data.monster.monster_ability",
     "monster_title": "game.data.monster.monster_title",
     "monster_drop": "game.data.monster.monster_drop",
-
     # game/data/equipment/
     "eq_01_weapon_010": "game.data.equipment.eq_01_weapon_010",
     "eq_01_weapon_020": "game.data.equipment.eq_01_weapon_020",
-    "eq_01_weapon_formet": "game.data.equipment.eq_01_weapon_formet",
+    "eq_01_weapon_format": "game.data.equipment.eq_01_weapon_format",
     "eq_01_weapon_030": "game.data.equipment.eq_01_weapon_030",
     "eq_01_weapon_040": "game.data.equipment.eq_01_weapon_040",
     "eq_01_weapon_050": "game.data.equipment.eq_01_weapon_050",
-    "eq_03_accesery_08_bracelet": "game.data.equipment.eq_03_accesery_08_bracelet",
+    "eq_03_accessory_08_bracelet": "game.data.equipment.eq_03_accessory_08_bracelet",
     "eq_02_armor_01_top": "game.data.equipment.eq_02_armor_01_top",
     "eq_02_armor_03_shoulder": "game.data.equipment.eq_02_armor_03_shoulder",
     "eq_02_armor_04_belt": "game.data.equipment.eq_02_armor_04_belt",
-    "eq_02_armor_formet": "game.data.equipment.eq_02_armor_formet",
+    "eq_02_armor_format": "game.data.equipment.eq_02_armor_format",
     "eq_02_armor_set": "game.data.equipment.eq_02_armor_set",
     "eq_02_armor_05_shoes": "game.data.equipment.eq_02_armor_05_shoes",
-    "eq_03_accesery_06_necklace": "game.data.equipment.eq_03_accesery_06_necklace",
-    "eq_03_accesery_07_ring": "game.data.equipment.eq_03_accesery_07_ring",
-    "eq_03_accesery_set": "game.data.equipment.eq_03_accesery_set",
+    "eq_03_accessory_06_necklace": "game.data.equipment.eq_03_accessory_06_necklace",
+    "eq_03_accessory_07_ring": "game.data.equipment.eq_03_accessory_07_ring",
+    "eq_03_accessory_set": "game.data.equipment.eq_03_accessory_set",
     "eq_04_special_11_earring": "game.data.equipment.eq_04_special_11_earring",
     "eq_04_special_10_magicstone": "game.data.equipment.eq_04_special_10_magicstone",
     "eq_04_special_09_subequipment": "game.data.equipment.eq_04_special_09_subequipment",
     "eq_04_special_set": "game.data.equipment.eq_04_special_set",
     "eq_02_armor_02_bottom": "game.data.equipment.eq_02_armor_02_bottom",
-
     # game/data/item/
     "item_potion": "game.data.item.item_potion",
     "item_consumable": "game.data.item.item_consumable",
     "item_materials": "game.data.item.item_materials",
     "item_quest": "game.data.item.item_quest",
-
     # game/data/character/
-    "character_formet": "game.data.character.character_formet",
-    "player_formet": "game.data.character.player_formet",
-
+    "character_format": "game.data.character.character_format",
+    "player_format": "game.data.character.player_format",
     # game/data/MAP/
-    "map_formet": "game.data.MAP.map_formet",
+    "map_format": "game.data.MAP.map_format",
     "map_utils": "game.data.MAP.map_utils",
     "map_01A_D01_Lorien": "game.data.MAP.map_01A_D01_Lorien",
     "map_01A_D02_Hollow_Lorien": "game.data.MAP.map_01A_D02_Hollow_Lorien",
@@ -129,12 +119,10 @@
     "map_01A_D08_grakquarak": "game.data.MAP.map_01A_D08_grakquarak",
     "map_01A_D09_blazing_grakquarak": "game.data.MAP.map_01A_D09_blazing_grakquarak",
     "map_01A_D10_shadow_thunderland": "game.data.MAP.map_01A_D10_shadow_thunderland",
-
     # game/data/town/
     "town_01A_T01_Elvengard": "game.data.town.town_01A_T01_Elvengard",
     "town_01A_T02_hendonmyre": "game.data.town.town_01A_T02_hendonmyre",
-    "town_formet": "game.data.town.town_formet",
-
+    "town_format": "game.data.town.town_format",
     # game/system/
     "equipment_system": "game.system.equipment_system",
     "dice_utils": "game.system.dice_utils",
@@ -150,9 +138,20 @@
     "character_data_system": "game.system.character_data_system",
     "character_creation_system": "game.system.character_creation_system",
     "character_levelup_system": "game.system.character_levelup_system",
-    "combat_system": "game.system.combat_system",
+    # game/system/combat/ (전투 시스템 패키지 - R4에서 옛 combat_system.py를 나눔)
+    "core": "game.system.combat.core",
+    "formula": "game.system.combat.formula",
+    "participants": "game.system.combat.participants",
+    "traits": "game.system.combat.traits",
+    "status": "game.system.combat.status",
+    "stats": "game.system.combat.stats",
+    "resources": "game.system.combat.resources",
+    "damage": "game.system.combat.damage",
+    "attacks": "game.system.combat.attacks",
+    "monster_actions": "game.system.combat.monster_actions",
+    "reactions": "game.system.combat.reactions",
+    "flow": "game.system.combat.flow",
     "skill_system": "game.system.skill_system",
-
     # game/screens/ (Kivy 화면)
     "screens_common": "game.screens.screens_common",
     "screens_menu": "game.screens.screens_menu",
@@ -196,12 +195,10 @@
 #     │   └── town/       마을 배경 그림 (asset_town_*.webp)
 #     │                      asset_town_elvengard.webp   엘븐가드 (720x350)
 #     │                      asset_town_hendonmyre.webp  헨돈마이어 (720x342)
-#     ├── mobile_apk_build_notes.md
 #     └── __init__.py
 #
 # 주의: assets/font/ 안에는 폰트 파일(.ttf/.otf)만 둔다. 문서·노트
-# 파일(mobile_apk_build_notes.md 등)은 에셋이 아니므로 여기 두지 않고
-# game/ 바로 아래에 둔다.
+# 파일은 에셋이 아니므로 저장소 최상위 docs/에 둔다.
 #
 # 폰트 관련 배경(한글 깨짐 문제 및 등록 코드)은
-# mobile_apk_build_notes.md 참고.
+# docs/mobile_apk_build_notes.md 참고.

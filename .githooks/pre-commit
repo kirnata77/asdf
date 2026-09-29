@@ -1,0 +1,23 @@
+#!/bin/sh
+# 커밋 전 줄끝 통일 - 작업 트리의 CR(CRLF)이 섞인 텍스트 파일을 LF로 바꾼다.
+# 켜기(저장소마다 한 번): git config core.hooksPath .githooks
+#
+# 스테이지된 내용은 .gitattributes(`* text=auto eol=lf`) 덕에 이미 LF로 정규화되므로
+# 다시 add할 필요는 없다. 이 훅은 작업 트리까지 LF로 맞춰 tests/test_repo_hygiene.py가
+# 로컬에서 깨지지 않게 한다.
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+if command -v python3 >/dev/null 2>&1; then
+    py=python3
+elif command -v python >/dev/null 2>&1; then
+    py=python
+else
+    echo "[pre-commit] 파이썬이 없어 줄끝 검사를 건너뜁니다."
+    exit 0
+fi
+
+"$py" tools/fix_eol.py >/dev/null || {
+    echo "[pre-commit] tools/fix_eol.py 실패 - 커밋을 멈춥니다."
+    exit 1
+}
