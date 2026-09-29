@@ -5,7 +5,7 @@
 ## Now - 2026-09-29 (refactor/prep: 리팩터링 준비 완료, PR #1 열림 - 병합 대기)
 
 **PR #1** `refactor/prep` -> `main`, **병합하지 말 것**(사용자 지시). 게임 동작 변경 없음.
-이 브랜치: DoD 게이트, CI, 훅 실행권한 수정, **전 파일 CRLF**(`* -text`, 테스트로 강제),
+이 브랜치: DoD 게이트, CI, 훅 실행권한 수정, **전 파일 LF**(`* text=auto eol=lf`, 테스트로 강제 - CRLF에서 되돌림),
 문서/기억 체계, **테스트 247개 · 커버리지 94%**(전 39%) - 게이트 하한 90%.
 
 **다음:** **로드맵 R0~R6 전부 완료**(전투는 `game/system/combat/` 12개 모듈, 서식은 ruff format으로 통일).
@@ -21,7 +21,7 @@ R0의 데이터 결정 2건(몬스터 HP/AC 값, 카잔 습득)은 사용자 답
 
 | 읽을 것 | 언제 |
 |---|---|
-| [`CLAUDE.md`](CLAUDE.md) | 규칙: 계층, DoD, 테스트 지도, CRLF, git |
+| [`CLAUDE.md`](CLAUDE.md) | 규칙: 계층, DoD, 테스트 지도, LF 줄끝, git |
 | [`.memory/README.md`](.memory/README.md) | 어느 기억 파일에 무엇을 쓰나 |
 | [`.memory/active-issues/`](.memory/active-issues/) | 값/문서/동작을 믿기 전에 |
 | [`.memory/roadmap/`](.memory/roadmap/) | 다음에 할 일, 숫자가 있는 사실 |

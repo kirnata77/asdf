@@ -1,22 +1,37 @@
 """저장소 규칙 검사 (코드 동작이 아니라 파일 자체)."""
 
 import os
+import subprocess
 
 from tools import fix_eol
 
 
-def test_모든_텍스트파일은_CRLF():
-    위반 = fix_eol.lf_files()
+def test_모든_텍스트파일은_LF():
+    위반 = fix_eol.crlf_files()
     assert not 위반, (
-        "CRLF 규칙 위반(CLAUDE.md '줄끝') - `python tools/fix_eol.py`로 고친다:\n"
+        "LF 규칙 위반(CLAUDE.md '줄끝') - `python tools/fix_eol.py`로 고친다:\n"
         + "\n".join(위반)
     )
 
 
-def test_git_훅은_LF():
-    훅폴더 = os.path.join(fix_eol.ROOT, ".githooks")
-    for 이름 in os.listdir(훅폴더):
-        with open(os.path.join(훅폴더, 이름), "rb") as f:
-            assert b"\r\n" not in f.read(), (
-                f".githooks/{이름}이 CRLF - sh가 실행하지 못한다"
-            )
+def test_git_훅도_검사_대상이다():
+    """훅(확장자 없음)은 sh가 실행하므로 CR이 섞이면 "/bin/sh^M" 오류가 난다."""
+    훅들 = [p for p in fix_eol.text_files() if os.sep + ".githooks" + os.sep in p]
+    assert any(p.endswith("post-commit") for p in 훅들)
+
+
+def test_gitattributes는_LF_정규화():
+    결과 = subprocess.run(
+        ["git", "check-attr", "text", "eol", "--", "main.py", ".githooks/post-commit"],
+        cwd=fix_eol.ROOT,
+        capture_output=True,
+        text=True,
+    )
+    if 결과.returncode != 0:  # git이 없는 환경(zip으로 받은 경우 등)은 건너뛴다
+        return
+    for 줄 in (
+        "main.py: text: auto",
+        "main.py: eol: lf",
+        ".githooks/post-commit: eol: lf",
+    ):
+        assert 줄 in 결과.stdout, 결과.stdout

@@ -20,7 +20,7 @@ game/assets/       폰트, 이미지
 tests/             헤드리스 테스트 + golden/*.json (kivy 없이 돈다, 아래 "테스트 지도")
 tools/check.py     완료 기준 게이트 (아래)
 tools/ui_smoke.py  화면 스모크(kivy + Xvfb, 스크린샷) - CI 밖, 화면 바꿀 때 직접
-tools/fix_eol.py   줄끝을 CRLF로 통일 (아래 "줄끝")
+tools/fix_eol.py   줄끝을 LF로 통일 (아래 "줄끝")
 docs/              빌드 노트 등 문서
 .memory/           작업 기억 (MEMORY.md가 색인)
 ```
@@ -66,7 +66,7 @@ docs/              빌드 노트 등 문서
 | `test_combat_monsters.py` | 몬스터 29종의 고유 패턴 73개 + 보스 칭호 | 골든 |
 | `test_combat_effects.py` | 상태이상 20 / 버프 21 / 디버프 20 전수, 반응특성 10종 전투 | 골든 |
 | `test_screen_api.py` | 화면용 gameflow 창구, 화면 -> system 직접 호출 금지 | 값 + 규칙 |
-| `test_imports.py`, `test_repo_hygiene.py` | 모듈 import, file_path.py, CRLF | 규칙 |
+| `test_imports.py`, `test_repo_hygiene.py` | 모듈 import, file_path.py, LF 줄끝 | 규칙 |
 
 - 공용 도우미는 `tests/support.py`(자동 전투, 강제 승리/패배, 경로 걷기, 결정적 성장).
 - 무작위는 전부 전역 `random`이라 `random.seed()`로 재현된다. 골든은 시드를 고정해 만든다.
@@ -88,18 +88,20 @@ docs/              빌드 노트 등 문서
 - **`buildozer.spec`을 바꾸면** CI 캐시 키가 바뀌어 다음 APK 빌드가 SDK/NDK를 새로
   받는다(수십 분). 꼭 필요할 때만 바꾼다.
 
-## 줄끝 - 모든 텍스트 파일은 CRLF
+## 줄끝 - 모든 텍스트 파일은 LF
 
-- **저장소의 모든 텍스트 파일(.py, .md, .json, .yml, .toml, .spec, .gitignore 등)은
-  CRLF로 저장한다.** 새 파일도 마찬가지다.
-- **예외는 `.githooks/` 하나** - sh가 실행하므로 LF여야 한다.
-- git은 줄끝을 변환하지 않는다(`.gitattributes`의 `* -text`). 저장소 바이트 = 받은 파일
-  바이트이므로, 각자의 `core.autocrlf` 설정과 무관하다.
+- **저장소의 모든 텍스트 파일(.py, .md, .json, .yml, .toml, .spec, .gitignore, git 훅 등)은
+  LF로 저장한다.** 새 파일도 마찬가지다. 예외 없음.
+- `.gitattributes`의 `* text=auto eol=lf`: git이 커밋할 때 CRLF를 LF로 정규화하고, 어느
+  OS에서나 LF로 체크아웃한다(각자의 `core.autocrlf`와 무관). Windows 편집기가 CRLF로 저장해도
+  커밋하면 LF가 된다.
+- **GitHub 웹 업로드는 git 정규화를 거치지 않는다** - CRLF 파일을 올리면 그대로 들어가고
+  게이트(`tests/test_repo_hygiene.py`)가 실패한다. 받아서 `python tools/fix_eol.py`로 고친다.
 - **커밋 전에 `python -m ruff format .` 그리고 `python tools/fix_eol.py`** - 서식을 맞추고
-  LF가 섞인 파일을 CRLF로 바꾼다(ruff format도 `line-ending = "cr-lf"`로 CRLF를 쓴다).
-  위반은 게이트(`tests/test_repo_hygiene.py`)와 CI가 잡는다.
-- 파이썬 스크립트로 파일을 고칠 때는 `open(..., newline="")`로 읽고 써서 줄끝을 보존한다.
-- 줄끝 통일 커밋은 `.git-blame-ignore-revs`에 등록돼 있다:
+  CR이 섞인 파일을 LF로 바꾼다(ruff format도 `line-ending = "lf"`).
+- 파이썬으로 파일을 쓸 때는 `open(..., "w", newline="\n")` - 지정하지 않으면 Windows에서
+  CRLF로 써진다(tests/conftest.py의 골든 쓰기 참고).
+- 줄끝 통일 커밋들은 `.git-blame-ignore-revs`에 등록돼 있다:
   `git config blame.ignoreRevsFile .git-blame-ignore-revs` (한 번만)
 
 ## 기억 파일 (MEMORY.md / .memory/)
