@@ -9,7 +9,7 @@ package.name = dnfmobile
 package.domain = org.test
 version = 0.1
 
-# 소스 위치 (zip 최상위에 main.py / gameflow.py / screens.py / game/ 가 바로 있음)
+# 소스 위치 (최상위에 main.py / gameflow.py / game/ 가 바로 있음)
 source.dir = .
 source.include_exts = py,png,jpg,jpeg,webp,ttf,otf,json,kv,atlas,txt
 source.exclude_dirs = tests, bin, venv, .buildozer, __pycache__
