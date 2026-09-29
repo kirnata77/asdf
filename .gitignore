@@ -1,0 +1,21 @@
+# 파이썬이 실행하면서 자동으로 만드는 캐시
+__pycache__/
+*.pyc
+
+# buildozer 빌드 결과물 (SDK/NDK 다운로드, 중간 파일, 완성된 APK)
+.buildozer/
+bin/
+
+# 세이브 파일 - 플레이 기록이라 코드와 함께 관리하지 않는다
+game/saves/
+
+# 압축 파일 (업로드용으로 만든 zip 등)
+*.zip
+
+# Claude Code 로컬 설정
+.claude/
+
+# 운영체제가 만드는 파일
+Thumbs.db
+desktop.ini
+.DS_Store
