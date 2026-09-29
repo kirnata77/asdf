@@ -35,7 +35,7 @@
 # "레벨×(6+건강보정치)" 같은 수식 문자열이다. combat_system.py의
 # _적_참가자_생성()/최종AC()가 이 수식을 실제로 평가하려면 몬스터의
 # "레벨"/"차수"가 필요한데, 몬스터 데이터 자신에는 없고(항상 None)
-# 던전 맵의 인카운트/오브젝트 데이터 쪽에 있다(monster_formet.py 설명
+# 던전 맵의 인카운트/오브젝트 데이터 쪽에 있다(monster_format.py 설명
 # 참고) - 그래서 이 파일의 _전투_시작()이 그 값을 몬스터 원본 데이터
 # 사본에 덮어써서 넘긴다(_몬스터원본목록_생성 참고).
 
@@ -89,9 +89,9 @@ from game.data.equipment.eq_02_armor_02_bottom import 하의목록
 from game.data.equipment.eq_02_armor_03_shoulder import 어깨목록
 from game.data.equipment.eq_02_armor_04_belt import 벨트목록
 from game.data.equipment.eq_02_armor_05_shoes import 신발목록
-from game.data.equipment.eq_03_accesery_06_necklace import 목걸이목록
-from game.data.equipment.eq_03_accesery_07_ring import 반지목록
-from game.data.equipment.eq_03_accesery_08_bracelet import 팔찌목록
+from game.data.equipment.eq_03_accessory_06_necklace import 목걸이목록
+from game.data.equipment.eq_03_accessory_07_ring import 반지목록
+from game.data.equipment.eq_03_accessory_08_bracelet import 팔찌목록
 from game.data.equipment.eq_04_special_09_subequipment import 보조장비목록
 from game.data.equipment.eq_04_special_10_magicstone import 마법석목록
 from game.data.equipment.eq_04_special_11_earring import 귀걸이목록
@@ -785,7 +785,7 @@ def _몬스터원본목록_생성(몬스터항목목록, 레벨=None, 차수=Non
     """레벨/차수를 주면 몬스터 원본 데이터 사본에 덮어쓴다 - 몬스터
     데이터(monster_race_*.py) 자신은 "레벨"/"차수"가 항상 None이고,
     실제 값은 던전 맵의 인카운트/오브젝트 데이터가 갖고 있다
-    (monster_formet.py 설명 참고). combat_system._적_참가자_생성()이
+    (monster_format.py 설명 참고). combat_system._적_참가자_생성()이
     "최대HP"/"AC" 수식(예: "레벨×(6+건강보정치)")을 평가할 때 이 값을
     읽는다."""
     몬스터원본목록 = []
@@ -1016,7 +1016,7 @@ def 전투_결과_정리(게임상태):
     승리 시, 이 전투가 던전 오브젝트(보스 등) 클리어로 시작됐다면
     map_system.오브젝트_클리어_처리()(타일 상태 변경)와 함께
     town_system.오브젝트_클리어_기록()(진행도에 영구 기록 - 세이브에
-    반영되고, map_formet.py "숏컷" 해금 조건에도 쓰인다)도 같이
+    반영되고, map_format.py "숏컷" 해금 조건에도 쓰인다)도 같이
     호출한다."""
     전투상태 = 게임상태["전투상태"]
     종료결과 = 전투상태["종료"]

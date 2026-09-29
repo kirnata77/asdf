@@ -45,7 +45,7 @@
     "job_level_041f_elemental_master": "game.data.job_level.job_level_041f_elemental_master",
     "job_level_050f_priest": "game.data.job_level.job_level_050f_priest",
     "job_level_051f_crusader": "game.data.job_level.job_level_051f_crusader",
-    "job_level_formet": "game.data.job_level.job_level_formet",
+    "job_level_format": "game.data.job_level.job_level_format",
 
     # game/data/perks/
     "perks_class_0000": "game.data.perks.perks_class_0000",
@@ -78,7 +78,7 @@
     "monster_race_lugaru": "game.data.monster.monster_race_lugaru",
     "monster_race_human": "game.data.monster.monster_race_human",
     "monster_race_zombie": "game.data.monster.monster_race_zombie",
-    "monster_formet": "game.data.monster.monster_formet",
+    "monster_format": "game.data.monster.monster_format",
     "monster_ability": "game.data.monster.monster_ability",
     "monster_title": "game.data.monster.monster_title",
     "monster_drop": "game.data.monster.monster_drop",
@@ -86,20 +86,20 @@
     # game/data/equipment/
     "eq_01_weapon_010": "game.data.equipment.eq_01_weapon_010",
     "eq_01_weapon_020": "game.data.equipment.eq_01_weapon_020",
-    "eq_01_weapon_formet": "game.data.equipment.eq_01_weapon_formet",
+    "eq_01_weapon_format": "game.data.equipment.eq_01_weapon_format",
     "eq_01_weapon_030": "game.data.equipment.eq_01_weapon_030",
     "eq_01_weapon_040": "game.data.equipment.eq_01_weapon_040",
     "eq_01_weapon_050": "game.data.equipment.eq_01_weapon_050",
-    "eq_03_accesery_08_bracelet": "game.data.equipment.eq_03_accesery_08_bracelet",
+    "eq_03_accessory_08_bracelet": "game.data.equipment.eq_03_accessory_08_bracelet",
     "eq_02_armor_01_top": "game.data.equipment.eq_02_armor_01_top",
     "eq_02_armor_03_shoulder": "game.data.equipment.eq_02_armor_03_shoulder",
     "eq_02_armor_04_belt": "game.data.equipment.eq_02_armor_04_belt",
-    "eq_02_armor_formet": "game.data.equipment.eq_02_armor_formet",
+    "eq_02_armor_format": "game.data.equipment.eq_02_armor_format",
     "eq_02_armor_set": "game.data.equipment.eq_02_armor_set",
     "eq_02_armor_05_shoes": "game.data.equipment.eq_02_armor_05_shoes",
-    "eq_03_accesery_06_necklace": "game.data.equipment.eq_03_accesery_06_necklace",
-    "eq_03_accesery_07_ring": "game.data.equipment.eq_03_accesery_07_ring",
-    "eq_03_accesery_set": "game.data.equipment.eq_03_accesery_set",
+    "eq_03_accessory_06_necklace": "game.data.equipment.eq_03_accessory_06_necklace",
+    "eq_03_accessory_07_ring": "game.data.equipment.eq_03_accessory_07_ring",
+    "eq_03_accessory_set": "game.data.equipment.eq_03_accessory_set",
     "eq_04_special_11_earring": "game.data.equipment.eq_04_special_11_earring",
     "eq_04_special_10_magicstone": "game.data.equipment.eq_04_special_10_magicstone",
     "eq_04_special_09_subequipment": "game.data.equipment.eq_04_special_09_subequipment",
@@ -113,11 +113,11 @@
     "item_quest": "game.data.item.item_quest",
 
     # game/data/character/
-    "character_formet": "game.data.character.character_formet",
-    "player_formet": "game.data.character.player_formet",
+    "character_format": "game.data.character.character_format",
+    "player_format": "game.data.character.player_format",
 
     # game/data/MAP/
-    "map_formet": "game.data.MAP.map_formet",
+    "map_format": "game.data.MAP.map_format",
     "map_utils": "game.data.MAP.map_utils",
     "map_01A_D01_Lorien": "game.data.MAP.map_01A_D01_Lorien",
     "map_01A_D02_Hollow_Lorien": "game.data.MAP.map_01A_D02_Hollow_Lorien",
@@ -133,7 +133,7 @@
     # game/data/town/
     "town_01A_T01_Elvengard": "game.data.town.town_01A_T01_Elvengard",
     "town_01A_T02_hendonmyre": "game.data.town.town_01A_T02_hendonmyre",
-    "town_formet": "game.data.town.town_formet",
+    "town_format": "game.data.town.town_format",
 
     # game/system/
     "equipment_system": "game.system.equipment_system",

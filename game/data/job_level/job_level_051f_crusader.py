@@ -1,5 +1,5 @@
 # 크루세이더 레벨업 테이블 (분류번호 051f, 레벨 6~10)
-# 양식: job_level_formet.py
+# 양식: job_level_format.py
 
 레벨업테이블 = {
 

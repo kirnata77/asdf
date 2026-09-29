@@ -30,7 +30,7 @@
   → `.memory/active-issues/known-bugs.md`
 - ~~R0.5 줄끝 통일~~ **완료 2026-09-29** - 전부 CRLF(사용자 결정), `.githooks/`만 LF.
   CRLF 116 / LF 29 → 35개 파일 변환. `* -text`로 git 변환 없음, 테스트로 강제.
-- **R1 이름 오타 정리** - `formet` → `format`(8개 파일), `accesery` → `accessory`(4개 파일).
+- ~~R1 이름 오타 정리~~ **완료 2026-09-29** (파일 12개, 참조 50개 파일, 골든 불변). - `formet` → `format`(8개 파일), `accesery` → `accessory`(4개 파일).
   파일 12개 이름 변경 + 참조 50개 파일. 순수 기계적 변경이라 골든 불변이 확실해야 함.
   세이브 JSON에 모듈명이 들어가는지 먼저 확인(들어가면 호환 처리 필요).
   `job_skill_format.py`/`perks_class_format.py`/`job_ability_format.py`는 이미 올바른 철자.
