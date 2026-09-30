@@ -62,6 +62,7 @@ from game.system import save_system
 from game.system import shop_system
 from game.system import player_system
 from game.system import equipment_system
+from game.system import loot_system
 
 import copy
 import importlib
@@ -88,6 +89,7 @@ from game.data.equipment.eq_02_armor_set import 방어구세트목록
 
 # 상점 카탈로그용 - 소모품 데이터(포션/투척 아이템/음식).
 from game.data.item.item_potion import 포션_데이터
+from game.data.monster.monster_drop import 드랍표_모음
 from game.data.item.item_consumable import 소모품_데이터
 
 from game.data.MAP.map_01A_D01_Lorien import 맵정보 as _로리엔
@@ -459,6 +461,7 @@ def _새_게임상태(파티, 진행도):
         "전투상태": None,
         "전투_클리어위치": None,
         "전투_로그커서": 0,
+        "전투_전리품": None,
         "소지품": player_system.빈_소지품(),
         "상점카탈로그": 상점카탈로그,
         # 던전 지도에 표시할 "플레이어 초상화"(캐릭터별 직업 기반
@@ -1190,6 +1193,56 @@ def 전투_종료됨(게임상태):
     return 전투상태 is not None and 전투상태["종료"] is not None
 
 
+def _아이템_소지품_카테고리(게임상태, 이름):
+    """상점 카탈로그에서 아이템 이름의 소지품 카테고리를 찾는다(없으면 None)."""
+    for 대분류, 탭모음 in 게임상태["상점카탈로그"].items():
+        for 탭, 아이템들 in 탭모음.items():
+            if 이름 in 아이템들:
+                return shop_system.소지품_카테고리(대분류, 탭)
+    return None
+
+
+def _전리품_지급(게임상태, 전투상태):
+    """쓰러뜨린 적 전부의 획득골드/드랍표를 굴려 소지품에 넣고, 넣은 것을
+    {"골드": n, "아이템": [(이름, 개수), ...]}로 돌려준다. 카탈로그에 없는
+    아이템 이름은 지급하지도 보여주지도 않는다."""
+    몬스터원본목록 = [
+        p["원본"] for p in 전투상태["참가자"] if p["진영"] == "적" and p.get("원본")
+    ]
+    전리품 = loot_system.전리품_판정(
+        몬스터원본목록, 드랍표_모음, 게임상태["상점카탈로그"]["장비"]
+    )
+    플레이어 = _플레이어뷰(게임상태)
+    if 전리품["골드"]:
+        player_system.골드_추가(플레이어, 전리품["골드"])
+    지급 = []
+    for 이름, 개수 in 전리품["아이템"]:
+        카테고리 = _아이템_소지품_카테고리(게임상태, 이름)
+        if 카테고리 is None:
+            continue
+        player_system.아이템_추가(플레이어, 카테고리, 이름, 개수)
+        지급.append((이름, 개수))
+    return {"골드": 전리품["골드"], "아이템": 지급}
+
+
+def 전투_종료_문구(게임상태, 종료결과):
+    """전투 종료 팝업의 줄 목록. 전투_결과_정리() 뒤에 부른다(승리면 그때
+    지급한 전리품을 보여준다)."""
+    if 종료결과 == "적승리":
+        return ["전투 패배!"]
+    if 종료결과 == "전투이탈":
+        return ["도망쳤다!"]
+    전리품 = 게임상태.get("전투_전리품") or {"골드": 0, "아이템": []}
+    줄들 = ["전투 승리!", "전리품"]
+    if 전리품["골드"]:
+        줄들.append(f"골드 {전리품['골드']}")
+    for 이름, 개수 in 전리품["아이템"]:
+        줄들.append(이름 if 개수 == 1 else f"{이름} x{개수}")
+    if len(줄들) == 2:
+        줄들.append("없음")
+    return 줄들
+
+
 def 전투_결과_정리(게임상태):
     """전투가 끝난 뒤, 참가자 인스턴스에만 반영돼 있던 HP/MP를 캐릭터
     원본 데이터로 되돌려 쓴다. combat 패키지/skill_system.py는 이
@@ -1200,7 +1253,10 @@ def 전투_결과_정리(게임상태):
     map_system.오브젝트_클리어_처리()(타일 상태 변경)와 함께
     town_system.오브젝트_클리어_기록()(진행도에 영구 기록 - 세이브에
     반영되고, map_format.py "숏컷" 해금 조건에도 쓰인다)도 같이
-    호출한다."""
+    호출한다.
+
+    승리하면 전리품(쓰러뜨린 적의 획득골드/드랍표)도 굴려 소지품에 넣고
+    게임상태["전투_전리품"]에 남긴다(전투_종료_문구가 읽는다)."""
     전투상태 = 게임상태["전투상태"]
     종료결과 = 전투상태["종료"]
 
@@ -1209,7 +1265,9 @@ def 전투_결과_정리(게임상태):
         캐릭터["현재HP"] = 참가자["현재HP"]
         캐릭터["현재MP"] = 참가자["현재MP"]
 
+    게임상태["전투_전리품"] = None
     if 종료결과 == "아군승리":
+        게임상태["전투_전리품"] = _전리품_지급(게임상태, 전투상태)
         클리어위치 = 게임상태.get("전투_클리어위치")
         if 클리어위치 is not None:
             던전상태 = 게임상태["던전상태"]
