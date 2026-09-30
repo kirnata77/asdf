@@ -2,17 +2,14 @@
 
 **색인이지 기록이 아니다.** 낡는 순간 거짓이 되는 것만 여기 둔다. 40줄 이하.
 
-## Now - 2026-09-29 (refactor/prep: 리팩터링 준비 완료, PR #1 열림 - 병합 대기)
+## Now - 2026-09-30 (PR #1 `refactor/prep` 병합됨 - 리팩터링 준비 완료가 `main`에 있음)
 
-**CLAUDE.md 정리**(브랜치 `claude/claude-md-cleanup-mmo8lm`): 자동 push 훅(post-commit) 제거 -
-push는 게이트 통과한 작업만, 로컬 커밋은 작업 중 고쳐도 됨. 줄끝은 pre-commit 훅이 `fix_eol.py`로 맞춘다.
-
-**PR #1** `refactor/prep` -> `main`, **병합하지 말 것**(사용자 지시). 게임 동작 변경 없음.
-이 브랜치: DoD 게이트, CI, 훅 실행권한 수정, **전 파일 LF**(`* text=auto eol=lf`, 테스트로 강제 - CRLF에서 되돌림),
-문서/기억 체계, **테스트 247개 · 커버리지 94%**(전 39%) - 게이트 하한 90%.
+**작업 흐름**(CLAUDE.md "Git"): 기능마다 `main`에서 브랜치 -> 게이트 통과 -> PR -> CI 초록이면 병합(병합은 사용자 확인).
+push는 검증된 작업만, 자동 push 훅 없음. 줄끝은 pre-commit 훅이 `fix_eol.py`로 맞춘다.
+`main` 기준 테스트 268개 · 커버리지 93.7% - 게이트 하한 90%.
 
 **다음:** **로드맵 R0~R6 전부 완료**(전투는 `game/system/combat/` 12개 모듈, 서식은 ruff format으로 통일).
-남은 것은 아래 사용자 결정 3건(데이터)과 PR #1 병합 여부.
+남은 것은 아래 사용자 결정 3건(데이터).
 **코드 리뷰 완료, 버그 12건 미수정**([`docs/review_refactor_prep.md`](docs/review_refactor_prep.md)) - 권장 순서 B2/B3 -> B1(도망 규칙 결정 필요) -> B4/B8.
 R0의 데이터 결정 2건(몬스터 HP/AC 값, 카잔 습득)은 사용자 답 대기. 모든 단계는 골든 불변이 조건.
 
