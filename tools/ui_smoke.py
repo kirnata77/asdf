@@ -6,7 +6,7 @@
 
 tests/는 kivy 없이 gameflow 이하만 검사한다. 화면(game/screens) 코드를 바꿨다면 이것을
 돌려 확인한다(CLAUDE.md 완료 기준 3). 레벨 10 파티를 만들어 다음을 실제로 호출한다:
-파티 구성 이름칸(6자 제한), 상점 구매/판매 목록, 능력치 배분 팝업, 전투 화면 스킬 팝업과 스킬별 실제 타겟(4직업 전 스킬),
+파티 구성 이름칸(6자 제한), 상점 구매/판매 목록, 능력치 배분 팝업, 장비 교체 팝업/상세보기, 전투 화면 스킬 팝업과 스킬별 실제 타겟(4직업 전 스킬),
 적반복지정(썬더콜링) 선택 - 은신 대상 거부 포함. 예외가 나면 종료코드 1.
 스크린샷 기본 폴더: ui_smoke_shots/ (.gitignore에 들어 있다).
 """
@@ -27,6 +27,7 @@ from kivy.clock import Clock  # noqa: E402
 from kivy.core.window import Window  # noqa: E402
 
 import gameflow as gf  # noqa: E402
+from game.screens import screens_party  # noqa: E402
 from game.system.combat import flow  # noqa: E402
 from tests import support  # noqa: E402
 
@@ -108,6 +109,29 @@ class 스모크앱(main.DnfMobileApp):
         _찍기("stat_popup")
         _팝업_닫기()
         결과["단계"].append("능력치 배분 팝업")
+
+        # 장비 교체 팝업: 칸마다 이름 + 간단요약(무기 공격력/AC) + [상세보기]
+        for 슬롯 in ("무기", "상의"):
+            for 이름 in list(상태["상점카탈로그"]["장비"][슬롯])[:3]:
+                상태["소지품"]["장비"][이름] = 상태["소지품"]["장비"].get(이름, 0) + 1
+        귀검사 = 상태["파티"]["파티원"][0]
+        매니저.current = "파티원"
+        for 슬롯, 요약 in (("무기", "무기 공격력 "), ("상의", "AC ")):
+            screens_party._장비교체_팝업(귀검사, 슬롯, lambda: None)
+            yield 0.5
+            _찍기(f"equip_swap_{슬롯}")
+            팝업 = Window.children[0]
+            글들 = [w.text for w in 팝업.walk(restrict=True) if hasattr(w, "text")]
+            assert any(요약 in 글 for 글 in 글들), 글들
+            assert 글들.count("상세보기") >= 2, 글들
+            _팝업_닫기()
+            yield 0.3
+        무기 = next(iter(상태["상점카탈로그"]["장비"]["무기"].values()))
+        screens_party._아이템_상세_팝업(무기)
+        yield 0.5
+        _찍기("equip_detail")
+        _팝업_닫기()
+        결과["단계"].append("장비 교체 팝업(무기/상의) + 상세보기")
 
         gf._전투_시작(상태, ["타우 아미", "고블린", "고블린"], 레벨=6, 차수=2)
         support.반응_처리(상태)
