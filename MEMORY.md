@@ -12,10 +12,11 @@ pre-commit 훅. 테스트/게이트 숫자는 [`roadmap/`](.memory/roadmap/).
 팝업(테두리 칸/상세보기), 핸드폰 [뒤로] 키. 경위: [`sessions/2026-09-30-ui-fixes.md`](.memory/sessions/2026-09-30-ui-fixes.md).
 **실기기 미확인** - [뒤로] 키 전달, 한글 조합 입력 중 6자 자르기.
 
-**다음:** **로드맵 R0~R6 전부 완료**(전투는 `game/system/combat/` 12개 모듈, 서식은 ruff format으로 통일).
-남은 것은 아래 사용자 결정 3건(데이터).
-**코드 리뷰 완료, 버그 12건 미수정**([`docs/review_refactor_prep.md`](docs/review_refactor_prep.md)) - 권장 순서 B2/B3 -> B1(도망 규칙 결정 필요) -> B4/B8.
-R0의 데이터 결정 2건(몬스터 HP/AC 값, 카잔 습득)은 사용자 답 대기. 모든 단계는 골든 불변이 조건.
+**`claude/bug-fixes`**(`claude/ui-fixes` 위, PR 전): 리뷰 버그 B2~B12를 버그당 커밋 하나로 수정.
+사용자 결정 - B4 이름 중복은 시작을 막고 안내, B8 같은 이름 몬스터는 "고블린 A/B/C", B10 버프
+수식은 시전자 기준, B11 걸 때 한 번 굴림. **B1(도망 비용)은 보류.** 경위: [`sessions/2026-09-30-bug-fixes.md`](.memory/sessions/2026-09-30-bug-fixes.md).
+
+**다음:** 두 브랜치의 PR/병합(친구 검토), B1 규칙 결정, 아래 사용자 결정 3건(데이터).
 
 **믿으면 안 되는 것** ([`known-bugs.md`](.memory/active-issues/known-bugs.md)):
 귀검사는 `귀신 : 카잔`을 배울 수 없다(레벨3 목록 누락). 몬스터 18종은 HP 1로
