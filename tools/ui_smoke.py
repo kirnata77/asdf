@@ -7,7 +7,7 @@
 tests/는 kivy 없이 gameflow 이하만 검사한다. 화면(game/screens) 코드를 바꿨다면 이것을
 돌려 확인한다(CLAUDE.md 완료 기준 3). 레벨 10 파티를 만들어 다음을 실제로 호출한다:
 파티 구성 이름칸(6자 제한), 상점 구매/판매 목록, 능력치 배분 팝업, 장비 교체 팝업/상세보기, 뒤로 키, 전투 화면 스킬 팝업과 스킬별 실제 타겟(4직업 전 스킬),
-적반복지정(썬더콜링) 선택 - 은신 대상 거부 포함, 도망(구속이면 막힘 팝업, 실패하면 턴 종료),
+적 대상 선택 팝업(일반공격, 취소), 적반복지정(썬더콜링) 선택 - 은신 대상 거부 포함, 도망(구속이면 막힘 팝업, 실패하면 턴 종료),
 전투 종료 팝업(승리 전리품/없음, 도망, 패배)과 전투 보상(3칸 선택/빈칸 포기), 자동전투(켜기/중지/끝까지), 몬스터 크기 배율, 적 도망(황금 고블린).
 예외가 나면 종료코드 1.
 스크린샷 기본 폴더: ui_smoke_shots/ (.gitignore에 들어 있다).
@@ -27,6 +27,7 @@ os.environ.setdefault("KIVY_NO_ARGS", "1")
 import main  # noqa: E402 - 크래시 로그 훅/폰트 등록 등 앱 초기화를 그대로 쓴다
 from kivy.clock import Clock  # noqa: E402
 from kivy.core.window import Window  # noqa: E402
+from kivy.uix.button import Button  # noqa: E402
 
 import gameflow as gf  # noqa: E402
 from game.screens import screens_party  # noqa: E402
@@ -217,17 +218,52 @@ class 스모크앱(main.DnfMobileApp):
         _찍기("battle_skill_popup")
         _팝업_닫기()
 
+        # 적 대상은 이름 목록 팝업에서 고른다 - 살아 있는 적 버튼 + 맨 아래 [취소]
+        def 대상버튼들():
+            assert 팝업수() == 1, 팝업수()
+            return [
+                w
+                for w in Window.children[0].walk(restrict=True)
+                if isinstance(w, Button)
+            ]
+
+        적 = [x for x in 전투상태["참가자"] if x["진영"] == "적" and x["생존"]]
+        차례("귀검사")
+        전투._일반공격_클릭()
+        yield 0.3
+        글들 = [b.text for b in 대상버튼들()]
+        assert len(글들) == len(적) + 1 and 글들[-1] == "취소", 글들
+        assert 글들[:-1] == [p["이름"] for p in 적], 글들
+        _찍기("battle_target_popup")
+        뒤로()
+        yield 0.3
+        assert 팝업수() == 0 and 전투.선택모드 is None, (
+            "취소(뒤로 키)면 행동 없이 닫힌다"
+        )
+        로그수 = len(전투상태["로그"])
+        전투._일반공격_클릭()
+        yield 0.3
+        대상버튼들()[0].trigger_action(duration=0)
+        yield 0.5
+        assert 팝업수() == 0 and len(전투상태["로그"]) > 로그수, "고르면 바로 공격한다"
+        결과["단계"].append("일반공격 대상 팝업(적 목록 + 취소/뒤로 키, 고르면 공격)")
+
         차례("마법사")
         yield 0.3
         전투._스킬_클릭("썬더콜링", 상태["스킬데이터모음"]["썬더콜링"])
         assert 전투.선택모드[0] == "반복지정", 전투.선택모드
         적 = [x for x in 전투상태["참가자"] if x["진영"] == "적" and x["생존"]]
         gf.skill_system._상태이상_부여(전투상태, 적[1], "은신", 3, None)
-        전투._반복지정_선택(적[1])
+        yield 0.3
+        _찍기("battle_target_popup_repeat")
+        대상버튼들()[1].trigger_action(duration=0)
         assert "지정할 수 없는" in 전투.안내라벨.text, 전투.안내라벨.text
         while 전투.선택모드 and 전투.선택모드[0] == "반복지정":
-            전투._반복지정_선택(적[0])
-        결과["단계"].append("썬더콜링 반복지정(은신 대상 거부 포함)")
+            대상버튼들()[0].trigger_action(duration=0)
+        assert 팝업수() == 0, 팝업수()
+        결과["단계"].append(
+            "썬더콜링 반복지정 - 대상 팝업을 다시 열며 선택(은신 대상 거부 포함)"
+        )
         yield 0.5
         _찍기("battle_after_thundercalling")
 

@@ -195,6 +195,41 @@ class _스킬선택팝업(Popup):
         self.dismiss()
 
 
+class _대상선택팝업(Popup):
+    """일반공격/적 대상 스킬의 대상 고르기 - 살아 있는 적 이름 목록과 맨 아래
+    [취소]. 적을 누르면 닫고 선택콜백(적참가자), [취소](뒤로 키)는 닫고 취소콜백()."""
+
+    def __init__(self, 제목, 적목록, 선택콜백, 취소콜백, **kwargs):
+        self._선택콜백 = 선택콜백
+        self._취소콜백 = 취소콜백
+
+        목록 = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(6))
+        for 적 in 적목록:
+            버튼 = Button(text=적["이름"])
+            버튼.bind(on_release=lambda inst, p=적: self._선택(p))
+            목록.add_widget(버튼)
+        취소버튼 = Button(
+            text="취소", background_normal="", background_color=(0.3, 0.31, 0.35, 1)
+        )
+        뒤로키_버튼(취소버튼)
+        취소버튼.bind(on_release=lambda *_: self._취소())
+        목록.add_widget(취소버튼)
+
+        kwargs.setdefault("title", 제목)
+        kwargs.setdefault("size_hint", (0.35, None))
+        kwargs.setdefault("height", dp(110 + 54 * (len(적목록) + 1)))
+        kwargs.setdefault("auto_dismiss", False)
+        super().__init__(content=목록, **kwargs)
+
+    def _선택(self, 적참가자):
+        self.dismiss(animation=False)
+        self._선택콜백(적참가자)
+
+    def _취소(self):
+        self.dismiss(animation=False)
+        self._취소콜백()
+
+
 class 전투화면(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -449,7 +484,6 @@ class 전투화면(Screen):
                 )
             )
             상태박스.disabled = not 적["생존"]
-            상태박스.bind(on_release=lambda inst, p=적: self._대상_선택(p))
             상태박스.현재턴_표시(적 is 현재참가자)
             상태박스목록.append(상태박스)
 
@@ -652,6 +686,19 @@ class 전투화면(Screen):
     def _일반공격_클릭(self):
         self.선택모드 = ("일반공격",)
         self.안내라벨.text = "일반공격할 대상을 선택하세요."
+        self._대상_팝업_열기("일반공격 대상")
+
+    def _대상_팝업_열기(self, 제목):
+        """적 대상 고르기 팝업(_대상선택팝업)을 연다. 고르면 _대상_선택으로 넘긴다."""
+        적목록 = [
+            p for p in gameflow.적_목록(App.get_running_app().게임상태) if p["생존"]
+        ]
+        _대상선택팝업(제목, 적목록, self._대상_선택, self._대상선택_취소).open()
+
+    def _대상선택_취소(self):
+        self.선택모드 = None
+        참가자 = gameflow.현재_턴_참가자(App.get_running_app().게임상태)
+        self.안내라벨.text = f"{참가자['이름']}의 턴 - 행동을 선택하세요."
 
     def _실제_타겟(self, 스킬데이터):
         """스킬의 실제 타겟 종류(gameflow.스킬_실제_타겟 참고)."""
@@ -662,22 +709,25 @@ class 전투화면(Screen):
         if 타겟 == "적단일":
             self.선택모드 = ("스킬", 이름)
             self.안내라벨.text = f"'{이름}' 사용 대상을 선택하세요."
+            self._대상_팝업_열기(f"'{이름}' 대상")
         elif 타겟 == "적3체":
             self.선택모드 = ("스킬", 이름)
             self.안내라벨.text = (
                 f"'{이름}' 중심 대상을 선택하세요 (양옆 1체씩 함께 맞습니다)."
             )
+            self._대상_팝업_열기(f"'{이름}' 중심 대상")
         elif 타겟 == "아군단일":
             self.선택모드 = ("스킬아군", 이름)
             self.안내라벨.text = f"'{이름}'을(를) 사용할 아군을 선택하세요."
         elif 타겟 == "적반복지정":
-            # 타격 횟수만큼 적을 차례로 누른다. 다 고르면 실행.
+            # 타격 횟수만큼 대상 팝업에서 적을 차례로 고른다. 다 고르면 실행.
             앱 = App.get_running_app()
             횟수 = max(
                 1, gameflow.현재참가자_수치(앱.게임상태, 스킬데이터.get("공격횟수", 1))
             )
             self.선택모드 = ("반복지정", 이름, 횟수, [])
             self.안내라벨.text = f"'{이름}' 대상을 {횟수}번 선택하세요 (1/{횟수})."
+            self._대상_팝업_열기(f"'{이름}' 대상 (1/{횟수})")
         else:
             self._스킬_실행(이름, None)
 
@@ -695,8 +745,6 @@ class 전투화면(Screen):
         if self.선택모드 is None or not 적참가자["생존"]:
             return
         종류 = self.선택모드[0]
-        if 종류 == "스킬아군":
-            return  # 아군 대상 선택 중에는 적 칸을 눌러도 무시한다.
         if 종류 == "반복지정":
             self._반복지정_선택(적참가자)
             return
@@ -713,30 +761,37 @@ class 전투화면(Screen):
         고를 수 없고, "중복지정가능"이 False면 같은 적을 두 번 고를 수 없으며,
         "대상당피격제한"이 있으면 그 횟수를 넘길 수 없다."""
         _, 이름, 횟수, 목록 = self.선택모드
-        앱 = App.get_running_app()
-        스킬데이터 = 앱.게임상태["스킬데이터모음"][이름]
-        if gameflow.지정불가_상태인가(앱.게임상태, 적참가자):
-            self.안내라벨.text = f"{적참가자['이름']}은(는) 지정할 수 없는 상태입니다."
-            return
-        이미 = sum(1 for p in 목록 if p is 적참가자)
-        if 이미 and not 스킬데이터.get("중복지정가능", True):
-            self.안내라벨.text = "같은 적을 두 번 고를 수 없습니다."
-            return
-        제한 = 스킬데이터.get("대상당피격제한")
-        if 제한 is not None:
-            제한 = gameflow.현재참가자_수치(앱.게임상태, 제한)
-            if 이미 >= 제한:
-                self.안내라벨.text = f"한 적은 최대 {제한}번까지 고를 수 있습니다."
+        거부 = self._반복지정_거부사유(이름, 목록, 적참가자)
+        if 거부 is None:
+            목록.append(적참가자)
+            if len(목록) >= 횟수:
+                self.선택모드 = None
+                self._스킬_실행(이름, 목록[0], 지정대상목록=list(목록))
                 return
-        목록.append(적참가자)
-        if len(목록) < 횟수:
             self.안내라벨.text = (
                 f"'{이름}' 대상을 선택하세요 ({len(목록) + 1}/{횟수}) - "
                 f"고른 대상: {', '.join(p['이름'] for p in 목록)}"
             )
-            return
-        self.선택모드 = None
-        self._스킬_실행(이름, 목록[0], 지정대상목록=list(목록))
+        else:
+            self.안내라벨.text = 거부
+        # 다 고를 때까지(또는 [취소]까지) 대상 팝업을 다시 연다
+        self._대상_팝업_열기(f"'{이름}' 대상 ({len(목록) + 1}/{횟수})")
+
+    def _반복지정_거부사유(self, 이름, 목록, 적참가자):
+        """이 적을 반복지정 대상으로 더 고를 수 없으면 그 안내 문구, 고를 수 있으면 None."""
+        앱 = App.get_running_app()
+        스킬데이터 = 앱.게임상태["스킬데이터모음"][이름]
+        if gameflow.지정불가_상태인가(앱.게임상태, 적참가자):
+            return f"{적참가자['이름']}은(는) 지정할 수 없는 상태입니다."
+        이미 = sum(1 for p in 목록 if p is 적참가자)
+        if 이미 and not 스킬데이터.get("중복지정가능", True):
+            return "같은 적을 두 번 고를 수 없습니다."
+        제한 = 스킬데이터.get("대상당피격제한")
+        if 제한 is not None:
+            제한 = gameflow.현재참가자_수치(앱.게임상태, 제한)
+            if 이미 >= 제한:
+                return f"한 적은 최대 {제한}번까지 고를 수 있습니다."
+        return None
 
     def _일반공격_실행(self, 대상):
         앱 = App.get_running_app()
