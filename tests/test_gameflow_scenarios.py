@@ -10,8 +10,8 @@ import random
 import pytest
 
 import gameflow as gf
-from game.system.combat import flow
-from game.system import dice_utils
+from game.system.combat import damage, flow, stats
+from game.system import dice_utils, map_system
 from game.system import skill_system as ss
 from tests import support
 from tests.support import 보스_처치, 새게임, 성장, 연결로_나가기
@@ -509,6 +509,107 @@ def test_카탈로그에_없는_이름은_보상_후보에서_뺀다(monkeypatch
     support.강제_승리(상태)
     gf.전투_결과_정리(상태)
     assert gf.전투_보상_칸(상태) == ["조잡한 반지", None, None]
+
+
+# ------------------------------------------------------------ 황금 고블린
+
+
+def _황금_전투(몬스터들, 레벨=3):
+    random.seed(5)
+    상태 = 새게임()
+    gf.던전_진입(상태, _던전(1))
+    gf._전투_시작(상태, 몬스터들, 레벨=레벨, 차수=1)
+    support.반응_처리(상태)
+    황금 = next(p for p in gf.적_목록(상태) if p["원본"]["몬스터명"] == "황금 고블린")
+    return 상태, 황금
+
+
+def _도망칠_때까지_턴_넘기기(상태, 황금):
+    for _ in range(200):
+        if 황금.get("도망") or gf.전투_종료됨(상태):
+            return
+        gf.턴_넘기기(상태)
+
+
+def test_황금_고블린은_고블린에_모든_능력치_4를_더한다():
+    상태, 황금 = _황금_전투(["고블린", "황금 고블린"])
+    고블린 = next(p for p in gf.적_목록(상태) if p is not 황금)
+    for 이름 in ("근력", "민첩", "건강", "지능", "지혜", "매력"):
+        assert 황금["원본"][이름] == 고블린["원본"][이름] + 4
+    assert (
+        gf.몬스터목록["황금 고블린"]["근력"] == gf.몬스터목록["고블린"]["근력"]
+    )  # 데이터는 그대로
+    # 레벨3: 고블린 3x(6-1)-1 = 14, 황금 3x(6+1)-1 = 20 / AC는 민첩보정치 +2
+    assert (고블린["현재HP"], 황금["현재HP"]) == (14, 20)
+    전투상태 = 상태["전투상태"]
+    assert stats.최종AC(전투상태, 황금) == stats.최종AC(전투상태, 고블린) + 2
+
+
+def test_황금_고블린_혼자면_자기_턴_5번_뒤_도망치고_보상이_없다():
+    상태, 황금 = _황금_전투(["황금 고블린"])
+    골드 = 상태["소지품"]["골드"]
+    _도망칠_때까지_턴_넘기기(상태, 황금)
+    assert 황금["도망"] and not 황금["생존"] and 황금["끝난턴수"] == 5
+    assert 황금["현재HP"] > 0  # 쓰러진 것이 아니다
+    assert any(
+        기록.get("공격자") == "황금 고블린" and 기록.get("행동") == "도망쳤다!"
+        for 기록 in 상태["전투상태"]["로그"]
+    )
+    assert gf.전투_결과_정리(상태) == "적도망"
+    assert 상태["전투_전리품"] is None and 상태["전투_보상"] is None
+    assert 상태["소지품"]["골드"] == 골드
+    assert gf.전투_종료_문구(상태, "적도망") == ["적이 도망쳤다!"]
+
+
+def test_다른_적을_잡았으면_황금_고블린이_도망쳐도_승리_전리품은_잡은_적_것만():
+    상태, 황금 = _황금_전투(["고블린", "황금 고블린"])
+    고블린 = next(p for p in gf.적_목록(상태) if p is not 황금)
+    damage.피해_적용(상태["전투상태"], 고블린, 10**6, 피해감소무시=True)
+    _도망칠_때까지_턴_넘기기(상태, 황금)
+    assert 황금["도망"]
+    assert gf.전투_결과_정리(상태) == "아군승리"
+    전리품 = 상태["전투_전리품"]
+    assert 0 <= 전리품["골드"] <= 10  # 고블린 1~10만(황금 고블린의 300 없음)
+    언커먼 = {
+        이름
+        for 탭 in 상태["상점카탈로그"]["장비"].values()
+        for 이름, d in 탭.items()
+        if d.get("레어도") == "언커먼"
+    }
+    assert not {이름 for 이름, _ in 전리품["아이템"]} & 언커먼
+    assert not set(gf.전투_보상_칸(상태)) & 언커먼  # 보상 후보도 고블린 드랍표뿐
+
+
+def test_황금_고블린을_잡으면_레벨x100_골드와_언커먼_장비_하나():
+    상태, 황금 = _황금_전투(["황금 고블린"], 레벨=3)
+    support.강제_승리(상태)
+    assert gf.전투_결과_정리(상태) == "아군승리"
+    전리품 = 상태["전투_전리품"]
+    assert 전리품["골드"] == 300
+    ((이름, 개수),) = 전리품["아이템"]
+    assert 개수 == 1
+    레어도 = {
+        n: d.get("레어도")
+        for 탭 in 상태["상점카탈로그"]["장비"].values()
+        for n, d in 탭.items()
+    }
+    assert 레어도[이름] == "언커먼"
+    assert all(칸 and 레어도[칸] == "언커먼" for 칸 in gf.전투_보상_칸(상태))
+
+
+def test_인카운트는_1퍼센트로_한_마리를_황금_고블린으로_바꾼다(monkeypatch):
+    상태 = 새게임()
+    gf.던전_진입(상태, _던전(1))
+    던전상태 = 상태["던전상태"]
+    던전상태["걸음수"] = 999  # 인카운트 확률 100%
+    assert map_system.인카운트_교체확률 == 0.01
+    값 = iter([0.0, 0.0])  # 인카운트 판정, 교체 판정(< 0.01)
+    monkeypatch.setattr(map_system.random, "random", lambda: next(값))
+    적 = map_system.인카운트_판정(던전상태)["등장몬스터"]
+    assert 적.count("황금 고블린") == 1
+    값 = iter([0.0, 0.01])  # 교체 판정 실패
+    monkeypatch.setattr(map_system.random, "random", lambda: next(값))
+    assert "황금 고블린" not in map_system.인카운트_판정(던전상태)["등장몬스터"]
 
 
 def _아군_차례로(상태, 직업):
