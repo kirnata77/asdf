@@ -711,19 +711,36 @@ class 전투화면(Screen):
     # -------------------------------------------------
 
     def _전투종료_처리(self):
-        앱 = App.get_running_app()
-        결과 = 앱.게임상태["전투상태"]["종료"]
-        self.안내라벨.text = f"전투 종료: {결과}"
-        self.액션틀.clear_widgets()
-
-        확인버튼 = Button(text="확인")
-        확인버튼.bind(on_release=self._전투종료_확인)
-        self.액션틀.add_widget(확인버튼)
-
-    def _전투종료_확인(self, *args):
+        """전투가 끝나면 결과를 정리하고(승리면 전리품 지급) 결과 팝업을 띄운다.
+        [확인]을 누르면 마을/던전으로 돌아간다."""
         앱 = App.get_running_app()
         결과 = gameflow.전투_결과_정리(앱.게임상태)
+        줄들 = gameflow.전투_종료_문구(앱.게임상태, 결과)
+        self.안내라벨.text = 줄들[0]
+        self.액션틀.clear_widgets()
 
+        안내 = Label(text="\n".join(줄들), halign="center")
+        확인버튼 = Button(text="확인", size_hint=(1, None), height=dp(48))
+        뒤로키_버튼(확인버튼)
+        본문 = BoxLayout(orientation="vertical", spacing=12, padding=12)
+        본문.add_widget(안내)
+        본문.add_widget(확인버튼)
+        팝업 = Popup(
+            title="전투 종료",
+            content=본문,
+            size_hint=(0.7, min(0.8, 0.25 + 0.05 * len(줄들))),
+            auto_dismiss=False,
+        )
+
+        def 확인(*_):
+            팝업.dismiss()
+            self._전투종료_이동(결과)
+
+        확인버튼.bind(on_release=확인)
+        팝업.open()
+
+    def _전투종료_이동(self, 결과):
+        앱 = App.get_running_app()
         if 결과 == "적승리":
             # 이번 프로토타입에는 별도의 부활/페널티 시스템이 없다
             # (town_system.휴식_처리의 주석 참고 - "마을에 도착한 것

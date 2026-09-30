@@ -133,6 +133,7 @@
     "player_system": "game.system.player_system",
     "save_system": "game.system.save_system",
     "shop_system": "game.system.shop_system",
+    "loot_system": "game.system.loot_system",
     "quest_system": "game.system.quest_system",
     "town_system": "game.system.town_system",
     "character_data_system": "game.system.character_data_system",

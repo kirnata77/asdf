@@ -7,7 +7,8 @@
 tests/는 kivy 없이 gameflow 이하만 검사한다. 화면(game/screens) 코드를 바꿨다면 이것을
 돌려 확인한다(CLAUDE.md 완료 기준 3). 레벨 10 파티를 만들어 다음을 실제로 호출한다:
 파티 구성 이름칸(6자 제한), 상점 구매/판매 목록, 능력치 배분 팝업, 장비 교체 팝업/상세보기, 뒤로 키, 전투 화면 스킬 팝업과 스킬별 실제 타겟(4직업 전 스킬),
-적반복지정(썬더콜링) 선택 - 은신 대상 거부 포함, 도망(구속이면 막힘 팝업, 실패하면 턴 종료).
+적반복지정(썬더콜링) 선택 - 은신 대상 거부 포함, 도망(구속이면 막힘 팝업, 실패하면 턴 종료),
+전투 종료 팝업(승리 전리품/없음, 도망, 패배).
 예외가 나면 종료코드 1.
 스크린샷 기본 폴더: ui_smoke_shots/ (.gitignore에 들어 있다).
 """
@@ -278,6 +279,93 @@ class 스모크앱(main.DnfMobileApp):
         ), "도망에 실패하면 턴이 넘어가야 한다"
         결과["단계"].append("도망 실패 -> 현재 캐릭터 턴 종료")
         _찍기("battle_after_flee_fail")
+
+        # 전투 종료 팝업: 승리(전리품) -> 던전, 도망 -> 던전, 패배 -> 마을
+        def 팝업글():
+            return [
+                w.text
+                for 팝업 in list(Window.children)[:-1]
+                for w in 팝업.walk(restrict=True)
+                if hasattr(w, "text")
+            ]
+
+        def 확인_누르기():
+            버튼 = next(
+                w
+                for 팝업 in list(Window.children)[:-1]
+                for w in 팝업.walk(restrict=True)
+                if getattr(w, "text", None) == "확인"
+            )
+            버튼.dispatch("on_release")
+
+        _팝업_닫기()
+        gf.던전_진입(상태, "map_01A_D01_Lorien")
+        for 몬스터들, 끝내기, 첫줄, 전리품줄, 도착, 사진 in (
+            (
+                ["고블린", "겁쟁이 고블린"],
+                support.강제_승리,
+                "전투 승리!",
+                True,
+                "던전",
+                "battle_end_win",
+            ),
+            (["힐가브"], support.강제_승리, "전투 승리!", False, "던전", None),
+            (
+                ["타우 아미"],
+                lambda s: flow.전투이탈_시도(s["전투상태"], gf.아군_목록(s)[0]),
+                "도망쳤다!",
+                None,
+                "던전",
+                None,
+            ),
+            (
+                ["타우 아미"],
+                support.강제_패배,
+                "전투 패배!",
+                None,
+                "마을",
+                "battle_end_lose",
+            ),
+        ):
+            gf._전투_시작(상태, 몬스터들, 레벨=6, 차수=2)  # 시작 반응에 안 쓰러지게
+            support.반응_처리(상태)
+            매니저.current = "전투"
+            전투.갱신(신규=True)
+            yield 0.3
+            # 체력 1 몬스터(힐가브)는 전투시작 반응에 쓰러져 이미 팝업이 떠 있을 수 있다
+            if 상태["전투상태"] is not None:
+                if 첫줄 == "도망쳤다!":
+                    원래 = dice_utils.random.randint
+                    dice_utils.random.randint = lambda a, b: 20
+                    try:
+                        끝내기(상태)
+                    finally:
+                        dice_utils.random.randint = 원래
+                else:
+                    끝내기(상태)
+                전투.갱신()
+            yield 0.5
+            글 = next(
+                t
+                for t in 팝업글()
+                if t.split("\n")[0] in ("전투 승리!", "도망쳤다!", "전투 패배!")
+            )
+            줄들 = 글.split("\n")
+            assert 줄들[0] == 첫줄, 글
+            if 전리품줄 is True:
+                assert 줄들[1] == "전리품" and len(줄들) >= 3 and "없음" not in 줄들, 글
+            elif 전리품줄 is False:
+                assert 줄들[1:3] == ["전리품", "없음"], 글
+            else:
+                assert "전리품" not in 줄들, 글
+            if 사진:
+                _찍기(사진)
+            확인_누르기()
+            yield 0.5
+            assert 매니저.current == 도착, 매니저.current
+            if 도착 == "마을":
+                gf.던전_진입(상태, "map_01A_D01_Lorien")
+        결과["단계"].append("전투 종료 팝업(승리 전리품/없음, 도망, 패배)")
 
 
 if __name__ == "__main__":
