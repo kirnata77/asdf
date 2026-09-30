@@ -12,6 +12,7 @@ import pytest
 import gameflow as gf
 from game.system.combat import flow
 from game.system import dice_utils
+from game.system import skill_system as ss
 from tests import support
 from tests.support import 보스_처치, 새게임, 성장, 연결로_나가기
 
@@ -194,19 +195,81 @@ def test_패배하면_기록없이_HP0으로_돌아오고_휴식으로_회복():
     assert gf.파티_판정대표(상태, "근력")["직업"] == "귀검사"
 
 
-@pytest.mark.parametrize("d20,성공", [(20, True), (1, False)])
-def test_도망(monkeypatch, d20, 성공):
-    상태 = 새게임()
+def _도망_전투(상태, 직업="귀검사"):
+    """던전 1 첫 오브젝트로 전투를 열고 직업의 아군 차례로 맞춘다."""
     gf.던전_진입(상태, _던전(1))
     위치, 오브젝트 = next(iter(상태["던전상태"]["맵정보"]["오브젝트"].items()))
     gf.오브젝트_상호작용(상태, 위치, 오브젝트)
     support.반응_처리(상태)
-    대표 = gf.파티_최고능력치_참가자(상태, "민첩")
-    assert 대표["원본"]["직업"] == "거너"  # 민첩 주스탯
+    전투상태 = 상태["전투상태"]
+    현재 = next(p for p in gf.아군_목록(상태) if p["원본"]["직업"] == 직업)
+    전투상태["현재턴"] = 전투상태["참가자"].index(현재)
+    flow._턴_시작_처리(전투상태, 현재)
+    return 전투상태, 현재
+
+
+@pytest.mark.parametrize("d20,성공", [(20, True), (1, False)])
+def test_도망은_현재_턴_캐릭터가_굴린다(monkeypatch, d20, 성공):
+    상태 = 새게임()
+    전투상태, 현재 = _도망_전투(상태, "귀검사")  # 민첩 최고는 거너 - 대표가 아니다
     monkeypatch.setattr(dice_utils.random, "randint", lambda a, b: d20)
     결과, 굴림, 난이도 = gf.아군_도망시도(상태)
     assert 결과 is 성공
     assert gf.전투_종료됨(상태) is 성공
+    시도로그 = next(
+        기록 for 기록 in reversed(전투상태["로그"]) if "도망" in 기록.get("행동", "")
+    )
+    assert 시도로그["공격자"] == 현재["이름"]
+    민첩 = gf.stats.유효_능력치_보정치(전투상태, 현재, "민첩")
+    assert 굴림 == d20 + 민첩
+
+
+def test_도망에_실패하면_현재_캐릭터의_턴이_끝난다(monkeypatch):
+    상태 = 새게임()
+    전투상태, 현재 = _도망_전투(상태, "귀검사")
+    monkeypatch.setattr(dice_utils.random, "randint", lambda a, b: 1)
+    # 비교용: 같은 상태에서 도망 판정만 하고 [턴 넘기기]를 직접 누른 결과
+    복제 = copy.deepcopy(상태)
+    복제전투 = 복제["전투상태"]
+    random.seed(7)  # 몬스터 대상 고르기 등 randint 밖의 무작위도 맞춘다
+    flow.전투이탈_시도(복제전투, 복제전투["참가자"][복제전투["현재턴"]])
+    gf.턴_넘기기(복제)
+
+    random.seed(7)
+    assert gf.아군_도망시도(상태)[0] is False
+    지금 = 전투상태["참가자"][전투상태["현재턴"]]
+    assert 지금 is not 현재
+    assert 지금["진영"] == "아군" or 전투상태["종료"] is not None
+    assert 전투상태["현재턴"] == 복제전투["현재턴"]
+    assert 전투상태["라운드"] == 복제전투["라운드"]
+    assert 전투상태["로그"] == 복제전투["로그"]
+
+
+def test_파티_중_한_명이라도_구속이면_도망칠_수_없다():
+    상태 = 새게임()
+    전투상태, 현재 = _도망_전투(상태, "귀검사")
+    assert gf.도망_막는_상태이상(상태) == []
+    거너 = next(p for p in gf.아군_목록(상태) if p["원본"]["직업"] == "거너")
+    ss._상태이상_부여(전투상태, 거너, "구속", 2, None)
+    assert gf.도망_막는_상태이상(상태) == [(거너["이름"], ["구속"])]
+    로그 = list(전투상태["로그"])
+    with pytest.raises(ValueError, match="도망 칠 수 없습니다"):
+        gf.아군_도망시도(상태)
+    # 시도하지 않았으므로 굴림도, 턴 변화도 없다
+    assert 전투상태["로그"] == 로그
+    assert 전투상태["참가자"][전투상태["현재턴"]] is 현재
+    # 쓰러진 아군의 구속은 막지 않는다
+    거너["생존"] = False
+    assert gf.도망_막는_상태이상(상태) == []
+
+
+def test_도망은_아군_차례에만():
+    상태 = 새게임()
+    전투상태, _ = _도망_전투(상태)
+    적 = next(p for p in 전투상태["참가자"] if p["진영"] == "적")
+    전투상태["현재턴"] = 전투상태["참가자"].index(적)
+    with pytest.raises(ValueError, match="아군 차례"):
+        gf.아군_도망시도(상태)
 
 
 def test_도망_생존자가_없으면_오류():
