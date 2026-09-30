@@ -90,6 +90,20 @@ class 스모크앱(main.DnfMobileApp):
         _찍기("party_create_name6")
         결과["단계"].append("파티 구성 이름칸(안내 문구, 6자 제한)")
 
+        # 이름이 겹치면 시작하지 않고 안내 줄에 알린다(B4)
+        파티생성 = 매니저.get_screen("파티생성")
+        파티생성.슬롯목록[1]["참여토글"].state = "down"
+        파티생성.슬롯목록[0]["이름입력"].text = "철수"
+        파티생성.슬롯목록[1]["이름입력"].text = "철수"
+        이전상태 = self.게임상태
+        파티생성._시작()
+        assert 매니저.current == "파티생성", 매니저.current
+        assert "겹칩니다" in 파티생성.안내라벨.text, 파티생성.안내라벨.text
+        assert self.게임상태 is 이전상태
+        yield 0.3
+        _찍기("party_create_duplicate")
+        결과["단계"].append("파티 구성 이름 중복 -> 시작 안 함")
+
         매니저.current = "상점"
         상점 = 매니저.get_screen("상점")
         상점._대분류_그리기("구매")

@@ -337,7 +337,11 @@ class 파티생성화면(Screen):
             파티구성.append((슬롯["이름입력"].text, 슬롯["직업스피너"].text))
 
         앱 = App.get_running_app()
-        앱.게임상태 = gameflow.새_게임_시작(파티구성)
+        try:
+            앱.게임상태 = gameflow.새_게임_시작(파티구성)
+        except ValueError as 오류:  # 이름 중복 - 시작하지 않고 알려 준다
+            self.안내라벨.text = str(오류)
+            return
         self.manager.get_screen("마을").갱신()
         self.manager.current = "마을"
 
