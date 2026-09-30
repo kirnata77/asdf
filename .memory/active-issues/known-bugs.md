@@ -6,8 +6,7 @@
 
 - **B1 도망 무비용 무한 재시도 - 미수정(사용자 지시로 보류)**. 도망에 비용을 쓸지/실패하면
   턴을 끝낼지는 게임 규칙 결정이다. 상세는 [`docs/review_refactor_prep.md`](../../docs/review_refactor_prep.md).
-  (B2~B12는 브랜치 `claude/bug-fixes`에서 고쳤다 - 경위는 `sessions/2026-09-30-bug-fixes.md`.
-  그 브랜치가 main에 병합되기 전까지 main에는 아직 버그가 그대로 있다.)
+  (B2~B12는 `claude/bug-fixes`에서 고쳐 PR #3으로 main에 병합됐다 - 경위는 `sessions/2026-09-30-bug-fixes.md`.)
 - **R1 세이브가 앱 소스 폴더에 저장됨** - 업데이트 시 소실 가능, 실기기 확인 필요. R2~R4도 보고서 참고.
 
 ## 사용자 결정 대기 (2026-09-29 질문함, 아래 "데이터" 절의 상세 참고)
