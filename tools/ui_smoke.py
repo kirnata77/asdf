@@ -6,7 +6,7 @@
 
 tests/는 kivy 없이 gameflow 이하만 검사한다. 화면(game/screens) 코드를 바꿨다면 이것을
 돌려 확인한다(CLAUDE.md 완료 기준 3). 레벨 10 파티를 만들어 다음을 실제로 호출한다:
-상점 구매/판매 목록, 능력치 배분 팝업, 전투 화면 스킬 팝업과 스킬별 실제 타겟(4직업 전 스킬),
+파티 구성 이름칸(6자 제한), 상점 구매/판매 목록, 능력치 배분 팝업, 전투 화면 스킬 팝업과 스킬별 실제 타겟(4직업 전 스킬),
 적반복지정(썬더콜링) 선택 - 은신 대상 거부 포함. 예외가 나면 종료코드 1.
 스크린샷 기본 폴더: ui_smoke_shots/ (.gitignore에 들어 있다).
 """
@@ -77,6 +77,17 @@ class 스모크앱(main.DnfMobileApp):
         gf.파티_최대치로_회복(상태)
         self.게임상태 = 상태
         매니저 = self.root
+
+        매니저.current = "파티생성"
+        이름칸 = 매니저.get_screen("파티생성").슬롯목록[0]["이름입력"]
+        assert 이름칸.hint_text == f"이름최대{gf.캐릭터명_최대길이}자", 이름칸.hint_text
+        yield 0.5
+        _찍기("party_create_hint")
+        이름칸.text = "가나다라마바사아"
+        assert 이름칸.text == "가나다라마바", 이름칸.text
+        yield 0.3
+        _찍기("party_create_name6")
+        결과["단계"].append("파티 구성 이름칸(안내 문구, 6자 제한)")
 
         매니저.current = "상점"
         상점 = 매니저.get_screen("상점")

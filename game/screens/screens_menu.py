@@ -211,9 +211,10 @@ class 파티생성화면(Screen):
         가운데.add_widget(번호라벨)
 
         입력줄 = BoxLayout(orientation="horizontal", spacing=dp(6), size_hint=(1, 0.3))
+        최대길이 = gameflow.캐릭터명_최대길이
         슬롯["이름입력"] = TextInput(
             text="",
-            hint_text="이름",
+            hint_text=f"이름최대{최대길이}자",
             multiline=False,
             font_size="15sp",
             background_normal="",
@@ -223,8 +224,18 @@ class 파티생성화면(Screen):
             foreground_color=(1, 1, 1, 1),
             hint_text_color=(0.5, 0.52, 0.57, 1),
             cursor_color=(1, 1, 1, 1),
-            padding=(dp(8), dp(8)),
-            size_hint=(0.5, 1),
+            padding=(dp(6), 0),
+            size_hint=(0.6, 1),
+        )
+        # 칸 높이가 글자 한 줄보다 크게 남지 않아서, 위아래 여백을 고정값으로
+        # 주면 글자가 잘린다. 남는 높이를 위아래로 나눠 글자를 가운데 둔다.
+        슬롯["이름입력"].bind(
+            height=lambda inst, h: setattr(
+                inst, "padding", (dp(6), max(0, (h - inst.line_height) / 2), dp(6), 0)
+            ),
+            text=lambda inst, 값: (
+                setattr(inst, "text", 값[:최대길이]) if len(값) > 최대길이 else None
+            ),
         )
         입력줄.add_widget(슬롯["이름입력"])
         슬롯["직업스피너"] = Spinner(
@@ -234,7 +245,7 @@ class 파티생성화면(Screen):
             background_normal="",
             background_disabled_normal="",
             background_color=(0.3, 0.31, 0.35, 1),
-            size_hint=(0.5, 1),
+            size_hint=(0.4, 1),
         )
         슬롯["직업스피너"].bind(text=lambda inst, 값, 슬=슬롯: self._카드_갱신(슬))
         입력줄.add_widget(슬롯["직업스피너"])
