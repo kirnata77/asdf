@@ -448,6 +448,69 @@ def test_패배와_도망은_전리품_없이_한_줄():
     assert gf.전투_종료_문구(상태, "전투이탈") == ["도망쳤다!"]
 
 
+def test_승리하면_전투_보상_3칸에서_하나를_받는다(monkeypatch):
+    상태 = 새게임()
+    _전투_열기(상태, ["고블린", "고블린"])
+    monkeypatch.setattr(
+        gf.loot_system, "보상_뽑기", lambda 후보: [후보[0][0], 후보[25][0], 후보[3][0]]
+    )
+    support.강제_승리(상태)
+    gf.전투_결과_정리(상태)
+    # 고블린 두 마리 = 커먼장비A군 25종이 두 번 -> 0번과 25번은 같은 아이템
+    칸 = gf.전투_보상_칸(상태)
+    assert 칸[0] == 칸[1] == "찢어진 천갑 상의" and 칸[2] == "녹슨 중갑 상의"
+    assert gf.전투_보상_대기중(상태)
+    보유 = 상태["소지품"]["장비"].get("녹슨 중갑 상의", 0)
+    골드 = 상태["소지품"]["골드"]
+    assert gf.전투_보상_받기(상태, 2) == "녹슨 중갑 상의"
+    assert 상태["소지품"]["장비"]["녹슨 중갑 상의"] == 보유 + 1
+    assert 상태["소지품"]["골드"] == 골드
+    assert not gf.전투_보상_대기중(상태)
+    with pytest.raises(ValueError, match="받을 전투 보상"):
+        gf.전투_보상_받기(상태, 0)  # 한 번만
+    with pytest.raises(ValueError, match="받을 전투 보상"):
+        gf.전투_보상_포기(상태)
+
+
+def test_전투_보상_빈칸과_포기하면_10골드():
+    상태 = 새게임()
+    _전투_열기(상태, ["힐가브"])  # 드랍표 "미정" -> 후보 0개
+    support.강제_승리(상태)
+    gf.전투_결과_정리(상태)
+    assert gf.전투_보상_칸(상태) == [None, None, None]
+    assert gf.전투_보상_대기중(상태)
+    with pytest.raises(ValueError, match="빈칸"):
+        gf.전투_보상_받기(상태, 1)
+    with pytest.raises(ValueError, match="빈칸"):
+        gf.전투_보상_받기(상태, 5)
+    골드 = 상태["소지품"]["골드"]
+    assert gf.전투_보상_포기(상태) == 10
+    assert 상태["소지품"]["골드"] == 골드 + 10
+    assert not gf.전투_보상_대기중(상태)
+
+
+def test_패배와_도망에는_전투_보상이_없다():
+    상태 = 새게임()
+    _전투_열기(상태, ["고블린"])
+    support.강제_패배(상태)
+    gf.전투_결과_정리(상태)
+    assert 상태["전투_보상"] is None and not gf.전투_보상_대기중(상태)
+    assert gf.전투_보상_칸(상태) == [None, None, None]
+
+
+def test_카탈로그에_없는_이름은_보상_후보에서_뺀다(monkeypatch):
+    상태 = 새게임()
+    _전투_열기(상태, ["고블린"])
+    monkeypatch.setattr(
+        gf.loot_system,
+        "보상_후보목록",
+        lambda *_: [("없는 아이템", 5), ("조잡한 반지", 1)],
+    )
+    support.강제_승리(상태)
+    gf.전투_결과_정리(상태)
+    assert gf.전투_보상_칸(상태) == ["조잡한 반지", None, None]
+
+
 def _아군_차례로(상태, 직업):
     전투상태 = 상태["전투상태"]
     현재 = next(p for p in gf.아군_목록(상태) if p["원본"]["직업"] == 직업)

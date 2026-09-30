@@ -86,6 +86,75 @@ class _테두리박스(ButtonBehavior, BoxLayout):
         self._테두리.width = self._기본두께 * 2.5 if 켜짐 else self._기본두께
 
 
+class _전투보상팝업(Popup):
+    """전투 보상 - 큰 테두리 박스 안에 왼쪽/중앙/오른쪽 세 박스(아이템 이름,
+    빈칸은 비워 둔다). 박스를 누르고 [선택]으로 받는다. 중앙 박스 아래
+    [포기하기(10골드)]는 고르지 않는 대신 골드를 받는다. 닫기 버튼은 없다.
+    받거나 포기하면 완료()를 부른다."""
+
+    def __init__(self, 칸목록, 완료, **kwargs):
+        self._완료 = 완료
+        self._고른칸 = None
+        self._박스들 = []
+
+        본문 = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(8))
+        큰박스 = _테두리박스(
+            _박스_테두리색, orientation="vertical", padding=dp(10), spacing=dp(8)
+        )
+        박스줄 = BoxLayout(orientation="horizontal", spacing=dp(8))
+        for 번호, 이름 in enumerate(칸목록):
+            박스 = _테두리박스(_박스_테두리색, 기본두께=1.2)
+            라벨 = Label(text=이름 or "", halign="center", valign="middle")
+            라벨.bind(size=lambda inst, sz: setattr(inst, "text_size", sz))
+            박스.add_widget(라벨)
+            if 이름 is None:
+                박스.disabled = True
+            else:
+                박스.bind(on_release=lambda _b, n=번호: self._칸_선택(n))
+            박스줄.add_widget(박스)
+            self._박스들.append(박스)
+        큰박스.add_widget(박스줄)
+
+        포기줄 = BoxLayout(orientation="horizontal", spacing=dp(8), size_hint_y=None)
+        포기줄.height = dp(48)
+        포기줄.add_widget(Widget())
+        포기버튼 = Button(text=f"포기하기({gameflow.보상_포기_골드}골드)")
+        포기버튼.bind(on_release=lambda *_: self._포기())
+        포기줄.add_widget(포기버튼)
+        포기줄.add_widget(Widget())
+        큰박스.add_widget(포기줄)
+        본문.add_widget(큰박스)
+
+        self._선택버튼 = Button(
+            text="선택", size_hint_y=None, height=dp(48), disabled=True
+        )
+        self._선택버튼.bind(on_release=lambda *_: self._받기())
+        본문.add_widget(self._선택버튼)
+
+        kwargs.setdefault("title", "전투 보상")
+        kwargs.setdefault("size_hint", (0.9, 0.5))
+        kwargs.setdefault("auto_dismiss", False)
+        super().__init__(content=본문, **kwargs)
+
+    def _칸_선택(self, 번호):
+        self._고른칸 = 번호
+        for n, 박스 in enumerate(self._박스들):
+            박스.현재턴_표시(n == 번호)
+        self._선택버튼.disabled = False
+
+    def _받기(self):
+        if self._고른칸 is None:
+            return
+        gameflow.전투_보상_받기(App.get_running_app().게임상태, self._고른칸)
+        self.dismiss()
+        self._완료()
+
+    def _포기(self):
+        gameflow.전투_보상_포기(App.get_running_app().게임상태)
+        self.dismiss()
+        self._완료()
+
+
 class _스킬선택팝업(Popup):
     """ "스킬" 버튼을 누르면 뜨는 목록 팝업(액션 버튼 5칸 고정 레이아웃이라
     화면에 스킬 목록을 펼칠 자리가 없다)."""
@@ -771,11 +840,31 @@ class 전투화면(Screen):
         뒤로키_버튼(확인버튼)
         본문 = BoxLayout(orientation="vertical", spacing=12, padding=12)
         본문.add_widget(안내)
+
+        # 승리하면 [확인] 위에 [전투 보상] - 받거나 포기하기 전에는 [확인]을 잠근다
+        보상대기 = gameflow.전투_보상_대기중(앱.게임상태)
+        if 보상대기:
+            보상버튼 = Button(text="전투 보상", size_hint=(1, None), height=dp(48))
+            확인버튼.disabled = True
+
+            def 보상끝():
+                보상버튼.disabled = True
+                확인버튼.disabled = False
+
+            보상버튼.bind(
+                on_release=lambda *_: _전투보상팝업(
+                    gameflow.전투_보상_칸(앱.게임상태), 보상끝
+                ).open()
+            )
+            본문.add_widget(보상버튼)
         본문.add_widget(확인버튼)
         팝업 = Popup(
             title="전투 종료",
             content=본문,
-            size_hint=(0.7, min(0.8, 0.25 + 0.05 * len(줄들))),
+            size_hint=(
+                0.7,
+                min(0.85, 0.25 + 0.05 * len(줄들) + (0.08 if 보상대기 else 0)),
+            ),
             auto_dismiss=False,
         )
 
