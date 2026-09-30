@@ -18,13 +18,13 @@ from kivy.uix.popup import Popup
 from kivy.uix.image import Image
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.metrics import dp
-from kivy.graphics import Color, Line
+from kivy.core.image import Image as CoreImage
+from kivy.graphics import Color, Line, Rectangle
 
 import gameflow
 from game.screens.screens_common import (
     _캐릭터이미지_경로,
     _에셋_경로,
-    _도트_필터,
     뒤로키_버튼,
 )
 
@@ -58,6 +58,18 @@ def _가운데정렬_채우기(틀, 위젯목록):
 
 # 상태/그래픽/배경 박스 테두리 색 - 전부 흰색 테두리로 통일한다.
 _박스_테두리색 = (1, 1, 1, 1)
+
+
+_텍스처_모음 = {}
+
+
+def _텍스처(경로):
+    """몬스터 그림 텍스처(경로별로 한 번만 읽는다). 도트 그림이라 확대는 nearest."""
+    if 경로 not in _텍스처_모음:
+        텍스처 = CoreImage(경로).texture
+        텍스처.mag_filter = "nearest"
+        _텍스처_모음[경로] = 텍스처
+    return _텍스처_모음[경로]
 
 
 class _테두리박스(ButtonBehavior, BoxLayout):
@@ -438,20 +450,44 @@ class 전투화면(Screen):
             상태박스목록.append(상태박스)
 
             그래픽박스 = _테두리박스(_박스_테두리색, size_hint_x=_박스_비율)
-            # 몬스터 데이터의 "이미지"(game/assets/monster/)를 띄운다.
-            # 지정이 없거나 파일이 없으면 빈 이미지로 자리만 둔다.
-            경로 = _에셋_경로("monster", 적["원본"].get("이미지"))
-            if 경로:
-                이미지 = Image(allow_stretch=True, source=경로)
-                _도트_필터(이미지)
-            else:
-                이미지 = Image(allow_stretch=True)
-            그래픽박스.add_widget(이미지)
+            그래픽박스.bind(pos=self._적그림_예약, size=self._적그림_예약)
             그래픽박스목록.append(그래픽박스)
 
         # 적이 5마리보다 적으면 칸 사이 간격이 넓어져 가운데로 모인다.
         _가운데정렬_채우기(self.적상태틀, 상태박스목록)
         _가운데정렬_채우기(self.적그래픽행, 그래픽박스목록)
+
+        # 그림은 칸 안이 아니라 적 그래픽 줄 위층(canvas.after)에 그린다 - 대형이 옆 칸을
+        # 넘을 수 있고, 그리는 순서로 앞뒤를 정한다(gameflow.적_그리기_순서).
+        self._적그림목록 = [
+            (
+                그래픽박스목록[번호],
+                _에셋_경로("monster", 적["원본"].get("이미지")),
+                gameflow.적_표시_배율(적),
+            )
+            for 번호, 적 in gameflow.적_그리기_순서(적목록)
+        ]
+        self._적그림_예약()
+
+    def _적그림_예약(self, *_):
+        Clock.unschedule(self._적그림_그리기)
+        Clock.schedule_once(self._적그림_그리기, 0)
+
+    def _적그림_그리기(self, *_):
+        """몬스터 그림을 칸에 맞춘 크기(중형 1배)에 크기 배율을 곱해, 칸 바닥
+        가운데(발바닥)에 맞춰 그린다. 지정이 없거나 파일이 없으면 빈 칸."""
+        캔버스 = self.적그래픽행.canvas.after
+        캔버스.clear()
+        with 캔버스:
+            Color(1, 1, 1, 1)
+            for 칸, 경로, 배율 in getattr(self, "_적그림목록", []):
+                if not 경로:
+                    continue
+                텍스처 = _텍스처(경로)
+                tw, th = 텍스처.size
+                맞춤 = min(칸.width / tw, 칸.height / th) * 배율
+                w, h = tw * 맞춤, th * 맞춤
+                Rectangle(texture=텍스처, pos=(칸.center_x - w / 2, 칸.y), size=(w, h))
 
     def _아군_박스_갱신(self, 게임상태, 현재참가자):
         self.아군상태틀.clear_widgets()
