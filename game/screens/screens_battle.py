@@ -441,7 +441,11 @@ class 전투화면(Screen):
             상태박스.add_widget(
                 self._중앙정렬_라벨(
                     f"{적['이름']}\nHP {적['현재HP']}"
-                    + ("" if 적["생존"] else "\n(쓰러짐)")
+                    + (
+                        ""
+                        if 적["생존"]
+                        else ("\n(도망)" if 적.get("도망") else "\n(쓰러짐)")
+                    )
                 )
             )
             상태박스.disabled = not 적["생존"]
@@ -462,7 +466,10 @@ class 전투화면(Screen):
         self._적그림목록 = [
             (
                 그래픽박스목록[번호],
-                _에셋_경로("monster", 적["원본"].get("이미지")),
+                # 도망친 적은 그림을 지운다(칸은 남긴다)
+                None
+                if 적.get("도망")
+                else _에셋_경로("monster", 적["원본"].get("이미지")),
                 gameflow.적_표시_배율(적),
             )
             for 번호, 적 in gameflow.적_그리기_순서(적목록)
