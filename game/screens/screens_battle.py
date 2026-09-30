@@ -119,6 +119,7 @@ class 전투화면(Screen):
         super().__init__(**kwargs)
         self.선택모드 = None
         self._엔진중 = False
+        self.자동전투 = False  # [자동전투] 켜짐 - 이 전투 동안만(끝나면 꺼진다)
 
         루트 = BoxLayout(orientation="vertical", padding=10, spacing=6)
 
@@ -201,6 +202,7 @@ class 전투화면(Screen):
 
         if 신규:
             self.로그라벨.text = ""
+            self.자동전투 = False
 
         if 게임상태 is None or 게임상태["전투상태"] is None:
             return
@@ -216,13 +218,18 @@ class 전투화면(Screen):
             return
 
         if gameflow.전투_종료됨(게임상태):
+            self.자동전투 = False
             self._전투종료_처리()
             return
 
         아군차례 = gameflow.아군_차례인가(게임상태)
         self._행동버튼_갱신(아군차례, 참가자)
 
-        if 아군차례:
+        if 아군차례 and self.자동전투:
+            self.안내라벨.text = f"{참가자['이름']}의 턴 (자동전투 중...)"
+            # 0초 뒤 - 그 사이 [자동전투 중지] 입력을 받을 수 있게 한 턴씩 끊는다
+            Clock.schedule_once(self._자동전투_진행, 0)
+        elif 아군차례:
             self.안내라벨.text = f"{참가자['이름']}의 턴 - 행동을 선택하세요."
         else:
             self.안내라벨.text = f"{참가자['이름']}의 턴 (자동 진행 중...)"
@@ -492,10 +499,20 @@ class 전투화면(Screen):
         행2.add_widget(도망버튼)
         self.액션틀.add_widget(행2)
 
+        행3 = BoxLayout(orientation="horizontal", spacing=4)
+        자동전투버튼 = Button(text="자동전투 중지" if self.자동전투 else "자동전투")
+        자동전투버튼.bind(on_release=lambda *_: self._자동전투_클릭())
+        행3.add_widget(자동전투버튼)
+
         턴넘기기버튼 = Button(text="턴 넘기기")
-        턴넘기기버튼.disabled = not 아군차례
+        턴넘기기버튼.disabled = not 아군차례 or self.자동전투
         턴넘기기버튼.bind(on_release=lambda *_: self._턴넘기기_클릭())
-        self.액션틀.add_widget(턴넘기기버튼)
+        행3.add_widget(턴넘기기버튼)
+        self.액션틀.add_widget(행3)
+
+        if self.자동전투:  # 자동전투 중에는 [자동전투 중지]만 누를 수 있다
+            for 버튼 in (일반공격버튼, 스킬버튼, 아이템버튼, 도망버튼):
+                버튼.disabled = True
 
     def _스킬_버튼_클릭(self, 참가자):
         """ "스킬" 버튼 - 보유 스킬 목록을 팝업(_스킬선택팝업)으로 띄운다."""
@@ -638,6 +655,36 @@ class 전투화면(Screen):
             self.갱신()
 
         self._엔진_실행(감싼작업, 완료)
+
+    # -------------------------------------------------
+    # 자동전투 - 아군 차례마다 무작위 적을 일반공격, 못 하면 턴 넘기기.
+    # 반응은 자동 사용, 대기 없이 한 턴씩 이어서 진행한다.
+    # -------------------------------------------------
+
+    def _자동전투_클릭(self):
+        self.자동전투 = not self.자동전투
+        self.선택모드 = None
+        self.갱신()
+
+    def _자동전투_진행(self, *_):
+        앱 = App.get_running_app()
+        게임상태 = 앱.게임상태
+        if (
+            not self.자동전투
+            or self._엔진중
+            or 게임상태 is None
+            or 게임상태["전투상태"] is None
+            or gameflow.전투_종료됨(게임상태)
+            or not gameflow.아군_차례인가(게임상태)
+        ):
+            return
+        게임상태["전투상태"]["반응선택"] = None  # 반응 자동 사용
+        try:
+            gameflow.자동전투_한_턴(게임상태)
+        except ValueError as 오류:
+            self.자동전투 = False
+            self.안내라벨.text = str(오류)
+        self.갱신()
 
     def _턴넘기기_클릭(self):
         앱 = App.get_running_app()

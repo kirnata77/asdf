@@ -8,7 +8,7 @@ tests/는 kivy 없이 gameflow 이하만 검사한다. 화면(game/screens) 코�
 돌려 확인한다(CLAUDE.md 완료 기준 3). 레벨 10 파티를 만들어 다음을 실제로 호출한다:
 파티 구성 이름칸(6자 제한), 상점 구매/판매 목록, 능력치 배분 팝업, 장비 교체 팝업/상세보기, 뒤로 키, 전투 화면 스킬 팝업과 스킬별 실제 타겟(4직업 전 스킬),
 적반복지정(썬더콜링) 선택 - 은신 대상 거부 포함, 도망(구속이면 막힘 팝업, 실패하면 턴 종료),
-전투 종료 팝업(승리 전리품/없음, 도망, 패배).
+전투 종료 팝업(승리 전리품/없음, 도망, 패배), 자동전투(켜기/중지/끝까지).
 예외가 나면 종료코드 1.
 스크린샷 기본 폴더: ui_smoke_shots/ (.gitignore에 들어 있다).
 """
@@ -366,6 +366,52 @@ class 스모크앱(main.DnfMobileApp):
             if 도착 == "마을":
                 gf.던전_진입(상태, "map_01A_D01_Lorien")
         결과["단계"].append("전투 종료 팝업(승리 전리품/없음, 도망, 패배)")
+
+        # 자동전투: 켜면 [자동전투 중지]로 바뀌고 다른 행동 버튼은 잠긴다. 중지하면 풀린다.
+        def 버튼(글):
+            return next(
+                w
+                for w in 전투.액션틀.walk(restrict=True)
+                if getattr(w, "text", None) == 글
+            )
+
+        def 아군_차례로_맞추기():
+            p = next(x for x in gf.아군_목록(상태) if x["생존"])
+            상태["전투상태"]["현재턴"] = 상태["전투상태"]["참가자"].index(p)
+            flow._턴_시작_처리(상태["전투상태"], p)
+
+        gf._전투_시작(상태, ["타우 아미", "타우 아미"], 레벨=6, 차수=2)
+        support.반응_처리(상태)
+        매니저.current = "전투"
+        아군_차례로_맞추기()
+        전투.갱신(신규=True)
+        yield 0.3
+        버튼("자동전투").dispatch("on_release")
+        assert 전투.자동전투
+        중지 = 버튼("자동전투 중지")
+        assert all(
+            버튼(글).disabled
+            for 글 in ("일반공격", "스킬", "아이템", "도망", "턴 넘기기")
+        )
+        중지.dispatch("on_release")  # 첫 턴이 돌기 전에(0초 예약) 중지
+        yield 0.3
+        assert not 전투.자동전투 and 버튼("자동전투")
+        if not gf.전투_종료됨(상태) and 상태["전투상태"] is not None:
+            assert not 버튼("일반공격").disabled or not gf.아군_차례인가(상태)
+        결과["단계"].append("자동전투 켜기 -> 버튼 잠금 -> 중지")
+
+        # 다시 켜면 전투가 끝날 때까지 스스로 진행한다(결과 팝업이 뜬다)
+        if 상태["전투상태"] is not None:
+            버튼("자동전투").dispatch("on_release")
+            for _ in range(100):
+                if 상태["전투상태"] is None:
+                    break
+                yield 0.2
+            assert 상태["전투상태"] is None, "자동전투가 전투를 끝내지 못했다"
+            assert not 전투.자동전투
+            _찍기("battle_auto_end")
+            _팝업_닫기()
+        결과["단계"].append("자동전투로 전투 끝까지 진행 -> 결과 팝업")
 
 
 if __name__ == "__main__":
