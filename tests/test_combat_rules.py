@@ -9,7 +9,15 @@ import random
 import pytest
 
 import gameflow as gf
-from game.system.combat import damage, flow, formula, participants, resources, status
+from game.system.combat import (
+    damage,
+    flow,
+    formula,
+    participants,
+    resources,
+    stats,
+    status,
+)
 from game.system import dice_utils, skill_system as ss
 from tests import support
 
@@ -590,3 +598,21 @@ def test_같은_이름_몬스터는_A_B_C로_구분하고_번호로_찾는다(�
     결과 = ss.스킬_실행(전투상태, p, "넥 업 사이드", 넥업, 중심대상=적[2])
     assert 결과["1단계"]["타격"][0]["대상"] == "고블린 C"
     assert [t["대상"] for t in 결과["2단계"]["타격"]] == ["고블린 C"]
+
+
+def test_버프_수식은_건_사람_기준으로_걸_때_한번_굴린다(전장, monkeypatch):
+    # B10: 수식의 주문시전보정치/차수를 버프를 받은 쪽 기준으로 계산했다(몬스터는 항상 0).
+    # B11: 1d(...)를 조회할 때마다 새로 굴려 명중/피해/상세화면 값이 매번 달랐다.
+    # 사용자 결정: 건 사람(시전자) 기준, 걸 때 한 번 굴려 고정.
+    _, 전투상태, 적, 아군 = 전장
+    마법사 = next(p for p in 아군 if p["원본"]["직업"] == "마법사")
+    귀검사 = next(p for p in 아군 if p["원본"]["직업"] == "귀검사")
+    보정치 = stats.주문시전_보정치(전투상태, 마법사)
+    assert 보정치 > 0 and stats.주문시전_보정치(전투상태, 귀검사) == 0
+    _주사위고정(monkeypatch, 3)
+    ss.이름있는효과_부여(전투상태, 귀검사, "공격력증가", 시전자=마법사)
+    ss.이름있는효과_부여(전투상태, 적[0], "공격력감소", 시전자=마법사)
+    _주사위고정(monkeypatch, 1)  # 조회 때 다시 굴리면 값이 바뀐다
+    for _ in range(3):
+        assert stats.버프디버프_수치(전투상태, 귀검사, "데미지보너스") == 3 + 보정치
+        assert stats.버프디버프_수치(전투상태, 적[0], "데미지보너스") == -(3 + 보정치)
