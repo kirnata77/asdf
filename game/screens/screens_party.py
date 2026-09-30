@@ -15,6 +15,7 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.popup import Popup
 from kivy.uix.image import Image
 from kivy.metrics import dp
+from kivy.graphics import Color, Line
 from kivy.utils import escape_markup
 
 import gameflow
@@ -29,6 +30,7 @@ from game.screens.screens_common import (
     _캐릭터이미지_경로,
     _평면버튼,
     _흐린글자색,
+    뒤로키_버튼,
 )
 
 
@@ -88,6 +90,7 @@ class 파티관리화면(Screen):
             height=dp(56),
             font_size="16sp",
         )
+        뒤로키_버튼(뒤로버튼)
         뒤로버튼.bind(on_release=self._뒤로_클릭)
         루트.add_widget(뒤로버튼)
 
@@ -313,6 +316,7 @@ class 파티관리화면(Screen):
             목록틀.add_widget(행)
 
         닫기버튼 = Button(text="취소", size_hint=(1, 0.1))
+        뒤로키_버튼(닫기버튼)
         닫기버튼.bind(on_release=lambda *_: 팝업.dismiss())
         본문.add_widget(닫기버튼)
         팝업.open()
@@ -443,6 +447,7 @@ class 파티관리화면(Screen):
             목록틀.add_widget(행)
 
         닫기버튼 = Button(text="취소", size_hint=(1, 0.1))
+        뒤로키_버튼(닫기버튼)
         닫기버튼.bind(on_release=lambda *_: 팝업.dismiss())
         본문.add_widget(닫기버튼)
 
@@ -494,9 +499,10 @@ _장비창_오른쪽 = [
 
 
 def _아이템_요약(아이템):
+    """상세보기에 쓰는 전체 효과 - 항목마다 한 줄씩."""
     조각 = []
     if 아이템.get("무기공격력"):
-        조각.append(f"공격 {아이템['무기공격력']}")
+        조각.append(f"무기 공격력 {아이템['무기공격력']}")
     if 아이템.get("재질"):
         조각.append(아이템["재질"])
     for 키, 표시 in (
@@ -511,7 +517,92 @@ def _아이템_요약(아이템):
     for 스탯, 값 in (아이템.get("스탯보너스") or {}).items():
         if 값:
             조각.append(f"{스탯}{값:+d}")
-    return " ".join(조각)
+    return "\n".join(조각)
+
+
+def _아이템_간단요약(아이템, 슬롯):
+    """교체 팝업 칸에 쓰는 짧은 요약 - 무기는 공격력, 방어구(장비창 왼쪽
+    5종)는 AC(0이어도 표시), 나머지 부위는 비운다. 전체는 [상세보기]."""
+    if 슬롯 == "무기":
+        return f"무기 공격력 {아이템.get('무기공격력') or 0}"
+    if 슬롯 in _장비창_왼쪽:
+        값 = 아이템.get("AC보너스", 0)
+        return f"AC {값 if isinstance(값, (int, float)) else 0}"
+    return ""
+
+
+class _테두리상자(BoxLayout):
+    """테두리를 그린 가로 상자 - 교체 팝업에서 장비 칸끼리 구분한다."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        with self.canvas.before:
+            Color(0.45, 0.47, 0.52, 1)
+            self._테두리 = Line(width=dp(1))
+        self.bind(pos=self._다시그리기, size=self._다시그리기)
+
+    def _다시그리기(self, *args):
+        self._테두리.rectangle = (
+            self.x + 1,
+            self.y + 1,
+            max(self.width - 2, 0),
+            max(self.height - 2, 0),
+        )
+
+
+def _아이템_상세_팝업(아이템, 사유=None):
+    효과 = _아이템_요약(아이템) or "(효과 없음)"
+    글 = f"[b]{escape_markup(아이템['이름'])}[/b]\n\n{escape_markup(효과)}"
+    if 사유:
+        글 += f"\n\n[color=e05555]{escape_markup(사유)}[/color]"
+    본문 = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(10))
+    스크롤 = ScrollView(size_hint=(1, 1))
+    스크롤.add_widget(_줄바꿈_라벨(글, font_size="15sp"))
+    본문.add_widget(스크롤)
+    닫기 = Button(text="닫기", size_hint=(1, None), height=dp(48))
+    뒤로키_버튼(닫기)
+    본문.add_widget(닫기)
+    팝업 = Popup(title="상세보기", content=본문, size_hint=(0.9, 0.5))
+    닫기.bind(on_release=lambda *_: 팝업.dismiss())
+    팝업.open()
+
+
+def _장비_칸(아이템, 슬롯, 글머리="", 수량=None, 사유=None, 선택=None):
+    """테두리 칸 하나: 왼쪽은 이름+간단요약(선택이 있으면 누르면 교체),
+    오른쪽은 [상세보기]. 사유(착용 불가)가 있으면 칸을 누를 수 없다."""
+    칸 = _테두리상자(
+        orientation="horizontal",
+        size_hint=(1, None),
+        height=dp(104),
+        padding=dp(6),
+        spacing=dp(6),
+    )
+    이름 = escape_markup(아이템["이름"]) + (f" x{수량}" if 수량 is not None else "")
+    요약 = _아이템_간단요약(아이템, 슬롯)
+    글 = f"{글머리}[b]{이름}[/b]" + (f"\n{요약}" if 요약 else "")
+    if 사유:
+        글 += "\n[size=12sp][color=e05555]착용 불가[/color][/size]"
+    공통 = dict(
+        text=글,
+        markup=True,
+        font_size="15sp",
+        halign="left",
+        valign="middle",
+        size_hint=(0.72, 1),
+    )
+    if 선택 is None:
+        왼쪽 = Label(**공통)
+    else:
+        왼쪽 = Button(disabled=bool(사유), **공통)
+        왼쪽.bind(on_release=lambda *_: 선택())
+    왼쪽.bind(
+        size=lambda inst, size: setattr(inst, "text_size", (size[0] - dp(12), size[1]))
+    )
+    칸.add_widget(왼쪽)
+    상세 = Button(text="상세보기", font_size="14sp", size_hint=(0.28, 1))
+    상세.bind(on_release=lambda *_: _아이템_상세_팝업(아이템, 사유))
+    칸.add_widget(상세)
+    return 칸
 
 
 def _줄바꿈_라벨(글, **kwargs):
@@ -532,10 +623,12 @@ def _장비교체_팝업(캐릭터, 슬롯, 완료콜백):
     후보 = gameflow.장비_교체_후보(게임상태, 캐릭터, 슬롯)
 
     본문 = BoxLayout(orientation="vertical", spacing=6, padding=10)
-    현재글 = f"현재: {현재['이름']}  {_아이템_요약(현재)}" if 현재 else "현재: (없음)"
-    본문.add_widget(Label(text=현재글, size_hint=(1, 0.08)))
+    if 현재:
+        본문.add_widget(_장비_칸(현재, 슬롯, 글머리="[color=9ea6b3]현재[/color]  "))
+    else:
+        본문.add_widget(Label(text="현재: (없음)", size_hint=(1, None), height=dp(48)))
     안내 = Label(text="", size_hint=(1, 0.08))
-    목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=4)
+    목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(6))
     목록틀.bind(minimum_height=목록틀.setter("height"))
     스크롤 = ScrollView(size_hint=(1, 0.64))
     스크롤.add_widget(목록틀)
@@ -573,28 +666,22 @@ def _장비교체_팝업(캐릭터, 슬롯, 완료콜백):
             )
         )
     for 아이템, 수량, 착용가능, 사유 in 후보:
-        글 = f"{아이템['이름']} x{수량}  {_아이템_요약(아이템)}"
-        if not 착용가능:
-            글 += f"\n({사유})"
-        버튼 = Button(
-            text=글,
-            size_hint=(1, None),
-            height=64 if not 착용가능 else 52,
-            disabled=not 착용가능,
-            halign="left",
-            valign="middle",
+        목록틀.add_widget(
+            _장비_칸(
+                아이템,
+                슬롯,
+                수량=수량,
+                사유=None if 착용가능 else 사유,
+                선택=lambda n=아이템["이름"]: 교체(n),
+            )
         )
-        버튼.bind(
-            size=lambda inst, size: setattr(inst, "text_size", (size[0] - 20, None))
-        )
-        버튼.bind(on_release=lambda inst, n=아이템["이름"]: 교체(n))
-        목록틀.add_widget(버튼)
 
     아래 = BoxLayout(orientation="horizontal", size_hint=(1, 0.12), spacing=6)
     해제버튼 = Button(text="해제", disabled=(현재 is None or 슬롯 == "무기"))
     해제버튼.bind(on_release=해제)
     아래.add_widget(해제버튼)
     취소버튼 = Button(text="취소")
+    뒤로키_버튼(취소버튼)
     취소버튼.bind(on_release=lambda *_: 팝업.dismiss())
     아래.add_widget(취소버튼)
     본문.add_widget(아래)
@@ -637,6 +724,7 @@ class 파티원화면(Screen):
         루트.add_widget(self.본문)
 
         뒤로버튼 = Button(text="뒤로", size_hint=(1, 0.08))
+        뒤로키_버튼(뒤로버튼)
         뒤로버튼.bind(on_release=self._뒤로_클릭)
         루트.add_widget(뒤로버튼)
         self.add_widget(루트)
@@ -775,6 +863,7 @@ class 파티원화면(Screen):
             auto_dismiss=False,
         )
         닫기 = Button(text="닫기", size_hint=(1, 0.12))
+        뒤로키_버튼(닫기)
         닫기.bind(on_release=lambda *_: 팝업.dismiss())
         본문.add_widget(닫기)
         팝업.open()

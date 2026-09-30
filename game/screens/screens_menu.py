@@ -28,6 +28,7 @@ from game.screens.screens_common import (
     _흐린글자색,
     설정_불러오기,
     설정_저장,
+    뒤로키_버튼,
 )
 
 
@@ -162,6 +163,7 @@ class 파티생성화면(Screen):
         뒤로버튼 = _평면버튼(
             "뒤로", (0.3, 0.31, 0.35, 1), font_size="16sp", size_hint=(0.35, 1)
         )
+        뒤로키_버튼(뒤로버튼)
         뒤로버튼.bind(
             on_release=lambda *_: setattr(self.manager, "current", "메인메뉴")
         )
@@ -211,9 +213,10 @@ class 파티생성화면(Screen):
         가운데.add_widget(번호라벨)
 
         입력줄 = BoxLayout(orientation="horizontal", spacing=dp(6), size_hint=(1, 0.3))
+        최대길이 = gameflow.캐릭터명_최대길이
         슬롯["이름입력"] = TextInput(
             text="",
-            hint_text="이름",
+            hint_text=f"이름최대{최대길이}자",
             multiline=False,
             font_size="15sp",
             background_normal="",
@@ -223,8 +226,18 @@ class 파티생성화면(Screen):
             foreground_color=(1, 1, 1, 1),
             hint_text_color=(0.5, 0.52, 0.57, 1),
             cursor_color=(1, 1, 1, 1),
-            padding=(dp(8), dp(8)),
-            size_hint=(0.5, 1),
+            padding=(dp(6), 0),
+            size_hint=(0.6, 1),
+        )
+        # 칸 높이가 글자 한 줄보다 크게 남지 않아서, 위아래 여백을 고정값으로
+        # 주면 글자가 잘린다. 남는 높이를 위아래로 나눠 글자를 가운데 둔다.
+        슬롯["이름입력"].bind(
+            height=lambda inst, h: setattr(
+                inst, "padding", (dp(6), max(0, (h - inst.line_height) / 2), dp(6), 0)
+            ),
+            text=lambda inst, 값: (
+                setattr(inst, "text", 값[:최대길이]) if len(값) > 최대길이 else None
+            ),
         )
         입력줄.add_widget(슬롯["이름입력"])
         슬롯["직업스피너"] = Spinner(
@@ -234,7 +247,7 @@ class 파티생성화면(Screen):
             background_normal="",
             background_disabled_normal="",
             background_color=(0.3, 0.31, 0.35, 1),
-            size_hint=(0.5, 1),
+            size_hint=(0.4, 1),
         )
         슬롯["직업스피너"].bind(text=lambda inst, 값, 슬=슬롯: self._카드_갱신(슬))
         입력줄.add_widget(슬롯["직업스피너"])
@@ -324,7 +337,11 @@ class 파티생성화면(Screen):
             파티구성.append((슬롯["이름입력"].text, 슬롯["직업스피너"].text))
 
         앱 = App.get_running_app()
-        앱.게임상태 = gameflow.새_게임_시작(파티구성)
+        try:
+            앱.게임상태 = gameflow.새_게임_시작(파티구성)
+        except ValueError as 오류:  # 이름 중복 - 시작하지 않고 알려 준다
+            self.안내라벨.text = str(오류)
+            return
         self.manager.get_screen("마을").갱신()
         self.manager.current = "마을"
 
@@ -357,6 +374,7 @@ class _슬롯목록화면(Screen):
         루트.add_widget(self.안내라벨)
 
         뒤로버튼 = Button(text="뒤로", size_hint=(1, 0.1))
+        뒤로키_버튼(뒤로버튼)
         뒤로버튼.bind(
             on_release=lambda *_: setattr(self.manager, "current", self.돌아갈화면)
         )
@@ -470,6 +488,7 @@ class 옵션화면(Screen):
         루트.add_widget(설정틀)
         self._반응자동_변경(self.반응자동버튼, self.반응자동버튼.state)
         뒤로버튼 = Button(text="뒤로", size_hint=(1, 0.2))
+        뒤로키_버튼(뒤로버튼)
         뒤로버튼.bind(
             on_release=lambda *_: setattr(self.manager, "current", "메인메뉴")
         )

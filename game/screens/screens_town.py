@@ -23,6 +23,7 @@ from game.screens.screens_common import (
     _캐릭터이미지_경로,
     _에셋_경로,
     _도트_필터,
+    뒤로키_버튼,
 )
 
 
@@ -241,6 +242,7 @@ class 모험단화면(Screen):
         루트.add_widget(프로필틀)
 
         뒤로버튼 = Button(text="◀ 마을로", size_hint=(1, 0.12))
+        뒤로키_버튼(뒤로버튼)
         뒤로버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "마을"))
         루트.add_widget(뒤로버튼)
 
@@ -329,6 +331,7 @@ class 마을이동목록화면(Screen):
         루트.add_widget(self.안내라벨)
 
         뒤로버튼 = Button(text="뒤로", size_hint=(1, 0.1))
+        뒤로키_버튼(뒤로버튼)
         뒤로버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "마을"))
         루트.add_widget(뒤로버튼)
 
@@ -422,6 +425,7 @@ class 상점화면(Screen):
         self.내용틀.add_widget(판매버튼)
 
         나가기버튼 = Button(text="나가기", font_size=_버튼_폰트크기)
+        뒤로키_버튼(나가기버튼)
         나가기버튼.bind(on_release=self._나가기)
         self.내용틀.add_widget(나가기버튼)
 
@@ -439,6 +443,7 @@ class 상점화면(Screen):
             orientation="horizontal", size_hint=(1, None), height=_버튼_높이
         )
         뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
+        뒤로키_버튼(뒤로버튼)
         뒤로버튼.bind(on_release=lambda *_: self._메인_그리기())
         상단.add_widget(뒤로버튼)
         상단.add_widget(Label(text=모드, size_hint=(0.68, 1)))
@@ -460,6 +465,7 @@ class 상점화면(Screen):
             orientation="horizontal", size_hint=(1, None), height=_버튼_높이
         )
         뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
+        뒤로키_버튼(뒤로버튼)
         뒤로버튼.bind(on_release=lambda *_, m=모드: self._대분류_그리기(m))
         상단.add_widget(뒤로버튼)
         self.내용틀.add_widget(상단)
@@ -476,6 +482,7 @@ class 상점화면(Screen):
             orientation="horizontal", size_hint=(1, None), height=_버튼_높이
         )
         뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
+        뒤로키_버튼(뒤로버튼)
         뒤로버튼.bind(on_release=lambda *_: self._대분류_그리기(모드))
         상단.add_widget(뒤로버튼)
         상단.add_widget(Label(text=f"{모드} - {대분류}", size_hint=(0.68, 1)))
@@ -652,6 +659,7 @@ class 상점화면(Screen):
             내용틀.add_widget(라벨)
 
         닫기버튼 = Button(text="닫기", size_hint=(1, None), height=_버튼_높이)
+        뒤로키_버튼(닫기버튼)
         본문.add_widget(닫기버튼)
 
         팝업 = Popup(

@@ -20,16 +20,20 @@ def 파티원_추가(파티, 캐릭터):
     이미 있으면 ValueError를 낸다."""
     if len(파티["파티원"]) >= 파티_최대인원:
         raise ValueError(f"파티는 최대 {파티_최대인원}명까지만 구성할 수 있다.")
-    if 캐릭터 in 파티["파티원"]:
+    # "in"은 딕셔너리 값 비교(==)라 이름/직업이 같은 새 캐릭터 둘을 같은
+    # 캐릭터로 본다(B4). 같은 객체인지(is)로 비교한다.
+    if any(c is 캐릭터 for c in 파티["파티원"]):
         raise ValueError(f"'{캐릭터.get('캐릭터명')}'은(는) 이미 파티에 있다.")
     파티["파티원"].append(캐릭터)
 
 
 def 파티원_제거(파티, 캐릭터):
     """파티에서 캐릭터를 뺀다. 파티에 없으면 ValueError를 낸다."""
-    if 캐릭터 not in 파티["파티원"]:
-        raise ValueError(f"'{캐릭터.get('캐릭터명')}'은(는) 파티에 없다.")
-    파티["파티원"].remove(캐릭터)
+    for i, c in enumerate(파티["파티원"]):
+        if c is 캐릭터:
+            del 파티["파티원"][i]
+            return
+    raise ValueError(f"'{캐릭터.get('캐릭터명')}'은(는) 파티에 없다.")
 
 
 def 생존자_목록(파티):
