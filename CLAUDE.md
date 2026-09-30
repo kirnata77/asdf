@@ -133,6 +133,8 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 - **CI가 초록이 되면 병합한다.** 병합 실행은 위 가드레일대로 그 순간 사용자 확인을 받는다.
 - **병합된 브랜치는 끝난 것이다.** 후속 작업은 최신 `main`에서 새로 시작한다(병합된 브랜치에
   커밋을 더 쌓지 않는다).
+- **`claude/*` 브랜치는 PR이 병합되면 자동으로 지워진다**(`.github/workflows/delete-merged-claude-branch.yml`).
+  다른 이름의 브랜치와 병합 없이 닫힌 PR의 브랜치는 그대로 둔다 - 지우려면 가드레일대로 그 순간 확인을 받는다.
 
 ### 커밋 - 한 작업 = 한 커밋, 게이트 통과 후
 
