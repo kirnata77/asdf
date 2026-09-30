@@ -233,7 +233,7 @@ class 스모크앱(main.DnfMobileApp):
         yield 0.3
         글들 = [b.text for b in 대상버튼들()]
         assert len(글들) == len(적) + 1 and 글들[-1] == "취소", 글들
-        assert all(글.startswith(p["이름"]) for 글, p in zip(글들, 적)), 글들
+        assert 글들[:-1] == [p["이름"] for p in 적], 글들
         _찍기("battle_target_popup")
         뒤로()
         yield 0.3
@@ -254,6 +254,8 @@ class 스모크앱(main.DnfMobileApp):
         assert 전투.선택모드[0] == "반복지정", 전투.선택모드
         적 = [x for x in 전투상태["참가자"] if x["진영"] == "적" and x["생존"]]
         gf.skill_system._상태이상_부여(전투상태, 적[1], "은신", 3, None)
+        yield 0.3
+        _찍기("battle_target_popup_repeat")
         대상버튼들()[1].trigger_action(duration=0)
         assert "지정할 수 없는" in 전투.안내라벨.text, 전투.안내라벨.text
         while 전투.선택모드 and 전투.선택모드[0] == "반복지정":

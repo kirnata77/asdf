@@ -205,7 +205,7 @@ class _대상선택팝업(Popup):
 
         목록 = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(6))
         for 적 in 적목록:
-            버튼 = Button(text=f"{적['이름']}  (HP {적['현재HP']})")
+            버튼 = Button(text=적["이름"])
             버튼.bind(on_release=lambda inst, p=적: self._선택(p))
             목록.add_widget(버튼)
         취소버튼 = Button(
@@ -216,7 +216,7 @@ class _대상선택팝업(Popup):
         목록.add_widget(취소버튼)
 
         kwargs.setdefault("title", 제목)
-        kwargs.setdefault("size_hint", (0.7, None))
+        kwargs.setdefault("size_hint", (0.35, None))
         kwargs.setdefault("height", dp(110 + 54 * (len(적목록) + 1)))
         kwargs.setdefault("auto_dismiss", False)
         super().__init__(content=목록, **kwargs)
