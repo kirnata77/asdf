@@ -20,6 +20,7 @@ import gameflow
 from game.screens.screens_common import (
     _캐릭터이미지_경로,
     _에셋_경로,
+    뒤로키_버튼,
 )
 
 
@@ -303,6 +304,7 @@ class 던전목록화면(Screen):
         루트.add_widget(self.안내라벨)
 
         뒤로버튼 = Button(text="뒤로", size_hint=(1, 0.1))
+        뒤로키_버튼(뒤로버튼)
         뒤로버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "마을"))
         루트.add_widget(뒤로버튼)
 

@@ -15,6 +15,8 @@ from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.widget import Widget
 from kivy.uix.popup import Popup
+from kivy.uix.modalview import ModalView
+from kivy.uix.dropdown import DropDown
 from kivy.uix.image import Image
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.metrics import dp
@@ -271,3 +273,47 @@ def _평면버튼(글, 색, **kwargs):
         background_color=색,
         **kwargs,
     )
+
+
+# =====================================================
+# 핸드폰 [뒤로] 키
+# =====================================================
+# 안드로이드 [뒤로] 키는 Kivy에 키코드 27로 들어오고, 그대로 두면 앱이
+# 최소화된다. 대신 화면/팝업의 취소·닫기·뒤로 버튼을 누른 것과 같게
+# 동작시키고, 그런 버튼이 없는 곳(메인메뉴, 마을, 던전, 전투, 꼭 골라야
+# 하는 팝업)에서는 아무 일도 하지 않는다. 대상 버튼은 만들 때
+# 뒤로키_버튼()으로 표시해 둔다. main.py가 창의 on_keyboard에 연결한다.
+
+
+def 뒤로키_버튼(버튼):
+    """[뒤로] 키를 누르면 이 버튼을 누른 것과 같게 동작하도록 표시한다."""
+    버튼.뒤로키 = True
+    return 버튼
+
+
+def _뒤로키_버튼_찾기(위젯):
+    for 자식 in 위젯.walk(restrict=True):
+        if getattr(자식, "뒤로키", False) and not 자식.disabled:
+            return 자식
+    return None
+
+
+def 뒤로키_처리(창, 키, *args):
+    if 키 != 27:
+        return False
+    맨위 = 창.children[0] if 창.children else None
+    if isinstance(맨위, DropDown):
+        맨위.dismiss()
+    elif isinstance(맨위, ModalView):
+        # 표시된 버튼이 없는 팝업은, 바깥을 눌러 닫을 수 있는 것만 닫는다
+        # (auto_dismiss=False이면서 취소 버튼도 없는 팝업은 꼭 골라야 하는 창).
+        버튼 = _뒤로키_버튼_찾기(맨위)
+        if 버튼 is not None:
+            버튼.trigger_action(duration=0)
+        elif 맨위.auto_dismiss:
+            맨위.dismiss()
+    else:
+        버튼 = _뒤로키_버튼_찾기(App.get_running_app().root.current_screen)
+        if 버튼 is not None:
+            버튼.trigger_action(duration=0)
+    return True

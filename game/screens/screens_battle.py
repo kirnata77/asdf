@@ -25,6 +25,7 @@ from game.screens.screens_common import (
     _캐릭터이미지_경로,
     _에셋_경로,
     _도트_필터,
+    뒤로키_버튼,
 )
 
 
@@ -657,6 +658,7 @@ class 전투화면(Screen):
         버튼틀 = BoxLayout(orientation="horizontal", size_hint=(1, 0.3), spacing=8)
         예버튼 = Button(text="예")
         아니오버튼 = Button(text="아니오")
+        뒤로키_버튼(아니오버튼)
         버튼틀.add_widget(예버튼)
         버튼틀.add_widget(아니오버튼)
 

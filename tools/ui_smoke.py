@@ -6,7 +6,7 @@
 
 tests/는 kivy 없이 gameflow 이하만 검사한다. 화면(game/screens) 코드를 바꿨다면 이것을
 돌려 확인한다(CLAUDE.md 완료 기준 3). 레벨 10 파티를 만들어 다음을 실제로 호출한다:
-파티 구성 이름칸(6자 제한), 상점 구매/판매 목록, 능력치 배분 팝업, 장비 교체 팝업/상세보기, 전투 화면 스킬 팝업과 스킬별 실제 타겟(4직업 전 스킬),
+파티 구성 이름칸(6자 제한), 상점 구매/판매 목록, 능력치 배분 팝업, 장비 교체 팝업/상세보기, 뒤로 키, 전투 화면 스킬 팝업과 스킬별 실제 타겟(4직업 전 스킬),
 적반복지정(썬더콜링) 선택 - 은신 대상 거부 포함. 예외가 나면 종료코드 1.
 스크린샷 기본 폴더: ui_smoke_shots/ (.gitignore에 들어 있다).
 """
@@ -132,6 +132,46 @@ class 스모크앱(main.DnfMobileApp):
         _찍기("equip_detail")
         _팝업_닫기()
         결과["단계"].append("장비 교체 팝업(무기/상의) + 상세보기")
+        yield 0.3
+
+        # 핸드폰 [뒤로] 키(27): 맨 위 팝업의 취소/닫기 -> 화면의 뒤로/나가기 순
+        def 뒤로():
+            Window.dispatch("on_keyboard", 27, 0, None, [])
+
+        def 팝업수():
+            return sum(hasattr(w, "dismiss") for w in Window.children)
+
+        screens_party._장비교체_팝업(귀검사, "무기", lambda: None)
+        screens_party._아이템_상세_팝업(무기)
+        yield 0.5
+        assert 팝업수() == 2, 팝업수()
+        뒤로()
+        yield 0.5
+        assert 팝업수() == 1, "상세보기만 닫혀야 한다"
+        뒤로()
+        yield 0.5
+        assert 팝업수() == 0 and 매니저.current == "파티원", 매니저.current
+        매니저.get_screen("파티원").복귀화면 = "파티관리"
+        매니저.get_screen("파티관리").복귀화면 = "마을"
+        뒤로()
+        assert 매니저.current == "파티관리", 매니저.current
+        뒤로()
+        assert 매니저.current == "마을", 매니저.current
+        뒤로()
+        assert 매니저.current == "마을", "마을에서는 아무 일도 없어야 한다"
+        상점 = 매니저.get_screen("상점")
+        상점.복귀화면 = "마을"
+        매니저.current = "상점"
+        상점._대분류_그리기("구매")
+        뒤로()
+        글들 = [w.text for w in 상점.내용틀.walk(restrict=True) if hasattr(w, "text")]
+        assert "나가기" in 글들 and 매니저.current == "상점", 글들
+        뒤로()
+        assert 매니저.current == "마을", 매니저.current
+        매니저.current = "메인메뉴"
+        뒤로()
+        assert 매니저.current == "메인메뉴", 매니저.current
+        결과["단계"].append("뒤로 키(팝업 겹침/파티원/파티관리/마을/상점/메인메뉴)")
 
         gf._전투_시작(상태, ["타우 아미", "고블린", "고블린"], 레벨=6, 차수=2)
         support.반응_처리(상태)

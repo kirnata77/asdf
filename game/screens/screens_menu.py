@@ -28,6 +28,7 @@ from game.screens.screens_common import (
     _흐린글자색,
     설정_불러오기,
     설정_저장,
+    뒤로키_버튼,
 )
 
 
@@ -162,6 +163,7 @@ class 파티생성화면(Screen):
         뒤로버튼 = _평면버튼(
             "뒤로", (0.3, 0.31, 0.35, 1), font_size="16sp", size_hint=(0.35, 1)
         )
+        뒤로키_버튼(뒤로버튼)
         뒤로버튼.bind(
             on_release=lambda *_: setattr(self.manager, "current", "메인메뉴")
         )
@@ -368,6 +370,7 @@ class _슬롯목록화면(Screen):
         루트.add_widget(self.안내라벨)
 
         뒤로버튼 = Button(text="뒤로", size_hint=(1, 0.1))
+        뒤로키_버튼(뒤로버튼)
         뒤로버튼.bind(
             on_release=lambda *_: setattr(self.manager, "current", self.돌아갈화면)
         )
@@ -481,6 +484,7 @@ class 옵션화면(Screen):
         루트.add_widget(설정틀)
         self._반응자동_변경(self.반응자동버튼, self.반응자동버튼.state)
         뒤로버튼 = Button(text="뒤로", size_hint=(1, 0.2))
+        뒤로키_버튼(뒤로버튼)
         뒤로버튼.bind(
             on_release=lambda *_: setattr(self.manager, "current", "메인메뉴")
         )

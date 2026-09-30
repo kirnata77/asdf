@@ -30,6 +30,7 @@ from game.screens.screens_common import (
     _캐릭터이미지_경로,
     _평면버튼,
     _흐린글자색,
+    뒤로키_버튼,
 )
 
 
@@ -89,6 +90,7 @@ class 파티관리화면(Screen):
             height=dp(56),
             font_size="16sp",
         )
+        뒤로키_버튼(뒤로버튼)
         뒤로버튼.bind(on_release=self._뒤로_클릭)
         루트.add_widget(뒤로버튼)
 
@@ -314,6 +316,7 @@ class 파티관리화면(Screen):
             목록틀.add_widget(행)
 
         닫기버튼 = Button(text="취소", size_hint=(1, 0.1))
+        뒤로키_버튼(닫기버튼)
         닫기버튼.bind(on_release=lambda *_: 팝업.dismiss())
         본문.add_widget(닫기버튼)
         팝업.open()
@@ -444,6 +447,7 @@ class 파티관리화면(Screen):
             목록틀.add_widget(행)
 
         닫기버튼 = Button(text="취소", size_hint=(1, 0.1))
+        뒤로키_버튼(닫기버튼)
         닫기버튼.bind(on_release=lambda *_: 팝업.dismiss())
         본문.add_widget(닫기버튼)
 
@@ -556,6 +560,7 @@ def _아이템_상세_팝업(아이템, 사유=None):
     스크롤.add_widget(_줄바꿈_라벨(글, font_size="15sp"))
     본문.add_widget(스크롤)
     닫기 = Button(text="닫기", size_hint=(1, None), height=dp(48))
+    뒤로키_버튼(닫기)
     본문.add_widget(닫기)
     팝업 = Popup(title="상세보기", content=본문, size_hint=(0.9, 0.5))
     닫기.bind(on_release=lambda *_: 팝업.dismiss())
@@ -676,6 +681,7 @@ def _장비교체_팝업(캐릭터, 슬롯, 완료콜백):
     해제버튼.bind(on_release=해제)
     아래.add_widget(해제버튼)
     취소버튼 = Button(text="취소")
+    뒤로키_버튼(취소버튼)
     취소버튼.bind(on_release=lambda *_: 팝업.dismiss())
     아래.add_widget(취소버튼)
     본문.add_widget(아래)
@@ -718,6 +724,7 @@ class 파티원화면(Screen):
         루트.add_widget(self.본문)
 
         뒤로버튼 = Button(text="뒤로", size_hint=(1, 0.08))
+        뒤로키_버튼(뒤로버튼)
         뒤로버튼.bind(on_release=self._뒤로_클릭)
         루트.add_widget(뒤로버튼)
         self.add_widget(루트)
@@ -856,6 +863,7 @@ class 파티원화면(Screen):
             auto_dismiss=False,
         )
         닫기 = Button(text="닫기", size_hint=(1, 0.12))
+        뒤로키_버튼(닫기)
         닫기.bind(on_release=lambda *_: 팝업.dismiss())
         본문.add_widget(닫기)
         팝업.open()

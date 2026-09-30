@@ -130,6 +130,7 @@ from game.screens.screens_town import 마을화면, 마을이동목록화면, �
 from game.screens.screens_dungeon import 던전목록화면, 던전화면
 from game.screens.screens_battle import 전투화면
 from game.screens.screens_party import 파티관리화면, 파티원화면
+from game.screens.screens_common import 뒤로키_처리
 
 
 class DnfMobileApp(App):
@@ -154,6 +155,10 @@ class DnfMobileApp(App):
         매니저.add_widget(전투화면(name="전투"))
         매니저.add_widget(모험단화면(name="모험단"))
         매니저.current = "메인메뉴"
+        # 핸드폰 [뒤로] 키 - 앱을 최소화하지 않고 취소/닫기/뒤로로 쓴다.
+        from kivy.core.window import Window
+
+        Window.bind(on_keyboard=뒤로키_처리)
         return 매니저
 
 
