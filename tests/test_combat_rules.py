@@ -174,6 +174,21 @@ def test_사용가능여부_각_사유(전장):
     assert ss.휴식_남은횟수(전투상태, p, _스킬()) is None
 
 
+def test_몬스터에는_MP_칸이_없다(전장):
+    _, 전투상태, 적, 아군 = 전장
+    assert all("현재MP" not in p for p in 적) and all("현재MP" in p for p in 아군)
+    assert all("최대MP" not in d for d in gf.몬스터목록.values())
+    p = 적[0]
+    flow._턴_시작_처리(전투상태, p)
+    # MP가 드는 스킬은 보유 0으로 보고 거부한다
+    가능, 사유 = ss.사용_가능여부(전투상태, p, _스킬(MP소모=1))
+    assert not 가능 and "MP가 부족" in 사유 and "보유 0" in 사유
+    # MP가 안 드는 스킬은 MP 칸 없이도 쓰고 소비해도 MP 칸이 생기지 않는다
+    assert ss.사용_가능여부(전투상태, p, _스킬()) == (True, None)
+    ss.자원_소비_처리(전투상태, p, _스킬())
+    assert "현재MP" not in p
+
+
 def test_사용가능여부_행동자원과_쇼타임(전장):
     _, 전투상태, _, 아군 = 전장
     p = 아군[0]
