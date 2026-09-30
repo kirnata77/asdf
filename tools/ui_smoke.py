@@ -8,7 +8,7 @@ tests/는 kivy 없이 gameflow 이하만 검사한다. 화면(game/screens) 코�
 돌려 확인한다(CLAUDE.md 완료 기준 3). 레벨 10 파티를 만들어 다음을 실제로 호출한다:
 파티 구성 이름칸(6자 제한), 상점 구매/판매 목록, 능력치 배분 팝업, 장비 교체 팝업/상세보기, 뒤로 키, 전투 화면 스킬 팝업과 스킬별 실제 타겟(4직업 전 스킬),
 적반복지정(썬더콜링) 선택 - 은신 대상 거부 포함, 도망(구속이면 막힘 팝업, 실패하면 턴 종료),
-전투 종료 팝업(승리 전리품/없음, 도망, 패배)과 전투 보상(3칸 선택/빈칸 포기), 자동전투(켜기/중지/끝까지).
+전투 종료 팝업(승리 전리품/없음, 도망, 패배)과 전투 보상(3칸 선택/빈칸 포기), 자동전투(켜기/중지/끝까지), 몬스터 크기 배율.
 예외가 나면 종료코드 1.
 스크린샷 기본 폴더: ui_smoke_shots/ (.gitignore에 들어 있다).
 """
@@ -457,6 +457,35 @@ class 스모크앱(main.DnfMobileApp):
             _찍기("battle_auto_end")
             _팝업_닫기()
         결과["단계"].append("자동전투로 전투 끝까지 진행 -> 결과 팝업")
+
+        # 몬스터 크기: 소형 0.75 / 중형 1 / 대형 1.25배, 칸 바닥(발바닥) 맞춤, 대형이 뒤(먼저 그림)
+        from kivy.graphics import Rectangle
+
+        gf._전투_시작(상태, ["고블린", "타우 비스트", "타우 아미"], 레벨=6, 차수=2)
+        support.반응_처리(상태)
+        매니저.current = "전투"
+        전투.갱신(신규=True)
+        yield 0.6
+        적 = gf.적_목록(상태)
+        사각형 = [
+            c for c in 전투.적그래픽행.canvas.after.children if isinstance(c, Rectangle)
+        ]
+        assert len(사각형) == 3, len(사각형)
+        칸들 = [칸 for 칸, _, _ in 전투._적그림목록]
+        for 사각, (칸, 경로, 배율), (_, p) in zip(
+            사각형, 전투._적그림목록, gf.적_그리기_순서(적)
+        ):
+            tw, th = 사각.texture.size
+            맞춤 = min(칸.width / tw, 칸.height / th)
+            assert abs(사각.size[1] - th * 맞춤 * 배율) < 1, (p["이름"], 사각.size)
+            assert abs(사각.pos[1] - 칸.y) < 1  # 발바닥 = 칸 바닥
+            assert abs(사각.pos[0] + 사각.size[0] / 2 - 칸.center_x) < 1
+        assert [p["원본"]["몬스터명"] for _, p in gf.적_그리기_순서(적)][
+            0
+        ] == "타우 비스트"
+        assert len(set(칸들)) == 3
+        _찍기("battle_monster_size")
+        결과["단계"].append("몬스터 크기 배율(소/중/대) + 발바닥 맞춤 + 대형이 뒤")
 
 
 if __name__ == "__main__":

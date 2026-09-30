@@ -9,6 +9,8 @@ import os
 import random
 import re
 
+import pytest
+
 import gameflow as gf
 from game.system.combat import flow
 from game.system import skill_system as ss
@@ -117,3 +119,40 @@ def test_현재참가자_수치와_지정불가():
     assert gf.지정불가_상태인가(상태, 적) is False
     ss._상태이상_부여(상태["전투상태"], 적, "은신", 2, None)
     assert gf.지정불가_상태인가(상태, 적) is True
+
+
+def test_몬스터_크기_분류와_표시_배율():
+    크기 = {n: d.get("크기") for n, d in gf.몬스터목록.items()}
+    for n, d in gf.몬스터목록.items():
+        기대 = {"고블린": "소형", "루가루": "소형", "좀비": "중형", "인간": "중형"}.get(
+            d["분류"]
+        )
+        if d["분류"] == "타우":
+            기대 = "대형" if n in ("타우 비스트", "타우킹 샤우타") else "중형"
+        assert 크기[n] == 기대, (n, d["분류"], 크기[n])
+    p = lambda 원본, 이름="x": {"이름": 이름, "원본": 원본}  # noqa: E731
+    assert [gf.적_표시_배율(p({"크기": k})) for k in ("소형", "중형", "대형")] == [
+        0.75,
+        1.0,
+        1.25,
+    ]
+    assert gf.적_표시_배율(p({})) == 1.0  # 없으면 중형
+    with pytest.raises(ValueError, match="크기"):
+        gf.적_표시_배율(p({"크기": "거대"}))
+
+
+def test_적_그리기_순서는_대형이_뒤_같은_크기는_왼쪽이_앞():
+    적 = [
+        {"이름": n, "원본": {"크기": k}}
+        for n, k in (
+            ("A", "소형"),
+            ("B", "대형"),
+            ("C", "중형"),
+            ("D", "소형"),
+            ("E", "대형"),
+        )
+    ]
+    순서 = [p["이름"] for _, p in gf.적_그리기_순서(적)]
+    # 먼저 그린 것이 뒤: 대형(오른쪽부터) -> 중형 -> 소형(오른쪽부터) - 왼쪽이 마지막(앞)
+    assert 순서 == ["E", "B", "C", "D", "A"]
+    assert [i for i, _ in gf.적_그리기_순서(적)] == [4, 1, 2, 3, 0]
