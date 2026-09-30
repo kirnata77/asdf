@@ -12,7 +12,8 @@ version = 0.1
 # 소스 위치 (최상위에 main.py / gameflow.py / game/ 가 바로 있음)
 source.dir = .
 source.include_exts = py,png,jpg,jpeg,webp,ttf,otf,json,kv,atlas,txt
-source.exclude_dirs = tests, bin, venv, .buildozer, __pycache__
+# 원본: 몬스터 그림을 떼어낼 때 쓴 원본 그림 보관용 - APK에 넣지 않는다
+source.exclude_dirs = tests, bin, venv, .buildozer, __pycache__, 원본
 
 # 필요 패키지
 requirements = python3,kivy

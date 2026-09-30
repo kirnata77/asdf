@@ -1,4 +1,4 @@
-"""몬스터 전수 특성 테스트 - 29종 몬스터의 서로 다른 패턴을 하나씩 강제로 실행한다.
+"""몬스터 전수 특성 테스트 - 28종 몬스터의 서로 다른 패턴을 하나씩 강제로 실행한다.
 
 패턴마다 새 전투(시드 고정)를 열고, 그 몬스터의 턴에 monster_ai.행동_선택이 그
 패턴을 고르게 한 뒤 몬스터_턴_실행 -> 1라운드 더 진행한다(버프 지속, 소환수 행동,
@@ -125,6 +125,6 @@ def test_몬스터_패턴_전수(monkeypatch, 종족, golden):
     golden(f"combat_monsters_{종족}", 결과)
 
 
-def test_몬스터는_29종():
-    assert len(gf.몬스터목록) == 29
-    assert sum(len(v) for v in 종족파일.values()) == 29
+def test_몬스터는_28종():
+    assert len(gf.몬스터목록) == 28
+    assert sum(len(v) for v in 종족파일.values()) == 28
