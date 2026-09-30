@@ -7,7 +7,8 @@
 tests/는 kivy 없이 gameflow 이하만 검사한다. 화면(game/screens) 코드를 바꿨다면 이것을
 돌려 확인한다(CLAUDE.md 완료 기준 3). 레벨 10 파티를 만들어 다음을 실제로 호출한다:
 파티 구성 이름칸(6자 제한), 상점 구매/판매 목록, 능력치 배분 팝업, 장비 교체 팝업/상세보기, 뒤로 키, 전투 화면 스킬 팝업과 스킬별 실제 타겟(4직업 전 스킬),
-적반복지정(썬더콜링) 선택 - 은신 대상 거부 포함. 예외가 나면 종료코드 1.
+적반복지정(썬더콜링) 선택 - 은신 대상 거부 포함, 도망(구속이면 막힘 팝업, 실패하면 턴 종료).
+예외가 나면 종료코드 1.
 스크린샷 기본 폴더: ui_smoke_shots/ (.gitignore에 들어 있다).
 """
 
@@ -28,6 +29,7 @@ from kivy.core.window import Window  # noqa: E402
 
 import gameflow as gf  # noqa: E402
 from game.screens import screens_party  # noqa: E402
+from game.system import dice_utils  # noqa: E402
 from game.system.combat import flow  # noqa: E402
 from tests import support  # noqa: E402
 
@@ -227,6 +229,55 @@ class 스모크앱(main.DnfMobileApp):
         결과["단계"].append("썬더콜링 반복지정(은신 대상 거부 포함)")
         yield 0.5
         _찍기("battle_after_thundercalling")
+
+        # 도망: 파티 중 한 명이라도 구속이면 [도망]이 판정 없이 막힘 팝업을 띄운다
+        현재 = 차례("귀검사")
+        거너 = next(x for x in 전투상태["참가자"] if x["이름"] == "거너")
+        gf.skill_system._상태이상_부여(전투상태, 거너, "구속", 3, None)
+        로그수 = len(전투상태["로그"])
+        전투._도망_클릭()
+        yield 0.5
+        글들 = [
+            w.text
+            for 팝업 in list(Window.children)[:-1]
+            for w in 팝업.walk(restrict=True)
+            if hasattr(w, "text")
+        ]
+        assert "도망 칠 수 없습니다.\n대상 : 거너\n상태이상 : 구속" in 글들, 글들
+        assert "확인" in 글들, 글들
+        _찍기("battle_flee_blocked")
+        뒤로()
+        yield 0.3
+        assert 팝업수() == 0, "확인(뒤로 키)으로 닫혀야 한다"
+        assert (
+            len(전투상태["로그"]) == 로그수
+            and 전투상태["참가자"][전투상태["현재턴"]] is 현재
+        ), "막히면 굴림도 턴 변화도 없다"
+        결과["단계"].append("구속이면 도망 불가 팝업(대상/상태이상/확인)")
+
+        # 구속이 풀리면 확인 팝업 -> 실패 시 현재 캐릭터의 턴이 끝난다
+        거너["상태이상"] = [i for i in 거너["상태이상"] if i["이름"] != "구속"]
+        전투._도망_클릭()
+        yield 0.3
+        예버튼 = next(
+            w
+            for 팝업 in list(Window.children)[:-1]
+            for w in 팝업.walk(restrict=True)
+            if getattr(w, "text", None) == "예"
+        )
+        원래 = dice_utils.random.randint
+        dice_utils.random.randint = lambda a, b: 1
+        try:
+            예버튼.dispatch("on_release")
+            yield 1.0
+        finally:
+            dice_utils.random.randint = 원래
+        assert (
+            전투상태["종료"] is not None
+            or 전투상태["참가자"][전투상태["현재턴"]] is not 현재
+        ), "도망에 실패하면 턴이 넘어가야 한다"
+        결과["단계"].append("도망 실패 -> 현재 캐릭터 턴 종료")
+        _찍기("battle_after_flee_fail")
 
 
 if __name__ == "__main__":

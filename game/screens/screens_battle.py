@@ -653,6 +653,10 @@ class 전투화면(Screen):
     # -------------------------------------------------
 
     def _도망_클릭(self):
+        막힘 = gameflow.도망_막는_상태이상(App.get_running_app().게임상태)
+        if 막힘:
+            self._도망불가_팝업(막힘)
+            return
         확인라벨 = Label(text="도망치시겠습니까?")
 
         버튼틀 = BoxLayout(orientation="horizontal", size_hint=(1, 0.3), spacing=8)
@@ -671,6 +675,28 @@ class 전투화면(Screen):
         )
         예버튼.bind(on_release=lambda *_: self._도망_확인(팝업))
         아니오버튼.bind(on_release=lambda *_: 팝업.dismiss())
+        팝업.open()
+
+    def _도망불가_팝업(self, 막힘):
+        """파티 중 누가 어떤 상태이상 때문에 도망칠 수 없는지 보여준다.
+        [확인]은 닫기만 한다(턴은 그대로)."""
+        줄들 = ["도망 칠 수 없습니다."]
+        for 이름, 상태이상들 in 막힘:
+            줄들.append(f"대상 : {이름}")
+            줄들.append(f"상태이상 : {', '.join(상태이상들)}")
+        안내라벨 = Label(text="\n".join(줄들), halign="center")
+
+        확인버튼 = Button(text="확인", size_hint=(1, 0.3))
+        뒤로키_버튼(확인버튼)
+
+        본문 = BoxLayout(orientation="vertical", spacing=12, padding=12)
+        본문.add_widget(안내라벨)
+        본문.add_widget(확인버튼)
+
+        팝업 = Popup(
+            title="도망", content=본문, size_hint=(0.7, 0.4), auto_dismiss=False
+        )
+        확인버튼.bind(on_release=lambda *_: 팝업.dismiss())
         팝업.open()
 
     def _도망_확인(self, 팝업):
