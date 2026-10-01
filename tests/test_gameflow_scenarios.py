@@ -426,12 +426,7 @@ def test_골드_공식은_레벨_등급_보스와_07에서_13배():
     골드값 = {이름: d["획득골드"] for 이름, d in gf.몬스터목록.items()}
     assert 골드값.pop("황금 고블린") == "50+20×레벨"
     assert set(골드값.values()) == {"공식"}
-    assert {d["적등급"] for d in gf.몬스터목록.values()} <= {
-        "일반",
-        "엘리트",
-        "네임드",
-        "미정",
-    }
+    assert {d["적등급"] for d in gf.몬스터목록.values()} == {"일반", "엘리트", "네임드"}
 
 
 def test_카탈로그에_없는_드랍_아이템은_주지_않는다(monkeypatch):
