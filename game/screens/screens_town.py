@@ -1,5 +1,5 @@
 # =====================
-# 마을 화면 - 마을, 모험단, 마을 이동 목록, 상점
+# 마을 화면 - 마을, 모험단, 마을 이동 목록, 상점, 주점(모험단 숙소)
 # =====================
 # main.py가 game/screens/ 여섯 파일의 화면을 ScreenManager에 등록한다.
 
@@ -12,6 +12,8 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.popup import Popup
 from kivy.uix.image import Image
+from kivy.uix.spinner import Spinner
+from kivy.uix.textinput import TextInput
 
 import gameflow
 from game.screens.screens_common import (
@@ -105,6 +107,10 @@ class 마을화면(Screen):
         상점버튼 = Button(text="상점")
         상점버튼.bind(on_release=self._상점_클릭)
         버튼그리드.add_widget(상점버튼)
+
+        주점버튼 = Button(text="주점")
+        주점버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "주점"))
+        버튼그리드.add_widget(주점버튼)
 
         npc버튼 = Button(text="NPC (미구현)", disabled=True)
         버튼그리드.add_widget(npc버튼)
@@ -681,3 +687,234 @@ class 상점화면(Screen):
         if isinstance(값, (list, tuple)):
             return ", ".join(str(v) for v in 값)
         return str(값)
+
+
+# =====================================================
+# 4-3. 주점 화면 (마을 -> 주점) - 파티원 영입/대기/합류/추방
+# =====================================================
+# 파티에 없는 동료는 "모험단 숙소"(최대 20명)에서 기다린다. 로직은 전부
+# gameflow.파티원_*() -> lodge_system.py에 있고, 이 화면은 버튼/팝업만 만든다.
+
+
+def _동료_글(캐릭터):
+    return f"{캐릭터['캐릭터명']}  ({gameflow.캐릭터_직업표시(캐릭터)})  Lv.{캐릭터['레벨']}"
+
+
+class 주점화면(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        루트 = BoxLayout(orientation="vertical", padding=16, spacing=10)
+        루트.add_widget(Label(text="주점", font_size=40, size_hint=(1, 0.12)))
+
+        self.현황라벨 = Label(text="", size_hint=(1, 0.1))
+        루트.add_widget(self.현황라벨)
+
+        버튼그리드 = GridLayout(cols=2, size_hint=(1, 0.46), spacing=8)
+        for 글, 처리 in (
+            ("파티원 영입", self._영입_팝업),
+            ("파티원 대기", self._대기_팝업),
+            ("파티원 합류", self._합류_팝업),
+            ("파티원 추방", self._추방_팝업),
+        ):
+            버튼 = Button(text=글)
+            버튼.bind(on_release=lambda *_, f=처리: f())
+            버튼그리드.add_widget(버튼)
+        루트.add_widget(버튼그리드)
+
+        self.안내라벨 = Label(
+            text="", size_hint=(1, 0.12), halign="center", valign="middle"
+        )
+        self.안내라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
+        루트.add_widget(self.안내라벨)
+
+        뒤로버튼 = Button(text="뒤로", size_hint=(1, 0.1))
+        뒤로키_버튼(뒤로버튼)
+        뒤로버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "마을"))
+        루트.add_widget(뒤로버튼)
+        self.add_widget(루트)
+
+    def on_pre_enter(self, *args):
+        self.안내라벨.text = ""
+        self.갱신()
+
+    def _게임상태(self):
+        return App.get_running_app().게임상태
+
+    def 갱신(self):
+        현황 = gameflow.주점_현황(self._게임상태())
+        self.현황라벨.text = (
+            f"파티 {현황['파티인원']}/{현황['파티최대']}명  ·  "
+            f"모험단 숙소 {현황['숙소인원']}/{현황['숙소최대']}명  ·  "
+            f"보유 골드 {현황['골드']}"
+        )
+
+    def _실행(self, 처리, 성공글, 팝업=None):
+        """처리()가 ValueError면 안내 줄에 이유를 보이고 팝업은 그대로 둔다."""
+        try:
+            처리()
+        except ValueError as 오류:
+            self.안내라벨.text = str(오류)
+        else:
+            self.안내라벨.text = 성공글
+            if 팝업 is not None:
+                팝업.dismiss()
+        self.갱신()
+
+    # -------------------------------------------------
+    # 영입 - 이름 + 직업, 레벨 1, 영입_비용 골드
+    # -------------------------------------------------
+
+    def _영입_팝업(self):
+        본문 = BoxLayout(orientation="vertical", spacing=8, padding=12)
+        본문.add_widget(
+            Label(
+                text=f"새 동료 (레벨 1, {gameflow.영입_비용}골드)\n"
+                "파티가 가득 차 있으면 모험단 숙소로 갑니다.",
+                size_hint=(1, 0.35),
+                halign="center",
+            )
+        )
+        이름칸 = TextInput(
+            text="",
+            hint_text=gameflow.캐릭터명_안내 + " (비우면 직업 이름)",
+            multiline=False,
+            size_hint=(1, 0.2),
+        )
+        이름칸.bind(
+            text=lambda inst, 값: (
+                setattr(inst, "text", gameflow.이름_자르기(값))
+                if gameflow.이름_폭(값) > gameflow.캐릭터명_최대폭
+                else None
+            )
+        )
+        본문.add_widget(이름칸)
+        직업선택 = Spinner(
+            text=gameflow.직업목록[0], values=gameflow.직업목록, size_hint=(1, 0.2)
+        )
+        본문.add_widget(직업선택)
+        팝업 = Popup(
+            title="파티원 영입", content=본문, size_hint=(0.85, 0.6), auto_dismiss=False
+        )
+        결과 = {}
+
+        def 영입():
+            결과["캐릭터"], 결과["자리"] = gameflow.파티원_영입(
+                self._게임상태(), 이름칸.text, 직업선택.text
+            )
+
+        def 누름(*_):
+            self._실행(영입, "", 팝업)
+            if 결과:
+                자리글 = (
+                    "파티에 합류했습니다"
+                    if 결과["자리"] == "파티"
+                    else "모험단 숙소로 갔습니다"
+                )
+                self.안내라벨.text = (
+                    f"{결과['캐릭터']['캐릭터명']}을(를) 영입해 {자리글}."
+                )
+
+        버튼줄 = BoxLayout(orientation="horizontal", spacing=8, size_hint=(1, 0.25))
+        영입버튼 = Button(text=f"영입 ({gameflow.영입_비용}골드)")
+        영입버튼.bind(on_release=누름)
+        취소버튼 = Button(text="취소")
+        뒤로키_버튼(취소버튼)
+        취소버튼.bind(on_release=lambda *_: 팝업.dismiss())
+        버튼줄.add_widget(영입버튼)
+        버튼줄.add_widget(취소버튼)
+        본문.add_widget(버튼줄)
+        팝업.open()
+
+    # -------------------------------------------------
+    # 대기 / 합류 / 추방 - 동료 목록 팝업
+    # -------------------------------------------------
+
+    def _목록_팝업(self, 제목, 안내, 캐릭터목록, 누르면):
+        본문 = BoxLayout(orientation="vertical", spacing=8, padding=12)
+        본문.add_widget(Label(text=안내, size_hint=(1, 0.1)))
+        목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=6)
+        목록틀.bind(minimum_height=목록틀.setter("height"))
+        스크롤 = ScrollView(size_hint=(1, 0.78))
+        스크롤.add_widget(목록틀)
+        본문.add_widget(스크롤)
+        팝업 = Popup(
+            title=제목, content=본문, size_hint=(0.9, 0.85), auto_dismiss=False
+        )
+        if not 캐릭터목록:
+            목록틀.add_widget(Label(text="(없음)", size_hint=(1, None), height=40))
+        for 캐릭터 in 캐릭터목록:
+            버튼 = Button(text=_동료_글(캐릭터), size_hint=(1, None), height=48)
+            버튼.bind(on_release=lambda *_, c=캐릭터: 누르면(c, 팝업))
+            목록틀.add_widget(버튼)
+        닫기 = Button(text="닫기", size_hint=(1, 0.12))
+        뒤로키_버튼(닫기)
+        닫기.bind(on_release=lambda *_: 팝업.dismiss())
+        본문.add_widget(닫기)
+        팝업.open()
+
+    def _대기_팝업(self):
+        상태 = self._게임상태()
+        self._목록_팝업(
+            "파티원 대기",
+            "모험단 숙소로 보낼 파티원 (최소 1명은 남아야 합니다)",
+            list(상태["파티"]["파티원"]),
+            lambda c, 팝업: self._실행(
+                lambda: gameflow.파티원_대기(상태, c),
+                f"{c['캐릭터명']}이(가) 모험단 숙소로 갔습니다.",
+                팝업,
+            ),
+        )
+
+    def _합류_팝업(self):
+        상태 = self._게임상태()
+        self._목록_팝업(
+            "파티원 합류",
+            "모험단 숙소에서 데려올 동료",
+            list(gameflow.숙소_목록(상태)),
+            lambda c, 팝업: self._실행(
+                lambda: gameflow.파티원_합류(상태, c),
+                f"{c['캐릭터명']}이(가) 파티에 합류했습니다.",
+                팝업,
+            ),
+        )
+
+    def _추방_팝업(self):
+        상태 = self._게임상태()
+        self._목록_팝업(
+            "파티원 추방",
+            "추방할 동료 (끼고 있던 장비는 소지품으로 돌아갑니다)",
+            list(상태["파티"]["파티원"]) + list(gameflow.숙소_목록(상태)),
+            lambda c, 팝업: self._추방_확인(c, 팝업),
+        )
+
+    def _추방_확인(self, 캐릭터, 목록팝업):
+        본문 = BoxLayout(orientation="vertical", spacing=8, padding=12)
+        본문.add_widget(
+            Label(
+                text=f"{_동료_글(캐릭터)}\n\n정말 추방할까요? 되돌릴 수 없습니다.\n"
+                "끼고 있던 장비는 소지품으로 돌아갑니다.",
+                halign="center",
+            )
+        )
+        팝업 = Popup(
+            title="파티원 추방", content=본문, size_hint=(0.8, 0.5), auto_dismiss=False
+        )
+
+        def 추방(*_):
+            팝업.dismiss()
+            self._실행(
+                lambda: gameflow.파티원_추방(self._게임상태(), 캐릭터),
+                f"{캐릭터['캐릭터명']}을(를) 추방했습니다.",
+                목록팝업,
+            )
+
+        버튼줄 = BoxLayout(orientation="horizontal", spacing=8, size_hint=(1, 0.3))
+        추방버튼 = Button(text="추방")
+        추방버튼.bind(on_release=추방)
+        취소버튼 = Button(text="취소")
+        뒤로키_버튼(취소버튼)
+        취소버튼.bind(on_release=lambda *_: 팝업.dismiss())
+        버튼줄.add_widget(추방버튼)
+        버튼줄.add_widget(취소버튼)
+        본문.add_widget(버튼줄)
+        팝업.open()

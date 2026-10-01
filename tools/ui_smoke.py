@@ -613,6 +613,74 @@ class 스모크앱(main.DnfMobileApp):
             "황금 고블린 도망 -> (도망) 표시, 그림 없음, 적이 도망쳤다! -> 던전"
         )
 
+        # 주점: 영입(파티가 꽉 차 있으면 숙소로) -> 대기 -> 합류 -> 추방(확인 팝업)
+        _팝업_닫기()
+        매니저.current = "마을"
+        yield 0.3
+        assert any(
+            getattr(w, "text", "") == "주점"
+            for w in 매니저.get_screen("마을").walk(restrict=True)
+        ), "마을에 주점 버튼 없음"
+        매니저.current = "주점"
+        주점 = 매니저.get_screen("주점")
+        상태 = self.게임상태
+        상태["소지품"]["골드"] = 1000
+        주점.갱신()
+        yield 0.3
+        _찍기("tavern")
+
+        def 팝업버튼(글):
+            팝업 = list(Window.children)[0]
+            return next(
+                w
+                for w in 팝업.walk(restrict=True)
+                if isinstance(w, Button) and w.text.startswith(글)
+            )
+
+        주점._영입_팝업()
+        yield 0.5
+        _찍기("tavern_recruit")
+        이름칸 = next(
+            w
+            for w in list(Window.children)[0].walk(restrict=True)
+            if w.__class__.__name__ == "TextInput"
+        )
+        이름칸.text = "새동료"
+        팝업버튼("영입").dispatch("on_release")
+        yield 0.3
+        숙소 = gf.숙소_목록(상태)
+        assert [c["캐릭터명"] for c in 숙소] == ["새동료"], 주점.안내라벨.text
+        assert 상태["소지품"]["골드"] == 1000 - gf.영입_비용
+
+        파티 = 상태["파티"]["파티원"]
+        첫째 = 파티[0]
+        주점._대기_팝업()
+        yield 0.3
+        팝업버튼(첫째["캐릭터명"]).dispatch("on_release")
+        yield 0.3
+        assert 첫째 in 숙소 and 첫째 not in 파티 and len(Window.children) == 1
+
+        주점._합류_팝업()
+        yield 0.3
+        _찍기("tavern_join")
+        팝업버튼(첫째["캐릭터명"]).dispatch("on_release")
+        yield 0.3
+        assert 첫째 in 파티 and 첫째 not in 숙소
+
+        새동료 = 숙소[0]
+        주점._추방_팝업()
+        yield 0.3
+        팝업버튼("새동료").dispatch("on_release")
+        yield 0.3
+        assert list(Window.children)[0].title == "파티원 추방"
+        _찍기("tavern_expel_confirm")
+        팝업버튼("추방").dispatch("on_release")
+        yield 0.3
+        assert 새동료 not in 숙소 and len(Window.children) == 1
+        assert "추방했습니다" in 주점.안내라벨.text, 주점.안내라벨.text
+        _찍기("tavern_after")
+        결과["단계"].append("주점(영입 -> 숙소, 대기, 합류, 추방 확인 팝업)")
+
 
 if __name__ == "__main__":
     스모크앱().run()
