@@ -137,7 +137,7 @@ class 파티관리화면(Screen):
         카드.add_widget(초상틀)
 
         # 가운데: 이름/직업/레벨, HP·MP 게이지, 능력치
-        가운데 = BoxLayout(orientation="vertical", size_hint=(0.54, 1), spacing=dp(4))
+        가운데 = BoxLayout(orientation="vertical", size_hint=(0.4, 1), spacing=dp(4))
         이름글 = f"[b]{escape_markup(캐릭터['캐릭터명'])}[/b]"
         if not 생존:
             이름글 += "  [color=e05555][size=12sp]쓰러짐[/size][/color]"
@@ -200,8 +200,13 @@ class 파티관리화면(Screen):
         가운데.add_widget(능력치판)
         카드.add_widget(가운데)
 
-        # 오른쪽: 버튼 세 개(레벨업 가능하면 강조색)
-        오른쪽 = BoxLayout(orientation="vertical", size_hint=(0.22, 1), spacing=dp(8))
+        # 오른쪽: 버튼 세 개를 좌우로(레벨업 가능하면 강조색)
+        오른쪽 = BoxLayout(orientation="horizontal", size_hint=(0.36, 1), spacing=dp(6))
+        버튼크기 = {
+            "size_hint": (1, None),
+            "height": dp(44),
+            "pos_hint": {"center_y": 0.5},
+        }
         가능 = gameflow.캐릭터_레벨업_가능(게임상태, 캐릭터)
         레벨업버튼 = _평면버튼(
             "레벨업",
@@ -210,16 +215,21 @@ class 파티관리화면(Screen):
             bold=가능,
             disabled=not 가능,
             disabled_color=(0.45, 0.47, 0.52, 1),
+            **버튼크기,
         )
         레벨업버튼.bind(on_release=lambda inst, c=캐릭터: self._레벨업_클릭(c))
         오른쪽.add_widget(레벨업버튼)
 
-        스킬습득버튼 = _평면버튼("스킬습득", (0.3, 0.31, 0.35, 1), font_size="14sp")
+        스킬습득버튼 = _평면버튼(
+            "스킬습득", (0.3, 0.31, 0.35, 1), font_size="14sp", **버튼크기
+        )
         스킬습득버튼.bind(on_release=lambda inst, c=캐릭터: self._스킬습득_팝업(c))
         오른쪽.add_widget(스킬습득버튼)
 
         # 파티원 화면(장비·스탯 / 스킬·특성).
-        상세버튼 = _평면버튼("상세보기", (0.3, 0.31, 0.35, 1), font_size="14sp")
+        상세버튼 = _평면버튼(
+            "상세보기", (0.3, 0.31, 0.35, 1), font_size="14sp", **버튼크기
+        )
         상세버튼.bind(on_release=lambda inst, c=캐릭터: self._상세보기_클릭(c))
         오른쪽.add_widget(상세버튼)
         카드.add_widget(오른쪽)
