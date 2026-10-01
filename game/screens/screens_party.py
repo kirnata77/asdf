@@ -1,5 +1,5 @@
 # =====================
-# 파티 화면 - 파티관리(레벨업/전직/능력치 배분/퍽 선택), 파티원(장비·스탯 /
+# 파티 화면 - 파티관리(레벨업/전직/능력치 배분/퍽 선택/스킬습득), 파티원(장비·스탯 /
 # 스킬·특성·퍽), 장비 교체 팝업
 # =====================
 # main.py가 game/screens/ 여섯 파일의 화면을 ScreenManager에 등록한다.
@@ -137,7 +137,7 @@ class 파티관리화면(Screen):
         카드.add_widget(초상틀)
 
         # 가운데: 이름/직업/레벨, HP·MP 게이지, 능력치
-        가운데 = BoxLayout(orientation="vertical", size_hint=(0.54, 1), spacing=dp(4))
+        가운데 = BoxLayout(orientation="vertical", size_hint=(0.4, 1), spacing=dp(4))
         이름글 = f"[b]{escape_markup(캐릭터['캐릭터명'])}[/b]"
         if not 생존:
             이름글 += "  [color=e05555][size=12sp]쓰러짐[/size][/color]"
@@ -200,8 +200,13 @@ class 파티관리화면(Screen):
         가운데.add_widget(능력치판)
         카드.add_widget(가운데)
 
-        # 오른쪽: 버튼 두 개(레벨업 가능하면 강조색)
-        오른쪽 = BoxLayout(orientation="vertical", size_hint=(0.22, 1), spacing=dp(8))
+        # 오른쪽: 버튼 세 개를 좌우로(레벨업 가능하면 강조색)
+        오른쪽 = BoxLayout(orientation="horizontal", size_hint=(0.36, 1), spacing=dp(6))
+        버튼크기 = {
+            "size_hint": (1, None),
+            "height": dp(44),
+            "pos_hint": {"center_y": 0.5},
+        }
         가능 = gameflow.캐릭터_레벨업_가능(게임상태, 캐릭터)
         레벨업버튼 = _평면버튼(
             "레벨업",
@@ -210,12 +215,21 @@ class 파티관리화면(Screen):
             bold=가능,
             disabled=not 가능,
             disabled_color=(0.45, 0.47, 0.52, 1),
+            **버튼크기,
         )
         레벨업버튼.bind(on_release=lambda inst, c=캐릭터: self._레벨업_클릭(c))
         오른쪽.add_widget(레벨업버튼)
 
+        스킬습득버튼 = _평면버튼(
+            "스킬습득", (0.3, 0.31, 0.35, 1), font_size="14sp", **버튼크기
+        )
+        스킬습득버튼.bind(on_release=lambda inst, c=캐릭터: self._스킬습득_팝업(c))
+        오른쪽.add_widget(스킬습득버튼)
+
         # 파티원 화면(장비·스탯 / 스킬·특성).
-        상세버튼 = _평면버튼("상세보기", (0.3, 0.31, 0.35, 1), font_size="14sp")
+        상세버튼 = _평면버튼(
+            "상세보기", (0.3, 0.31, 0.35, 1), font_size="14sp", **버튼크기
+        )
         상세버튼.bind(on_release=lambda inst, c=캐릭터: self._상세보기_클릭(c))
         오른쪽.add_widget(상세버튼)
         카드.add_widget(오른쪽)
@@ -241,7 +255,7 @@ class 파티관리화면(Screen):
             return
         타입 = 항목["타입"]
 
-        if 타입 in ("특성획득", "스킬획득", "행동획득"):
+        if 타입 in ("특성획득", "행동획득", "미정"):
             self._레벨업_확정(캐릭터)
         elif 타입 == "스탯획득":
             배분점수 = 항목["획득"]["배분점수"]
@@ -470,6 +484,103 @@ class 파티관리화면(Screen):
         확인콜백({"퍽이름": 퍽이름, "퍽정의": 퍽정의, "특성정의": 특성정의})
 
     # -------------------------------------------------
+    # 스킬습득 팝업 - 지금 직업 계열 스킬을 골드(50 x 차수)로 배운다
+    # -------------------------------------------------
+
+    def _스킬습득_팝업(self, 캐릭터):
+        본문 = BoxLayout(orientation="vertical", spacing=8, padding=12)
+        골드라벨 = Label(size_hint=(1, 0.1))
+        본문.add_widget(골드라벨)
+
+        목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=6)
+        목록틀.bind(minimum_height=목록틀.setter("height"))
+        스크롤 = ScrollView(size_hint=(1, 0.76))
+        스크롤.add_widget(목록틀)
+        본문.add_widget(스크롤)
+
+        팝업 = Popup(
+            title=f"{캐릭터['캐릭터명']} 스킬습득",
+            content=본문,
+            size_hint=(0.9, 0.85),
+            auto_dismiss=False,
+        )
+
+        def 다시그리기():
+            게임상태 = App.get_running_app().게임상태
+            골드 = gameflow.상점_보유골드(게임상태)
+            골드라벨.text = f"보유 골드 {골드}"
+            목록틀.clear_widgets()
+            목록 = gameflow.캐릭터_습득가능_스킬(캐릭터)
+            if not 목록:
+                목록틀.add_widget(
+                    Label(
+                        text="(지금 배울 수 있는 스킬이 없습니다)",
+                        size_hint=(1, None),
+                        height=40,
+                    )
+                )
+            for 이름, 비용, 상세글 in 목록:
+                # 한 줄: 스킬이름 / 가격(누르면 배운다) / 상세보기
+                행 = BoxLayout(
+                    orientation="horizontal",
+                    size_hint=(1, None),
+                    height=dp(44),
+                    spacing=dp(6),
+                )
+                이름라벨 = Label(
+                    text=이름,
+                    font_size="15sp",
+                    size_hint=(0.5, 1),
+                    halign="left",
+                    valign="middle",
+                    shorten=True,
+                    shorten_from="right",
+                )
+                이름라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
+                행.add_widget(이름라벨)
+                가격버튼 = _평면버튼(
+                    f"{비용}골드",
+                    _강조색 if 골드 >= 비용 else (0.2, 0.21, 0.25, 1),
+                    font_size="14sp",
+                    size_hint=(0.25, 1),
+                    disabled=골드 < 비용,
+                    disabled_color=(0.45, 0.47, 0.52, 1),
+                )
+                가격버튼.bind(on_release=lambda inst, n=이름: 배우기(n))
+                행.add_widget(가격버튼)
+                상세버튼 = _평면버튼(
+                    "상세보기",
+                    (0.3, 0.31, 0.35, 1),
+                    font_size="14sp",
+                    size_hint=(0.25, 1),
+                )
+                상세버튼.bind(
+                    on_release=lambda inst, n=이름, 글=상세글: _스킬_상세_팝업(n, 글)
+                )
+                행.add_widget(상세버튼)
+                목록틀.add_widget(행)
+
+        def 배우기(이름):
+            게임상태 = App.get_running_app().게임상태
+            try:
+                비용 = gameflow.캐릭터_스킬_습득(게임상태, 캐릭터, 이름)
+            except ValueError as 오류:
+                self.안내라벨.text = str(오류)
+                return
+            self.안내라벨.text = (
+                f"{캐릭터['캐릭터명']}이(가) {이름}을(를) 배웠습니다(-{비용}골드)."
+            )
+            다시그리기()
+
+        다시그리기()
+        닫기버튼 = Button(text="닫기", size_hint=(1, 0.1))
+        뒤로키_버튼(닫기버튼)
+        닫기버튼.bind(on_release=lambda *_: 팝업.dismiss())
+        본문.add_widget(닫기버튼)
+
+        팝업.open()
+
+    # -------------------------------------------------
 
     def _뒤로_클릭(self, *args):
         self.manager.current = self.복귀화면
@@ -548,6 +659,20 @@ class _테두리상자(BoxLayout):
             max(self.width - 2, 0),
             max(self.height - 2, 0),
         )
+
+
+def _스킬_상세_팝업(이름, 상세글):
+    글 = f"[b]{escape_markup(이름)}[/b]\n\n{escape_markup(상세글 or '(설명 없음)')}"
+    본문 = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(10))
+    스크롤 = ScrollView(size_hint=(1, 1))
+    스크롤.add_widget(_줄바꿈_라벨(글, font_size="15sp", line_height=1.4))
+    본문.add_widget(스크롤)
+    닫기 = Button(text="닫기", size_hint=(1, None), height=dp(48))
+    뒤로키_버튼(닫기)
+    본문.add_widget(닫기)
+    팝업 = Popup(title="스킬 상세보기", content=본문, size_hint=(0.9, 0.8))
+    닫기.bind(on_release=lambda *_: 팝업.dismiss())
+    팝업.open()
 
 
 def _아이템_상세_팝업(아이템, 사유=None):
