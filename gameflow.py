@@ -1631,17 +1631,21 @@ def _차수별_스킬목록(캐릭터):
     return 결과
 
 
+def _상세값(값):
+    if isinstance(값, bool):
+        return "예" if 값 else "아니오"
+    if isinstance(값, dict):
+        return "{" + ", ".join(f"{k}: {_상세값(v)}" for k, v in 값.items()) + "}"
+    if isinstance(값, (list, tuple)):
+        return ", ".join(_상세값(v) for v in 값) if 값 else "없음"
+    return "없음" if 값 is None else str(값)
+
+
 def _스킬_상세글(스킬):
-    """[스킬습득] 상세보기 팝업 글 - "행동 · MP · 휴식당 횟수" 요약 + 설명."""
-    조각 = []
-    행동 = 스킬.get("행동")
-    if 행동:
-        조각.append("/".join(행동) if isinstance(행동, list) else str(행동))
-    if 스킬.get("MP소모"):
-        조각.append(f"MP {스킬['MP소모']}")
-    if 스킬.get("휴식당횟수") is not None:
-        조각.append(f"휴식당 {스킬['휴식당횟수']}회")
-    return "\n\n".join(글 for 글 in (" · ".join(조각), 스킬.get("설명", "")) if 글)
+    """[스킬습득] 상세보기 팝업 글 - 설명을 먼저, 그 밖의 스킬 데이터를 전부
+    "키: 값" 줄로(데이터 순서)."""
+    줄 = [f"{키}: {_상세값(값)}" for 키, 값 in 스킬.items() if 키 != "설명"]
+    return "\n\n".join(글 for 글 in (스킬.get("설명", ""), "\n".join(줄)) if 글)
 
 
 def 캐릭터_습득가능_스킬(캐릭터):

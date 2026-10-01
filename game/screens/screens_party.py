@@ -665,12 +665,12 @@ def _스킬_상세_팝업(이름, 상세글):
     글 = f"[b]{escape_markup(이름)}[/b]\n\n{escape_markup(상세글 or '(설명 없음)')}"
     본문 = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(10))
     스크롤 = ScrollView(size_hint=(1, 1))
-    스크롤.add_widget(_줄바꿈_라벨(글, font_size="15sp"))
+    스크롤.add_widget(_줄바꿈_라벨(글, font_size="15sp", line_height=1.4))
     본문.add_widget(스크롤)
     닫기 = Button(text="닫기", size_hint=(1, None), height=dp(48))
     뒤로키_버튼(닫기)
     본문.add_widget(닫기)
-    팝업 = Popup(title="스킬 상세보기", content=본문, size_hint=(0.85, 0.5))
+    팝업 = Popup(title="스킬 상세보기", content=본문, size_hint=(0.9, 0.8))
     닫기.bind(on_release=lambda *_: 팝업.dismiss())
     팝업.open()
 
