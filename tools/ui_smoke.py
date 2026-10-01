@@ -128,6 +128,43 @@ class 스모크앱(main.DnfMobileApp):
         _팝업_닫기()
         결과["단계"].append("능력치 배분 팝업")
 
+        # [스킬습득] 팝업: 직업 계열 스킬 목록 + 비용, 골드가 모자라면 버튼 잠금, 누르면 배운다
+        파티관리 = 매니저.get_screen("파티관리")
+        파티관리.갱신()
+        assert any(
+            getattr(w, "text", "") == "스킬습득" for w in 파티관리.walk(restrict=True)
+        ), "스킬습득 버튼 없음"
+        yield 0.3
+        _찍기("party_manage")
+        귀검사 = 상태["파티"]["파티원"][0]
+        상태["소지품"]["골드"] = 50
+        파티관리._스킬습득_팝업(귀검사)
+        yield 0.5
+        _찍기("skill_learn_popup")
+        팝업 = list(Window.children)[0]
+        스킬버튼 = [
+            w
+            for w in 팝업.walk(restrict=True)
+            if isinstance(w, Button) and "골드)" in w.text
+        ]
+        # 골드 50: 50골드(1차 계열) 스킬만 누를 수 있고 100골드(전직) 스킬은 잠김
+        assert 스킬버튼 and all(
+            b.disabled == ("(100골드)" in b.text) for b in 스킬버튼
+        ), [(b.text, b.disabled) for b in 스킬버튼]
+        첫스킬 = 스킬버튼[0].text.split("  (")[0]
+        스킬버튼[0].dispatch("on_release")
+        yield 0.3
+        assert 첫스킬 in 귀검사["보유스킬"] and 상태["소지품"]["골드"] == 0
+        남은버튼 = [
+            w
+            for w in 팝업.walk(restrict=True)
+            if isinstance(w, Button) and "골드)" in w.text
+        ]
+        assert 남은버튼 and all(b.disabled for b in 남은버튼)  # 골드 0 -> 잠김
+        _찍기("skill_learn_after")
+        _팝업_닫기()
+        결과["단계"].append("스킬습득 팝업(목록/비용, 배우면 골드 차감, 모자라면 잠금)")
+
         # 장비 교체 팝업: 칸마다 이름 + 간단요약(무기 공격력/AC) + [상세보기]
         for 슬롯 in ("무기", "상의"):
             for 이름 in list(상태["상점카탈로그"]["장비"][슬롯])[:3]:

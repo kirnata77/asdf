@@ -1,5 +1,5 @@
 # =====================
-# 파티 화면 - 파티관리(레벨업/전직/능력치 배분/퍽 선택), 파티원(장비·스탯 /
+# 파티 화면 - 파티관리(레벨업/전직/능력치 배분/퍽 선택/스킬습득), 파티원(장비·스탯 /
 # 스킬·특성·퍽), 장비 교체 팝업
 # =====================
 # main.py가 game/screens/ 여섯 파일의 화면을 ScreenManager에 등록한다.
@@ -200,7 +200,7 @@ class 파티관리화면(Screen):
         가운데.add_widget(능력치판)
         카드.add_widget(가운데)
 
-        # 오른쪽: 버튼 두 개(레벨업 가능하면 강조색)
+        # 오른쪽: 버튼 세 개(레벨업 가능하면 강조색)
         오른쪽 = BoxLayout(orientation="vertical", size_hint=(0.22, 1), spacing=dp(8))
         가능 = gameflow.캐릭터_레벨업_가능(게임상태, 캐릭터)
         레벨업버튼 = _평면버튼(
@@ -213,6 +213,10 @@ class 파티관리화면(Screen):
         )
         레벨업버튼.bind(on_release=lambda inst, c=캐릭터: self._레벨업_클릭(c))
         오른쪽.add_widget(레벨업버튼)
+
+        스킬습득버튼 = _평면버튼("스킬습득", (0.3, 0.31, 0.35, 1), font_size="14sp")
+        스킬습득버튼.bind(on_release=lambda inst, c=캐릭터: self._스킬습득_팝업(c))
+        오른쪽.add_widget(스킬습득버튼)
 
         # 파티원 화면(장비·스탯 / 스킬·특성).
         상세버튼 = _평면버튼("상세보기", (0.3, 0.31, 0.35, 1), font_size="14sp")
@@ -241,7 +245,7 @@ class 파티관리화면(Screen):
             return
         타입 = 항목["타입"]
 
-        if 타입 in ("특성획득", "스킬획득", "행동획득"):
+        if 타입 in ("특성획득", "행동획득", "미정"):
             self._레벨업_확정(캐릭터)
         elif 타입 == "스탯획득":
             배분점수 = 항목["획득"]["배분점수"]
@@ -468,6 +472,87 @@ class 파티관리화면(Screen):
         특성정의 = gameflow.퍽_특성정의_찾기(캐릭터, 퍽정의)
         팝업.dismiss()
         확인콜백({"퍽이름": 퍽이름, "퍽정의": 퍽정의, "특성정의": 특성정의})
+
+    # -------------------------------------------------
+    # 스킬습득 팝업 - 지금 직업 계열 스킬을 골드(50 x 차수)로 배운다
+    # -------------------------------------------------
+
+    def _스킬습득_팝업(self, 캐릭터):
+        본문 = BoxLayout(orientation="vertical", spacing=8, padding=12)
+        골드라벨 = Label(size_hint=(1, 0.1))
+        본문.add_widget(골드라벨)
+
+        목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=6)
+        목록틀.bind(minimum_height=목록틀.setter("height"))
+        스크롤 = ScrollView(size_hint=(1, 0.76))
+        스크롤.add_widget(목록틀)
+        본문.add_widget(스크롤)
+
+        팝업 = Popup(
+            title=f"{캐릭터['캐릭터명']} 스킬습득",
+            content=본문,
+            size_hint=(0.9, 0.85),
+            auto_dismiss=False,
+        )
+
+        def 다시그리기():
+            게임상태 = App.get_running_app().게임상태
+            골드 = gameflow.상점_보유골드(게임상태)
+            골드라벨.text = f"보유 골드 {골드}"
+            목록틀.clear_widgets()
+            목록 = gameflow.캐릭터_습득가능_스킬(캐릭터)
+            if not 목록:
+                목록틀.add_widget(
+                    Label(
+                        text="(지금 배울 수 있는 스킬이 없습니다)",
+                        size_hint=(1, None),
+                        height=40,
+                    )
+                )
+            for 이름, 비용, 설명 in 목록:
+                행 = BoxLayout(
+                    orientation="vertical", size_hint=(1, None), height=64, spacing=2
+                )
+                버튼 = Button(
+                    text=f"{이름}  ({비용}골드)",
+                    size_hint=(1, None),
+                    height=40,
+                    disabled=골드 < 비용,
+                )
+                버튼.bind(on_release=lambda inst, n=이름: 배우기(n))
+                행.add_widget(버튼)
+                설명라벨 = Label(
+                    text=설명,
+                    font_size=24,
+                    size_hint=(1, None),
+                    height=24,
+                    halign="left",
+                    shorten=True,
+                    shorten_from="right",
+                )
+                설명라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
+                행.add_widget(설명라벨)
+                목록틀.add_widget(행)
+
+        def 배우기(이름):
+            게임상태 = App.get_running_app().게임상태
+            try:
+                비용 = gameflow.캐릭터_스킬_습득(게임상태, 캐릭터, 이름)
+            except ValueError as 오류:
+                self.안내라벨.text = str(오류)
+                return
+            self.안내라벨.text = (
+                f"{캐릭터['캐릭터명']}이(가) {이름}을(를) 배웠습니다(-{비용}골드)."
+            )
+            다시그리기()
+
+        다시그리기()
+        닫기버튼 = Button(text="닫기", size_hint=(1, 0.1))
+        뒤로키_버튼(닫기버튼)
+        닫기버튼.bind(on_release=lambda *_: 팝업.dismiss())
+        본문.add_widget(닫기버튼)
+
+        팝업.open()
 
     # -------------------------------------------------
 
