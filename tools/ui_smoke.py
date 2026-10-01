@@ -145,25 +145,37 @@ class 스모크앱(main.DnfMobileApp):
         스킬버튼 = [
             w
             for w in 팝업.walk(restrict=True)
-            if isinstance(w, Button) and "골드)" in w.text
+            if isinstance(w, Button) and w.text.endswith("골드")
         ]
         # 골드 50: 50골드(1차 계열) 스킬만 누를 수 있고 100골드(전직) 스킬은 잠김
         assert 스킬버튼 and all(
-            b.disabled == ("(100골드)" in b.text) for b in 스킬버튼
+            b.disabled == (b.text == "100골드") for b in 스킬버튼
         ), [(b.text, b.disabled) for b in 스킬버튼]
-        첫스킬 = 스킬버튼[0].text.split("  (")[0]
+        보유전 = list(귀검사["보유스킬"])
         스킬버튼[0].dispatch("on_release")
         yield 0.3
-        assert 첫스킬 in 귀검사["보유스킬"] and 상태["소지품"]["골드"] == 0
+        새스킬 = [n for n in 귀검사["보유스킬"] if n not in 보유전]
+        assert len(새스킬) == 1 and 상태["소지품"]["골드"] == 0, 새스킬
         남은버튼 = [
             w
             for w in 팝업.walk(restrict=True)
-            if isinstance(w, Button) and "골드)" in w.text
+            if isinstance(w, Button) and w.text.endswith("골드")
         ]
         assert 남은버튼 and all(b.disabled for b in 남은버튼)  # 골드 0 -> 잠김
         _찍기("skill_learn_after")
+        상세 = next(
+            w
+            for w in 팝업.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "상세보기"
+        )
+        상세.dispatch("on_release")
+        yield 0.5
+        assert list(Window.children)[0].title == "스킬 상세보기"
+        _찍기("skill_learn_detail")
         _팝업_닫기()
-        결과["단계"].append("스킬습득 팝업(목록/비용, 배우면 골드 차감, 모자라면 잠금)")
+        결과["단계"].append(
+            "스킬습득 팝업(한 줄: 이름/가격/상세보기, 가격 누르면 배움, 모자라면 잠금, 상세 팝업)"
+        )
 
         # 장비 교체 팝업: 칸마다 이름 + 간단요약(무기 공격력/AC) + [상세보기]
         for 슬롯 in ("무기", "상의"):

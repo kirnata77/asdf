@@ -519,29 +519,45 @@ class 파티관리화면(Screen):
                         height=40,
                     )
                 )
-            for 이름, 비용, 설명 in 목록:
+            for 이름, 비용, 상세글 in 목록:
+                # 한 줄: 스킬이름 / 가격(누르면 배운다) / 상세보기
                 행 = BoxLayout(
-                    orientation="vertical", size_hint=(1, None), height=64, spacing=2
-                )
-                버튼 = Button(
-                    text=f"{이름}  ({비용}골드)",
+                    orientation="horizontal",
                     size_hint=(1, None),
-                    height=40,
-                    disabled=골드 < 비용,
+                    height=dp(44),
+                    spacing=dp(6),
                 )
-                버튼.bind(on_release=lambda inst, n=이름: 배우기(n))
-                행.add_widget(버튼)
-                설명라벨 = Label(
-                    text=설명,
-                    font_size=24,
-                    size_hint=(1, None),
-                    height=24,
+                이름라벨 = Label(
+                    text=이름,
+                    font_size="15sp",
+                    size_hint=(0.5, 1),
                     halign="left",
+                    valign="middle",
                     shorten=True,
                     shorten_from="right",
                 )
-                설명라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
-                행.add_widget(설명라벨)
+                이름라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
+                행.add_widget(이름라벨)
+                가격버튼 = _평면버튼(
+                    f"{비용}골드",
+                    _강조색 if 골드 >= 비용 else (0.2, 0.21, 0.25, 1),
+                    font_size="14sp",
+                    size_hint=(0.25, 1),
+                    disabled=골드 < 비용,
+                    disabled_color=(0.45, 0.47, 0.52, 1),
+                )
+                가격버튼.bind(on_release=lambda inst, n=이름: 배우기(n))
+                행.add_widget(가격버튼)
+                상세버튼 = _평면버튼(
+                    "상세보기",
+                    (0.3, 0.31, 0.35, 1),
+                    font_size="14sp",
+                    size_hint=(0.25, 1),
+                )
+                상세버튼.bind(
+                    on_release=lambda inst, n=이름, 글=상세글: _스킬_상세_팝업(n, 글)
+                )
+                행.add_widget(상세버튼)
                 목록틀.add_widget(행)
 
         def 배우기(이름):
@@ -643,6 +659,20 @@ class _테두리상자(BoxLayout):
             max(self.width - 2, 0),
             max(self.height - 2, 0),
         )
+
+
+def _스킬_상세_팝업(이름, 상세글):
+    글 = f"[b]{escape_markup(이름)}[/b]\n\n{escape_markup(상세글 or '(설명 없음)')}"
+    본문 = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(10))
+    스크롤 = ScrollView(size_hint=(1, 1))
+    스크롤.add_widget(_줄바꿈_라벨(글, font_size="15sp"))
+    본문.add_widget(스크롤)
+    닫기 = Button(text="닫기", size_hint=(1, None), height=dp(48))
+    뒤로키_버튼(닫기)
+    본문.add_widget(닫기)
+    팝업 = Popup(title="스킬 상세보기", content=본문, size_hint=(0.85, 0.5))
+    닫기.bind(on_release=lambda *_: 팝업.dismiss())
+    팝업.open()
 
 
 def _아이템_상세_팝업(아이템, 사유=None):
