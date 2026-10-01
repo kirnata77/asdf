@@ -17,7 +17,12 @@ from game.system import monster_ai
 from tests import support
 from tests.test_combat_skills import 정리, 참가자_요약
 
-파티 = [("", "귀검사"), ("", "격투가"), ("", "거너"), ("", "프리스트")]
+파티 = [
+    ("귀검사", "귀검사"),
+    ("격투가", "격투가"),
+    ("거너", "거너"),
+    ("프리스트", "프리스트"),
+]
 전직 = {
     "귀검사": "웨펀마스터",
     "격투가": "스트라이커",

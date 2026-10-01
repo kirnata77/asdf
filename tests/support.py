@@ -10,7 +10,12 @@ from collections import deque
 import gameflow as gf
 from game.system.combat import damage, flow
 
-기본_파티 = [("", "귀검사"), ("", "격투가"), ("", "거너"), ("", "프리스트")]
+기본_파티 = [
+    ("귀검사", "귀검사"),
+    ("격투가", "격투가"),
+    ("거너", "거너"),
+    ("프리스트", "프리스트"),
+]
 
 
 def 새게임(파티구성=None):
