@@ -122,6 +122,38 @@ class 스모크앱(main.DnfMobileApp):
         _찍기("shop_sell")
         결과["단계"].append("상점 구매/판매 목록")
 
+        # 해체: 메인에 [해체], 장비 목록에서 해체하면 소울/큐브 조각이 재료로
+        상점._메인_그리기()
+        assert any(
+            getattr(w, "text", "") == "해체" for w in 상점.내용틀.walk(restrict=True)
+        ), "상점에 해체 버튼 없음"
+        상태["소지품"]["장비"]["찢어진 천갑 상의"] = (
+            상태["소지품"]["장비"].get("찢어진 천갑 상의", 0) + 1
+        )
+        상점._탭목록_그리기("해체", "장비")
+        탭 = next(
+            w
+            for w in 상점.내용틀.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "상의"
+        )
+        탭.dispatch("on_release")
+        yield 0.3
+        _찍기("shop_dismantle")
+        해체버튼 = next(
+            w
+            for w in 상점.내용틀.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "해체"
+        )
+        소울전 = 상태["소지품"]["재료"].get("커먼 소울", 0)
+        해체버튼.dispatch("on_release")
+        yield 0.3
+        assert "해체" in 상점.안내라벨.text and "커먼 소울" in 상점.안내라벨.text, (
+            상점.안내라벨.text
+        )
+        assert 상태["소지품"]["재료"]["커먼 소울"] == 소울전 + 1
+        _찍기("shop_dismantle_after")
+        결과["단계"].append("상점 해체(장비 -> 소울 + 큐브 조각)")
+
         매니저.current = "파티관리"
         매니저.get_screen("파티관리")._능력치배분_팝업(
             상태["파티"]["파티원"][0], 2, lambda 배분: None
@@ -432,7 +464,14 @@ class 스모크앱(main.DnfMobileApp):
                 "battle_end_lose",
             ),
         ):
+            원래맵 = 상태["던전상태"]["맵정보"]
+            if 전리품줄 is False:
+                # "전리품 없음": 던전 공용 드랍도, 골드도 없는 전투로 만든다
+                상태["던전상태"]["맵정보"] = {**원래맵, "드랍표": []}
             gf._전투_시작(상태, 몬스터들, 레벨=6, 차수=2)  # 시작 반응에 안 쓰러지게
+            if 전리품줄 is False:
+                for 적 in gf.적_목록(상태):
+                    적["원본"]["획득골드"] = "미정"
             support.반응_처리(상태)
             매니저.current = "전투"
             전투.갱신(신규=True)
@@ -465,6 +504,8 @@ class 스모크앱(main.DnfMobileApp):
                 assert "전리품" not in 줄들, 글
             if 사진:
                 _찍기(사진)
+            if 상태.get("던전상태"):
+                상태["던전상태"]["맵정보"] = 원래맵
             if 첫줄 == "전투 승리!":
                 # [확인]은 전투 보상을 받거나 포기하기 전까지 잠겨 있다
                 assert (

@@ -60,6 +60,7 @@ from game.system.combat import (
 from game.system import skill_system
 from game.system import skill_learn_system
 from game.system import lodge_system
+from game.system import dismantle_system
 from game.system import town_system
 from game.system import save_system
 from game.system import shop_system
@@ -781,6 +782,21 @@ def 상점_구매(게임상태, 대분류, 탭, 이름, 수량, 상점판매목�
         이름,
         수량,
         상점판매목록=상점판매목록,
+    )
+
+
+def 상점_해체목록(게임상태, 탭):
+    """[(장비데이터, 해체가능수량)] - 장착 중이 아닌 보유 장비(dismantle_system)."""
+    return dismantle_system.해체목록(
+        _플레이어뷰(게임상태), 게임상태["상점카탈로그"], 탭
+    )
+
+
+def 상점_해체(게임상태, 탭, 이름, 수량):
+    """장비를 해체해 소울/큐브 조각을 소지품 "재료"에 넣는다. 얻은 {재료: 개수}를
+    반환한다. 실패하면 ValueError."""
+    return dismantle_system.해체_처리(
+        _플레이어뷰(게임상태), 게임상태["상점카탈로그"], 탭, 이름, 수량
     )
 
 

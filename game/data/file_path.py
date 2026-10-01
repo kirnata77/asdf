@@ -156,6 +156,7 @@
     "skill_system": "game.system.skill_system",
     "skill_learn_system": "game.system.skill_learn_system",
     "lodge_system": "game.system.lodge_system",
+    "dismantle_system": "game.system.dismantle_system",
     # game/screens/ (Kivy 화면)
     "screens_common": "game.screens.screens_common",
     "screens_menu": "game.screens.screens_menu",

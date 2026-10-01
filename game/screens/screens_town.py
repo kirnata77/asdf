@@ -430,6 +430,11 @@ class 상점화면(Screen):
         판매버튼.bind(on_release=lambda *_: self._대분류_그리기("판매"))
         self.내용틀.add_widget(판매버튼)
 
+        # 해체 - 장비만 (소울 + 큐브 조각)
+        해체버튼 = Button(text="해체", font_size=_버튼_폰트크기)
+        해체버튼.bind(on_release=lambda *_: self._탭목록_그리기("해체", "장비"))
+        self.내용틀.add_widget(해체버튼)
+
         나가기버튼 = Button(text="나가기", font_size=_버튼_폰트크기)
         뒤로키_버튼(나가기버튼)
         나가기버튼.bind(on_release=self._나가기)
@@ -489,7 +494,11 @@ class 상점화면(Screen):
         )
         뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
         뒤로키_버튼(뒤로버튼)
-        뒤로버튼.bind(on_release=lambda *_: self._대분류_그리기(모드))
+        뒤로버튼.bind(
+            on_release=lambda *_: (
+                self._메인_그리기() if 모드 == "해체" else self._대분류_그리기(모드)
+            )
+        )
         상단.add_widget(뒤로버튼)
         상단.add_widget(Label(text=f"{모드} - {대분류}", size_hint=(0.68, 1)))
         self.내용틀.add_widget(상단)
@@ -536,6 +545,11 @@ class 상점화면(Screen):
                 )
             ]
             빈문구 = "팔고 있는 물건이 없습니다."
+        elif 모드 == "해체":
+            항목목록 = gameflow.상점_해체목록(게임상태, 탭)
+            빈문구 = (
+                "해체할 수 있는 장비가 없습니다(장착 중인 장비는 해체할 수 없습니다)."
+            )
         else:
             항목목록 = gameflow.상점_판매목록(게임상태, 대분류, 탭)
             빈문구 = "팔 수 있는 물건이 없습니다."
@@ -548,7 +562,12 @@ class 상점화면(Screen):
             목록틀.add_widget(self._행_생성(모드, 대분류, 탭, 아이템, 최대수량, 목록틀))
 
     def _행_생성(self, 모드, 대분류, 탭, 아이템, 최대수량, 목록틀):
-        단가 = 아이템["가격"] if 모드 == "구매" else gameflow.상점_판매가(아이템)
+        if 모드 == "구매":
+            단가글 = f"{아이템['가격']}G"
+        elif 모드 == "해체":
+            단가글 = 아이템.get("레어도", "")
+        else:
+            단가글 = f"{gameflow.상점_판매가(아이템)}G"
 
         행 = BoxLayout(
             orientation="horizontal", size_hint=(1, None), height=56, spacing=4
@@ -564,7 +583,7 @@ class 상점화면(Screen):
         자세히버튼.bind(on_release=lambda *_, a=아이템: self._자세히보기(a))
         행.add_widget(자세히버튼)
 
-        단가라벨 = Label(text=f"{단가}G", size_hint=(0.14, 1), font_size=22)
+        단가라벨 = Label(text=단가글, size_hint=(0.14, 1), font_size=22)
         행.add_widget(단가라벨)
 
         수량상태 = {"값": 1}
@@ -625,6 +644,11 @@ class 상점화면(Screen):
                     상점판매목록=마을정보.get("상점판매목록"),
                 )
                 self.안내라벨.text = f"{이름} {수량}개를 {금액}G에 샀습니다."
+            elif 모드 == "해체":
+                얻음 = gameflow.상점_해체(게임상태, 탭, 이름, 수량)
+                self.안내라벨.text = f"{이름} {수량}개 해체: " + ", ".join(
+                    f"{재료} {개수}" for 재료, 개수 in 얻음.items()
+                )
             else:
                 금액 = gameflow.상점_판매(게임상태, 대분류, 탭, 이름, 수량)
                 self.안내라벨.text = f"{이름} {수량}개를 {금액}G에 팔았습니다."
