@@ -101,6 +101,7 @@
     # game/data/item/
     "item_potion": "game.data.item.item_potion",
     "item_consumable": "game.data.item.item_consumable",
+    "item_food": "game.data.item.item_food",
     "item_materials": "game.data.item.item_materials",
     "item_quest": "game.data.item.item_quest",
     # game/data/character/
