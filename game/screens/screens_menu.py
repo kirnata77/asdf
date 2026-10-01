@@ -213,10 +213,9 @@ class 파티생성화면(Screen):
         가운데.add_widget(번호라벨)
 
         입력줄 = BoxLayout(orientation="horizontal", spacing=dp(6), size_hint=(1, 0.3))
-        최대길이 = gameflow.캐릭터명_최대길이
         슬롯["이름입력"] = TextInput(
             text="",
-            hint_text=f"이름최대{최대길이}자",
+            hint_text=gameflow.캐릭터명_안내,
             multiline=False,
             font_size="15sp",
             background_normal="",
@@ -235,8 +234,11 @@ class 파티생성화면(Screen):
             height=lambda inst, h: setattr(
                 inst, "padding", (dp(6), max(0, (h - inst.line_height) / 2), dp(6), 0)
             ),
+            # 한글 6자 / 영문 12자(섞으면 영문 2자 = 한글 1자)를 넘으면 자른다
             text=lambda inst, 값: (
-                setattr(inst, "text", 값[:최대길이]) if len(값) > 최대길이 else None
+                setattr(inst, "text", gameflow.이름_자르기(값))
+                if gameflow.이름_폭(값) > gameflow.캐릭터명_최대폭
+                else None
             ),
         )
         입력줄.add_widget(슬롯["이름입력"])
