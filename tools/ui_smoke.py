@@ -85,14 +85,17 @@ class 스모크앱(main.DnfMobileApp):
 
         매니저.current = "파티생성"
         이름칸 = 매니저.get_screen("파티생성").슬롯목록[0]["이름입력"]
-        assert 이름칸.hint_text == f"이름최대{gf.캐릭터명_최대길이}자", 이름칸.hint_text
+        assert 이름칸.hint_text == gf.캐릭터명_안내, 이름칸.hint_text
         yield 0.5
         _찍기("party_create_hint")
         이름칸.text = "가나다라마바사아"
         assert 이름칸.text == "가나다라마바", 이름칸.text
+        이름칸.text = "abcdefghijklmnop"
+        assert 이름칸.text == "abcdefghijkl", 이름칸.text
+        이름칸.text = "가나다라마바"
         yield 0.3
         _찍기("party_create_name6")
-        결과["단계"].append("파티 구성 이름칸(안내 문구, 6자 제한)")
+        결과["단계"].append("파티 구성 이름칸(안내 문구, 한글 6자/영문 12자 제한)")
 
         # 이름이 겹치면 시작하지 않고 안내 줄에 알린다(B4)
         파티생성 = 매니저.get_screen("파티생성")
@@ -248,7 +251,12 @@ class 스모크앱(main.DnfMobileApp):
         전투상태 = 상태["전투상태"]
 
         def 차례(이름):
-            p = next(x for x in 전투상태["참가자"] if x["이름"] == 이름)
+            # 이름 없이 만든 캐릭터는 전직명이 되므로 1차 직업으로도 찾는다
+            p = next(
+                x
+                for x in 전투상태["참가자"]
+                if 이름 in (x["이름"], (x.get("원본") or {}).get("직업"))
+            )
             전투상태["현재턴"] = 전투상태["참가자"].index(p)
             flow._턴_시작_처리(전투상태, p)
             return p
@@ -318,7 +326,9 @@ class 스모크앱(main.DnfMobileApp):
 
         # 도망: 파티 중 한 명이라도 구속이면 [도망]이 판정 없이 막힘 팝업을 띄운다
         현재 = 차례("귀검사")
-        거너 = next(x for x in 전투상태["참가자"] if x["이름"] == "거너")
+        거너 = next(
+            x for x in 전투상태["참가자"] if (x.get("원본") or {}).get("직업") == "거너"
+        )
         gf.skill_system._상태이상_부여(전투상태, 거너, "구속", 3, None)
         로그수 = len(전투상태["로그"])
         전투._도망_클릭()
@@ -329,7 +339,9 @@ class 스모크앱(main.DnfMobileApp):
             for w in 팝업.walk(restrict=True)
             if hasattr(w, "text")
         ]
-        assert "도망 칠 수 없습니다.\n대상 : 거너\n상태이상 : 구속" in 글들, 글들
+        assert (
+            f"도망 칠 수 없습니다.\n대상 : {거너['이름']}\n상태이상 : 구속" in 글들
+        ), 글들
         assert "확인" in 글들, 글들
         _찍기("battle_flee_blocked")
         뒤로()
