@@ -386,3 +386,23 @@ def test_타겟선택_어그로_표적고정():
     assert monster_ai.타겟_선택([a, b], 정의) is b
     c = {"원본": {"어그로": 0}, "상태이상": []}
     assert monster_ai.타겟_선택([c], {}) is c  # 가중치 합 0 -> 무작위
+
+
+def test_숙소_시스템_오류():
+    from game.system import lodge_system as 숙소시스템
+
+    파티 = party_system.빈_파티()
+    a, b, 밖 = {"캐릭터명": "a"}, {"캐릭터명": "b"}, {"캐릭터명": "x"}
+    숙소 = []
+    assert 숙소시스템.영입(파티, 숙소, a) == "파티"
+    with pytest.raises(ValueError, match="파티에 없다"):
+        숙소시스템.대기(파티, 숙소, 밖)
+    with pytest.raises(ValueError, match="숙소에 없다"):
+        숙소시스템.합류(파티, 숙소, 밖)
+    with pytest.raises(ValueError, match="숙소에 없다"):
+        숙소시스템.추방(파티, 숙소, 밖)
+    숙소.extend({"캐릭터명": str(i)} for i in range(숙소시스템.숙소_최대인원))
+    파티["파티원"].extend([b, {}, {}])
+    assert 숙소시스템.영입_자리(파티, 숙소) is None
+    with pytest.raises(ValueError, match="숙소가 가득"):
+        숙소시스템.영입(파티, 숙소, 밖)
