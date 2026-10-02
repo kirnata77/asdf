@@ -517,11 +517,8 @@ class 상점화면(Screen):
         self.내용틀.add_widget(목록스크롤)
 
         if 모드 == "해체":
+            # 일괄해체 줄은 목록 아래(화면 하단) - 탭 줄은 상단 줄 바로 아래에 붙는다
             self.내용틀.add_widget(self._일괄해체_줄(목록틀))
-            # 일괄해체 줄을 탭 줄 위로(탭/목록보다 먼저 보이게)
-            줄 = self.내용틀.children[0]
-            self.내용틀.remove_widget(줄)
-            self.내용틀.add_widget(줄, index=len(self.내용틀.children) - 1)
             탭목록 = gameflow.상점_해체_탭목록
         else:
             탭목록 = gameflow.상점_탭목록(대분류)
