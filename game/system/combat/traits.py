@@ -2,6 +2,7 @@
 # (combat 패키지에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
 
 from game.system import dice_utils
+from game.system import equipment_system
 from game.system.combat import (
     core,
     damage,
@@ -266,6 +267,11 @@ def _캐릭터특성_정의목록(전투상태, 참가자):
             continue
         # 무기 숙련 - 그 종류의 무기를 들었을 때만
         if 정의.get("무기조건") and 정의["무기조건"] != _장착무기_타입(참가자):
+            continue
+        # 방어구 숙련 - 방어구 5부위가 모두 그 재질일 때만
+        if 정의.get("방어구조건") and 정의[
+            "방어구조건"
+        ] != equipment_system.방어구_세트재질(참가자.get("장비데이터") or {}):
             continue
         결과.append(정의)
     return 결과
