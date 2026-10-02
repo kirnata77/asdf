@@ -33,6 +33,7 @@
     "job_skill_format": "game.data.job_skill.job_skill_format",
     "job_skill_0000": "game.data.job_skill.job_skill_0000",
     # game/data/job_level/
+    "job_level_000x_style": "game.data.job_level.job_level_000x_style",
     "job_level_010m_ghost_swordsman": "game.data.job_level.job_level_010m_ghost_swordsman",
     "job_level_011m_weapon_master": "game.data.job_level.job_level_011m_weapon_master",
     "job_level_020f_fighter": "game.data.job_level.job_level_020f_fighter",

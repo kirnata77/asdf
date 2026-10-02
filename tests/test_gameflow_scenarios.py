@@ -10,7 +10,7 @@ import random
 import pytest
 
 import gameflow as gf
-from game.system.combat import damage, flow, stats
+from game.system.combat import damage, flow, stats, traits
 from game.system import dice_utils, map_system
 from game.system import skill_system as ss
 from tests import support
@@ -1445,12 +1445,13 @@ def test_1차수_레벨2_스타일_레벨4_퍽_레벨5_스탯성장():
         "스탯성장",
     ]
     assert c["스타일"] is None
+    assert 표[2]["획득"]["선택지"] == ["강타", "급소", "연타", "정밀", "수호"]
     with pytest.raises(ValueError, match="스타일은"):
-        gf.캐릭터_레벨업_적용(c, 스타일="탱커")
+        gf.캐릭터_레벨업_적용(c, 스타일="밀리")  # 밀리는 2차수 직업유형이다
     assert c["레벨"] == 1
-    gf.캐릭터_레벨업_적용(c, 스타일="캐스터")
-    assert (c["레벨"], c["스타일"]) == (2, "캐스터")
-    assert any("스타일: 캐스터" in 줄 for 줄 in gf.캐릭터_상세정보(상태, c)[0][1])
+    gf.캐릭터_레벨업_적용(c, 스타일="정밀")
+    assert (c["레벨"], c["스타일"]) == (2, "정밀") and "정밀" in c["보유특성"]
+    assert any("스타일: 정밀" in 줄 for 줄 in gf.캐릭터_상세정보(상태, c)[0][1])
 
     성장(상태, c, 4)
     assert len(c["보유퍽"]) == 1
@@ -1473,3 +1474,42 @@ def test_1차수_레벨2_스타일_레벨4_퍽_레벨5_스탯성장():
 
     성장(상태, c, 10, 전직="웨펀마스터")
     assert c["추가공격"] == 1  # 레벨 10에서 처음으로 (총 2회)
+
+
+@pytest.mark.parametrize(
+    "스타일, 대상, 값",
+    [
+        ("강타", "데미지보너스", 2),
+        ("강타", "명중보너스", -1),
+        ("급소", "치명타범위", 1),
+        ("연타", "데미지보너스", 1),
+        ("정밀", "명중보너스", 2),
+        ("수호", "AC", 1),
+    ],
+)
+def test_전투스타일은_특성으로_전투에_적용된다(스타일, 대상, 값):
+    상태 = 새게임([("", "귀검사")])
+    c = 상태["파티"]["파티원"][0]
+    gf._전투_시작(상태, ["고블린"], 레벨=1, 차수=1)
+    p = next(x for x in gf.아군_목록(상태))
+    전 = traits.특성_수치(상태["전투상태"], p, 대상)
+    c["보유특성"].append(스타일)
+    assert traits.특성_수치(상태["전투상태"], p, 대상) == 전 + 값
+
+
+def test_수호는_어그로배율을_올리고_직업유형은_전직으로_정해진다():
+    상태 = 새게임([("", "귀검사")])
+    c = 상태["파티"]["파티원"][0]
+    배율 = c["어그로배율"]
+    gf.캐릭터_레벨업_적용(c, 스타일="수호")
+    assert c["어그로배율"] == 배율 * 1.5
+    assert gf.캐릭터_직업유형(c) is None  # 전직 전
+    성장(상태, c, 6, 전직="웨펀마스터")
+    assert gf.캐릭터_직업유형(c) == "밀리"
+    assert {gf.직업유형[전직] for 전직 in 구현된_전직.values()} <= {
+        "밀리",
+        "캐스터",
+        "하이브리드",
+    }
+    assert set(구현된_전직.values()) <= set(gf.직업유형)
+    assert [n for n, _ in gf.전투스타일_목록()] == list(gf.전투스타일)
