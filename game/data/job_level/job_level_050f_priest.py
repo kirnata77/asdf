@@ -4,7 +4,7 @@
 # 가용무기: 십자가/염주/낫/토템/배틀액스 (eq_weapon_50.py)
 # 시작장비: 허술한 십자가 / 시작상의: 허름한 경갑 상의
 
-from game.data.job_level.job_level_000x_style import 전투스타일
+from game.data.job_level.job_level_000x_style import 선택가능_전투스타일
 
 레벨업테이블 = {
     1: {
@@ -29,7 +29,7 @@ from game.data.job_level.job_level_000x_style import 전투스타일
         "클래스": "프리스트",
         "획득": {
             "타입": "스타일",
-            "선택지": list(전투스타일),
+            "선택지": 선택가능_전투스타일,
             "설명": "전투 스타일 하나를 고른다(job_level_000x_style.py).",
         },
     },
