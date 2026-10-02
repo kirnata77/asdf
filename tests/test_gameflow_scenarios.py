@@ -12,7 +12,7 @@ import pytest
 import gameflow as gf
 from game.data.job_level import job_level_000x_style as 스타일파일
 from game.system.combat import damage, flow, stats, traits
-from game.system import dice_utils, map_system
+from game.system import dice_utils, dungeon_system
 from game.system import skill_system as ss
 from game.system import character_levelup_system as 레벨업
 from tests import support
@@ -21,16 +21,16 @@ from tests.support import 보스_처치, 새게임, 성장, 연결로_나가기
 
 def _던전(n):
     return {
-        1: "map_01A_D01_Lorien",
-        2: "map_01A_D02_Hollow_Lorien",
-        3: "map_01A_D03_mirkwood",
-        4: "map_01A_D04_Hollow_mirkwood",
-        5: "map_01A_D05_thunderland",
-        6: "map_01A_D06_poison_thunderland",
-        7: "map_01A_D07_frost_mirkwood",
-        8: "map_01A_D08_grakquarak",
-        9: "map_01A_D09_blazing_grakquarak",
-        10: "map_01A_D10_shadow_thunderland",
+        1: "dungeon_01A_D01_Lorien",
+        2: "dungeon_01A_D02_Hollow_Lorien",
+        3: "dungeon_01A_D03_mirkwood",
+        4: "dungeon_01A_D04_Hollow_mirkwood",
+        5: "dungeon_01A_D05_thunderland",
+        6: "dungeon_01A_D06_poison_thunderland",
+        7: "dungeon_01A_D07_frost_mirkwood",
+        8: "dungeon_01A_D08_grakquarak",
+        9: "dungeon_01A_D09_blazing_grakquarak",
+        10: "dungeon_01A_D10_shadow_thunderland",
     }[n]
 
 
@@ -657,14 +657,14 @@ def test_인카운트는_1퍼센트로_한_마리를_황금_고블린으로_바�
     gf.던전_진입(상태, _던전(1))
     던전상태 = 상태["던전상태"]
     던전상태["걸음수"] = 999  # 인카운트 확률 100%
-    assert map_system.인카운트_교체확률 == 0.01
+    assert dungeon_system.인카운트_교체확률 == 0.01
     값 = iter([0.0, 0.0])  # 인카운트 판정, 교체 판정(< 0.01)
-    monkeypatch.setattr(map_system.random, "random", lambda: next(값))
-    적 = map_system.인카운트_판정(던전상태)["등장몬스터"]
+    monkeypatch.setattr(dungeon_system.random, "random", lambda: next(값))
+    적 = dungeon_system.인카운트_판정(던전상태)["등장몬스터"]
     assert 적.count("황금 고블린") == 1
     값 = iter([0.0, 0.01])  # 교체 판정 실패
-    monkeypatch.setattr(map_system.random, "random", lambda: next(값))
-    assert "황금 고블린" not in map_system.인카운트_판정(던전상태)["등장몬스터"]
+    monkeypatch.setattr(dungeon_system.random, "random", lambda: next(값))
+    assert "황금 고블린" not in dungeon_system.인카운트_판정(던전상태)["등장몬스터"]
 
 
 def _아군_차례로(상태, 직업):

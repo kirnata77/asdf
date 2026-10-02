@@ -1,7 +1,7 @@
 [
  [
   "인카운트",
-  "map_01A_D01_Lorien",
+  "dungeon_01A_D01_Lorien",
   [
    10,
    3
@@ -13,13 +13,13 @@
  ],
  [
   "보스",
-  "map_01A_D01_Lorien",
+  "dungeon_01A_D01_Lorien",
   "아군승리",
   1
  ],
  [
   "인카운트",
-  "map_01A_D02_Hollow_Lorien",
+  "dungeon_01A_D02_Hollow_Lorien",
   [
    7,
    3
@@ -32,13 +32,13 @@
  ],
  [
   "보스",
-  "map_01A_D02_Hollow_Lorien",
+  "dungeon_01A_D02_Hollow_Lorien",
   "아군승리",
   2
  ],
  [
   "인카운트",
-  "map_01A_D02_Hollow_Lorien",
+  "dungeon_01A_D02_Hollow_Lorien",
   [
    15,
    3
@@ -49,7 +49,7 @@
  ],
  [
   "인카운트",
-  "map_01A_D03_mirkwood",
+  "dungeon_01A_D03_mirkwood",
   [
    8,
    3
@@ -62,13 +62,13 @@
  ],
  [
   "보스",
-  "map_01A_D03_mirkwood",
+  "dungeon_01A_D03_mirkwood",
   "아군승리",
   2
  ],
  [
   "인카운트",
-  "map_01A_D03_mirkwood",
+  "dungeon_01A_D03_mirkwood",
   [
    15,
    3
@@ -81,7 +81,7 @@
  ],
  [
   "인카운트",
-  "map_01A_D04_Hollow_mirkwood",
+  "dungeon_01A_D04_Hollow_mirkwood",
   [
    6,
    3
@@ -92,13 +92,13 @@
  ],
  [
   "보스",
-  "map_01A_D04_Hollow_mirkwood",
+  "dungeon_01A_D04_Hollow_mirkwood",
   "아군승리",
   4
  ],
  [
   "인카운트",
-  "map_01A_D05_thunderland",
+  "dungeon_01A_D05_thunderland",
   [
    12,
    3
@@ -111,7 +111,7 @@
  ],
  [
   "인카운트",
-  "map_01A_D05_thunderland",
+  "dungeon_01A_D05_thunderland",
   [
    20,
    3
@@ -122,13 +122,13 @@
  ],
  [
   "보스",
-  "map_01A_D05_thunderland",
+  "dungeon_01A_D05_thunderland",
   "아군승리",
   4
  ],
  [
   "인카운트",
-  "map_01A_D06_poison_thunderland",
+  "dungeon_01A_D06_poison_thunderland",
   [
    8,
    3
@@ -140,7 +140,7 @@
  ],
  [
   "인카운트",
-  "map_01A_D06_poison_thunderland",
+  "dungeon_01A_D06_poison_thunderland",
   [
    16,
    3
@@ -151,13 +151,13 @@
  ],
  [
   "보스",
-  "map_01A_D06_poison_thunderland",
+  "dungeon_01A_D06_poison_thunderland",
   "아군승리",
   6
  ],
  [
   "인카운트",
-  "map_01A_D03_mirkwood",
+  "dungeon_01A_D03_mirkwood",
   [
    9,
    3
@@ -170,13 +170,13 @@
  ],
  [
   "보스",
-  "map_01A_D03_mirkwood",
+  "dungeon_01A_D03_mirkwood",
   "아군승리",
   6
  ],
  [
   "인카운트",
-  "map_01A_D03_mirkwood",
+  "dungeon_01A_D03_mirkwood",
   [
    7,
    3
@@ -189,7 +189,7 @@
  ],
  [
   "인카운트",
-  "map_01A_D07_frost_mirkwood",
+  "dungeon_01A_D07_frost_mirkwood",
   [
    12,
    3
@@ -202,7 +202,7 @@
  ],
  [
   "인카운트",
-  "map_01A_D07_frost_mirkwood",
+  "dungeon_01A_D07_frost_mirkwood",
   [
    21,
    3
@@ -214,13 +214,13 @@
  ],
  [
   "보스",
-  "map_01A_D07_frost_mirkwood",
+  "dungeon_01A_D07_frost_mirkwood",
   "아군승리",
   6
  ],
  [
   "인카운트",
-  "map_01A_D08_grakquarak",
+  "dungeon_01A_D08_grakquarak",
   [
    8,
    3
@@ -232,7 +232,7 @@
  ],
  [
   "인카운트",
-  "map_01A_D08_grakquarak",
+  "dungeon_01A_D08_grakquarak",
   [
    18,
    3
@@ -244,13 +244,13 @@
  ],
  [
   "보스",
-  "map_01A_D08_grakquarak",
+  "dungeon_01A_D08_grakquarak",
   "아군승리",
   8
  ],
  [
   "인카운트",
-  "map_01A_D08_grakquarak",
+  "dungeon_01A_D08_grakquarak",
   [
    19,
    3
@@ -261,7 +261,7 @@
  ],
  [
   "인카운트",
-  "map_01A_D08_grakquarak",
+  "dungeon_01A_D08_grakquarak",
   [
    6,
    3
@@ -272,7 +272,7 @@
  ],
  [
   "인카운트",
-  "map_01A_D09_blazing_grakquarak",
+  "dungeon_01A_D09_blazing_grakquarak",
   [
    13,
    3
@@ -283,7 +283,7 @@
  ],
  [
   "인카운트",
-  "map_01A_D09_blazing_grakquarak",
+  "dungeon_01A_D09_blazing_grakquarak",
   [
    21,
    3
@@ -294,13 +294,13 @@
  ],
  [
   "보스",
-  "map_01A_D09_blazing_grakquarak",
+  "dungeon_01A_D09_blazing_grakquarak",
   "아군승리",
   8
  ],
  [
   "인카운트",
-  "map_01A_D10_shadow_thunderland",
+  "dungeon_01A_D10_shadow_thunderland",
   [
    8,
    3
@@ -314,7 +314,7 @@
  ],
  [
   "인카운트",
-  "map_01A_D10_shadow_thunderland",
+  "dungeon_01A_D10_shadow_thunderland",
   [
    18,
    3
@@ -326,7 +326,7 @@
  ],
  [
   "인카운트",
-  "map_01A_D10_shadow_thunderland",
+  "dungeon_01A_D10_shadow_thunderland",
   [
    26,
    3
@@ -339,7 +339,7 @@
  ],
  [
   "보스",
-  "map_01A_D10_shadow_thunderland",
+  "dungeon_01A_D10_shadow_thunderland",
   "아군승리",
   10
  ],
@@ -347,70 +347,70 @@
   "클리어한오브젝트",
   [
    [
-    "map_01A_D01_Lorien",
+    "dungeon_01A_D01_Lorien",
     [
      15,
      3
     ]
    ],
    [
-    "map_01A_D02_Hollow_Lorien",
+    "dungeon_01A_D02_Hollow_Lorien",
     [
      15,
      3
     ]
    ],
    [
-    "map_01A_D03_mirkwood",
+    "dungeon_01A_D03_mirkwood",
     [
      15,
      3
     ]
    ],
    [
-    "map_01A_D04_Hollow_mirkwood",
+    "dungeon_01A_D04_Hollow_mirkwood",
     [
      15,
      3
     ]
    ],
    [
-    "map_01A_D05_thunderland",
+    "dungeon_01A_D05_thunderland",
     [
      25,
      3
     ]
    ],
    [
-    "map_01A_D06_poison_thunderland",
+    "dungeon_01A_D06_poison_thunderland",
     [
      25,
      3
     ]
    ],
    [
-    "map_01A_D07_frost_mirkwood",
+    "dungeon_01A_D07_frost_mirkwood",
     [
      25,
      3
     ]
    ],
    [
-    "map_01A_D08_grakquarak",
+    "dungeon_01A_D08_grakquarak",
     [
      25,
      3
     ]
    ],
    [
-    "map_01A_D09_blazing_grakquarak",
+    "dungeon_01A_D09_blazing_grakquarak",
     [
      25,
      3
     ]
    ],
    [
-    "map_01A_D10_shadow_thunderland",
+    "dungeon_01A_D10_shadow_thunderland",
     [
      35,
      3

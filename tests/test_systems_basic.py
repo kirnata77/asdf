@@ -13,7 +13,7 @@ from game.system import (
     character_data_system as 데이터,
     dice_utils,
     effect_engine,
-    map_system,
+    dungeon_system,
     monster_ai,
     party_system,
     player_system,
@@ -283,36 +283,36 @@ def _작은맵(**추가):
 
 
 def test_지도_이동과_오브젝트():
-    상태 = map_system.던전_시작(_작은맵(), "작은맵")
+    상태 = dungeon_system.던전_시작(_작은맵(), "작은맵")
     assert 상태["위치"] == (1, 1)  # 입장좌표 없음 -> 첫 O/# 칸
-    assert map_system.이동_시도(상태, "위") == {"결과": "이동불가"}
-    결과 = map_system.이동_시도(상태, "오른쪽")
+    assert dungeon_system.이동_시도(상태, "위") == {"결과": "이동불가"}
+    결과 = dungeon_system.이동_시도(상태, "오른쪽")
     assert 결과["결과"] == "오브젝트" and 결과["위치"] == (2, 1)
     assert 상태["위치"] == (1, 1) and 상태["걸음수"] == 0  # 오브젝트 칸엔 안 들어간다
-    결과 = map_system.이동_시도(상태, "아래")
+    결과 = dungeon_system.이동_시도(상태, "아래")
     assert 결과 == {
         "결과": "이동",
         "위치": (1, 2),
         "인카운트": None,
         "연결지역": {"연결맵": "town_01A_T01_Elvengard"},
     }
-    map_system.오브젝트_클리어_처리(상태, (2, 1))
-    map_system.오브젝트_클리어_처리(상태, (9, 9))  # 없는 좌표 -> 무시
-    assert map_system.칸_문자(상태["그리드"], (2, 1)) == "O"
-    assert map_system.칸_문자(상태["그리드"], (-1, 0)) is None
-    assert map_system.칸_문자(상태["그리드"], (0, 9)) is None
-    assert map_system.칸_문자(상태["그리드"], (9, 0)) is None
+    dungeon_system.오브젝트_클리어_처리(상태, (2, 1))
+    dungeon_system.오브젝트_클리어_처리(상태, (9, 9))  # 없는 좌표 -> 무시
+    assert dungeon_system.칸_문자(상태["그리드"], (2, 1)) == "O"
+    assert dungeon_system.칸_문자(상태["그리드"], (-1, 0)) is None
+    assert dungeon_system.칸_문자(상태["그리드"], (0, 9)) is None
+    assert dungeon_system.칸_문자(상태["그리드"], (9, 0)) is None
 
 
 def test_연결지역화_와_시작좌표():
     맵 = _작은맵(입장좌표=(3, 2))
     맵["오브젝트"][(2, 1)]["클리어시"] = "연결지역화"
-    상태 = map_system.던전_시작(맵, "작은맵")
+    상태 = dungeon_system.던전_시작(맵, "작은맵")
     assert 상태["위치"] == (3, 2)
-    assert map_system.던전_시작(맵, "작은맵", 시작좌표=(2, 2))["위치"] == (2, 2)
-    map_system.오브젝트_클리어_처리(상태, (2, 1))
+    assert dungeon_system.던전_시작(맵, "작은맵", 시작좌표=(2, 2))["위치"] == (2, 2)
+    dungeon_system.오브젝트_클리어_처리(상태, (2, 1))
     assert 상태["그리드"][1][2] == "#"
-    assert map_system._기본_시작좌표([["X"]]) == (0, 0)
+    assert dungeon_system._기본_시작좌표([["X"]]) == (0, 0)
 
 
 def test_숏컷_해금():
@@ -321,10 +321,10 @@ def test_숏컷_해금():
     맵["오브젝트"][(2, 2)] = {"타입": "숏컷", "해금조건": {"필요오브젝트좌표": (2, 1)}}
     맵["오브젝트"][(3, 3)] = {"타입": "숏컷", "해금조건": {}}  # 조건 없음 -> 무시
     진행도 = town_system.새_진행도()
-    assert map_system.던전_시작(맵, "작은맵", 진행도=진행도)["그리드"][2][2] == "X"
+    assert dungeon_system.던전_시작(맵, "작은맵", 진행도=진행도)["그리드"][2][2] == "X"
     town_system.오브젝트_클리어_기록(진행도, "작은맵", (2, 1))
-    assert map_system.던전_시작(맵, "작은맵", 진행도=진행도)["그리드"][2][2] == "O"
-    assert map_system.던전_시작(맵, "작은맵")["그리드"][2][2] == "X"  # 진행도 없음
+    assert dungeon_system.던전_시작(맵, "작은맵", 진행도=진행도)["그리드"][2][2] == "O"
+    assert dungeon_system.던전_시작(맵, "작은맵")["그리드"][2][2] == "X"  # 진행도 없음
 
 
 def test_인카운트_확률_경계(monkeypatch):
@@ -333,20 +333,20 @@ def test_인카운트_확률_경계(monkeypatch):
         "출현마리수": (2, 2),
         "출현그룹": [{"그룹확률": 1, "출현몬스터": {"고블린": 1}}],
     }
-    상태 = map_system.던전_시작(_작은맵(인카운트=인카운트), "작은맵")
+    상태 = dungeon_system.던전_시작(_작은맵(인카운트=인카운트), "작은맵")
     상태["걸음수"] = 2
-    assert map_system.인카운트_판정(상태) is None  # 안전걸음 이내
+    assert dungeon_system.인카운트_판정(상태) is None  # 안전걸음 이내
     상태["걸음수"] = 4  # 초과 2걸음 -> 확률 0.5
-    monkeypatch.setattr(map_system.random, "random", lambda: 0.5)
-    assert map_system.인카운트_판정(상태) is None  # 0.5 >= 0.5 -> 안 뜸
-    monkeypatch.setattr(map_system.random, "random", lambda: 0.49)
-    assert map_system.인카운트_판정(상태) == {"등장몬스터": ["고블린", "고블린"]}
+    monkeypatch.setattr(dungeon_system.random, "random", lambda: 0.5)
+    assert dungeon_system.인카운트_판정(상태) is None  # 0.5 >= 0.5 -> 안 뜸
+    monkeypatch.setattr(dungeon_system.random, "random", lambda: 0.49)
+    assert dungeon_system.인카운트_판정(상태) == {"등장몬스터": ["고블린", "고블린"]}
     # 이동 중 인카운트가 뜨면 걸음수가 0으로 돌아간다
     상태["걸음수"] = 10
-    결과 = map_system.이동_시도(상태, "아래")
+    결과 = dungeon_system.이동_시도(상태, "아래")
     assert 결과["인카운트"] is None  # "#" 칸은 인카운트 판정을 안 한다
     상태["위치"], 상태["걸음수"] = (3, 1), 10
-    결과 = map_system.이동_시도(상태, "아래")
+    결과 = dungeon_system.이동_시도(상태, "아래")
     assert 결과["인카운트"] and 상태["걸음수"] == 0
 
 

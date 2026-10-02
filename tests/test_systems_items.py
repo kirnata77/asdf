@@ -299,6 +299,22 @@ def test_세이브_구버전_형식과_요약(임시_세이브폴더):
     assert save_system.세이브_요약(3) is None
 
 
+def test_세이브_map_던전파일명은_dungeon으로_바꿔_불러온다(임시_세이브폴더):
+    구버전 = {
+        "플레이어": player_system.빈_플레이어(),
+        "진행도": {
+            "클리어한던전": ["map_01A_D01_Lorien"],
+            "클리어한오브젝트": [["map_01A_D02_Hollow_Lorien", [15, 3]]],
+        },
+    }
+    (임시_세이브폴더 / "slot_1.json").write_text(
+        json.dumps(구버전, ensure_ascii=False), encoding="utf-8"
+    )
+    _, 진행도 = save_system.게임_불러오기(1)
+    assert 진행도["클리어한던전"] == {"dungeon_01A_D01_Lorien"}
+    assert 진행도["클리어한오브젝트"] == {("dungeon_01A_D02_Hollow_Lorien", (15, 3))}
+
+
 def test_세이브_신버전_기본값_채움(임시_세이브폴더):
     (임시_세이브폴더 / "slot_1.json").write_text(
         json.dumps(

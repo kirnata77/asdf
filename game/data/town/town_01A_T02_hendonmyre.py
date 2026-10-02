@@ -8,9 +8,9 @@
     "상세지역": ["아라드", "벨마이어 공국 북부"],
     "배경이미지": "asset_town_hendonmyre.webp",
     "던전목록": [
-        "map_01A_D03_mirkwood",
-        "map_01A_D05_thunderland",
-        "map_01A_D08_grakquarak",
+        "dungeon_01A_D03_mirkwood",
+        "dungeon_01A_D05_thunderland",
+        "dungeon_01A_D08_grakquarak",
     ],
     "상점판매목록": [
         # 무기 - 귀검사
@@ -105,6 +105,6 @@
     ],
     "개방조건": {
         "타입": "던전클리어",
-        "대상": "map_01A_D02_Hollow_Lorien",
+        "대상": "dungeon_01A_D02_Hollow_Lorien",
     },  # 로리엔 안쪽 클리어
 }
