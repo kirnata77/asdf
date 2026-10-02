@@ -390,6 +390,7 @@ def 사용_가능여부(
     MP소모 = MP소모오버라이드
     if MP소모 is None:
         MP소모 = 스킬데이터.get("MP소모", 0)
+    MP소모 *= stats.MP소모_배율(참가자)  # 중갑/판금 패널티
     # MP 칸이 없는 참가자(몬스터)는 보유 0으로 본다 - MP가 드는 스킬은 못 쓴다.
     if MP소모 and 참가자.get("현재MP", 0) < MP소모:
         return False, f"MP가 부족하다 (필요 {MP소모}, 보유 {참가자.get('현재MP', 0)})."
@@ -477,6 +478,7 @@ def 자원_소비_처리(
     MP소모 = MP소모오버라이드
     if MP소모 is None:
         MP소모 = 스킬데이터.get("MP소모", 0)
+    MP소모 *= stats.MP소모_배율(참가자)  # 중갑/판금 패널티
     if MP소모:
         참가자["현재MP"] -= MP소모
 
