@@ -171,8 +171,8 @@ class _스킬선택팝업(Popup):
     """ "스킬" 버튼을 누르면 뜨는 목록 팝업(액션 버튼 5칸 고정 레이아웃이라
     화면에 스킬 목록을 펼칠 자리가 없다)."""
 
-    def __init__(self, 항목목록, 선택콜백, **kwargs):
-        super().__init__(title="스킬 선택", size_hint=(0.85, 0.75), **kwargs)
+    def __init__(self, 항목목록, 선택콜백, 제목="스킬 선택", **kwargs):
+        super().__init__(title=제목, size_hint=(0.85, 0.75), **kwargs)
         self.선택콜백 = 선택콜백
 
         스크롤 = ScrollView()
@@ -858,9 +858,28 @@ class 전투화면(Screen):
         self._엔진_실행(lambda: gameflow.턴_넘기기(앱.게임상태), lambda _: self.갱신())
 
     def _아이템_클릭(self):
-        # 아직 아이템/인벤토리 시스템 자체가 없어(게임 데이터에 아이템
-        # 목록이 없음) 자리만 만들어 둔 버튼이다.
-        self.안내라벨.text = "아이템은 아직 구현되지 않았습니다."
+        """ "아이템" 버튼 - 소지품의 회복포션 목록. 보조행동 1개로 자신에게 쓴다."""
+        항목목록 = [
+            (
+                이름,
+                None,
+                사유 is None,
+                f"{이름} x{개수}" + (f"\n({사유})" if 사유 else ""),
+            )
+            for 이름, 개수, 사유 in gameflow.아군_회복포션_목록(
+                App.get_running_app().게임상태
+            )
+        ]
+        if not 항목목록:
+            self.안내라벨.text = "사용할 수 있는 회복포션이 없습니다."
+            return
+        _스킬선택팝업(
+            항목목록, lambda 이름, _: self._포션_실행(이름), 제목="포션 (보조행동)"
+        ).open()
+
+    def _포션_실행(self, 이름):
+        앱 = App.get_running_app()
+        self._오류표시_실행(lambda: gameflow.아군_포션사용(앱.게임상태, 이름))
 
     # -------------------------------------------------
     # 도망

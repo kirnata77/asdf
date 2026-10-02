@@ -9,10 +9,12 @@ import gameflow as gf
 from game.data.monster.monster_drop import 드랍표_모음
 from game.system import (
     character_data_system as 데이터,
+    dice_utils,
     character_levelup_system as 레벨업,
     equipment_system as 장비,
     loot_system as 전리품,
     player_system,
+    potion_system as 포션시스템,
     save_system,
     shop_system as 상점,
 )
@@ -606,3 +608,39 @@ def test_드랍그룹_이름과_포션군은_차수_티어의_HP06_MP04(카탈�
     ]
     assert set(나온것) == {"입문자용 HP 포션", "입문자용 MP 포션"}
     assert 0.53 < 나온것.count("입문자용 HP 포션") / 500 < 0.67
+
+
+# ------------------------------------------------------------------- potion
+def test_회복포션_굴림_최소값과_최대치(monkeypatch):
+    포션 = {
+        "티어": 3,
+        "회복대상": "HP",
+        "회복값": "(차수)d10+건강보정치",
+        "최소회복값": 1,
+        "레벨제한": 11,
+    }
+    monkeypatch.setattr(dice_utils, "주사위_합", lambda 개수, 면수: 개수 * 100 + 면수)
+    assert 포션시스템.회복량_굴림(포션, 2) == 310 + 2  # 3d10 -> 개수/면수 확인
+    monkeypatch.setattr(dice_utils, "주사위_합", lambda 개수, 면수: 3)
+    assert 포션시스템.회복량_굴림(포션, -1) == 2
+    assert 포션시스템.회복량_굴림(포션, -5) == 1  # 3-5 -> 최소 1
+    mp포션 = dict(포션, 회복대상="MP", 회복값="(차수)d6+주문시전보정치")
+    assert 포션시스템.회복량_굴림(mp포션, 1) == 4
+    대상 = {"현재HP": 8}
+    assert 포션시스템.포션_적용(대상, 포션, 0, 10) == 2 and 대상["현재HP"] == 10
+
+
+def test_회복포션_사용불가_사유와_소지품_차감():
+    포션 = {"티어": 1, "회복대상": "MP", "레벨제한": 6}
+    사유 = 포션시스템.사용불가_사유
+    assert 사유(포션, 6, 5, 3, 10, 1) is None
+    assert "소지품" in 사유(포션, 6, 5, 3, 10, 0)
+    assert "레벨 6" in 사유(포션, 5, 5, 3, 10, 1)
+    assert "쓰러진" in 사유(포션, 6, 0, 3, 10, 1)
+    assert "가득" in 사유(포션, 6, 5, 10, 10, 1)
+    소지품 = {"포션": {"a": 2}}
+    포션시스템.소지품_차감(소지품, "a")
+    포션시스템.소지품_차감(소지품, "a")
+    assert 소지품["포션"] == {}
+    with pytest.raises(ValueError):
+        포션시스템.소지품_차감(소지품, "a")
