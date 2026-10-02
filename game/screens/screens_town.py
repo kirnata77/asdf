@@ -15,6 +15,7 @@ from kivy.uix.image import Image
 from kivy.uix.spinner import Spinner
 from kivy.uix.textinput import TextInput
 from kivy.metrics import dp
+from kivy.uix.widget import Widget
 
 import gameflow
 from game.screens.screens_common import (
@@ -687,14 +688,22 @@ class 상점화면(Screen):
         줄 = BoxLayout(
             orientation="horizontal", size_hint=(1, None), height=_버튼_높이, spacing=4
         )
-        일괄버튼 = Button(text="일괄해체", size_hint=(0.34, 1))
+        # 세 칸 모두 "일괄해체" 글자 너비에 맞춘 같은 크기로, 오른쪽 끝에 붙인다.
+        일괄버튼 = Button(text="일괄해체", size_hint=(None, 1))
         self.일괄등급 = Spinner(
-            text="커먼", values=gameflow.상점_해체_등급목록, size_hint=(0.33, 1)
+            text="커먼", values=gameflow.상점_해체_등급목록, size_hint=(None, 1)
         )
         self.일괄부위 = Spinner(
-            text="전체", values=gameflow.상점_해체_탭목록, size_hint=(0.33, 1)
+            text="전체", values=gameflow.상점_해체_탭목록, size_hint=(None, 1)
         )
+
+        def 너비_맞추기(inst, ts):
+            for 칸 in (일괄버튼, self.일괄등급, self.일괄부위):
+                칸.width = ts[0] + dp(28)
+
+        일괄버튼.bind(texture_size=너비_맞추기)
         일괄버튼.bind(on_release=lambda *_: self._일괄해체_확인(목록틀))
+        줄.add_widget(Widget())  # 왼쪽 빈 공간
         줄.add_widget(일괄버튼)
         줄.add_widget(self.일괄등급)
         줄.add_widget(self.일괄부위)
