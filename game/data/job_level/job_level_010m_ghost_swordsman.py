@@ -3,7 +3,7 @@
 # 가용무기: 소검/도/둔기/대검 (eq_weapon_10.py, 광검은 특성으로 별도 해금)
 # 시작장비: 녹슨 소검 / 시작상의: 허름한 경갑 상의
 
-from game.data.job_level.job_level_000x_style import 전투스타일
+from game.data.job_level.job_level_000x_style import 선택가능_전투스타일
 
 레벨업테이블 = {
     1: {
@@ -27,7 +27,7 @@ from game.data.job_level.job_level_000x_style import 전투스타일
         "클래스": "귀검사",
         "획득": {
             "타입": "스타일",
-            "선택지": list(전투스타일),
+            "선택지": 선택가능_전투스타일,
             "설명": "전투 스타일 하나를 고른다(job_level_000x_style.py).",
         },
     },

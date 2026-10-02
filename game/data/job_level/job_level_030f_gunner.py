@@ -3,7 +3,7 @@
 # 가용무기: 자동권총/보우건/리볼버/머스켓/핸드캐넌 (eq_weapon_30.py)
 # 시작장비: 조악한 보우건 / 시작상의: 갈라진 가죽 상의
 
-from game.data.job_level.job_level_000x_style import 전투스타일
+from game.data.job_level.job_level_000x_style import 선택가능_전투스타일
 
 레벨업테이블 = {
     1: {
@@ -27,7 +27,7 @@ from game.data.job_level.job_level_000x_style import 전투스타일
         "클래스": "거너",
         "획득": {
             "타입": "스타일",
-            "선택지": list(전투스타일),
+            "선택지": 선택가능_전투스타일,
             "설명": "전투 스타일 하나를 고른다(job_level_000x_style.py).",
         },
     },

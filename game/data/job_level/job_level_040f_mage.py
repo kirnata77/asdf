@@ -3,7 +3,7 @@
 # 가용무기: 로드/스태프/봉/창 (eq_weapon_40.py, 빗자루는 추후 특성으로 해금)
 # 시작장비: 부패한 스태프 / 시작상의: 찢어진 천갑 상의
 
-from game.data.job_level.job_level_000x_style import 전투스타일
+from game.data.job_level.job_level_000x_style import 선택가능_전투스타일
 
 레벨업테이블 = {
     1: {
@@ -28,7 +28,7 @@ from game.data.job_level.job_level_000x_style import 전투스타일
         "클래스": "마법사",
         "획득": {
             "타입": "스타일",
-            "선택지": list(전투스타일),
+            "선택지": 선택가능_전투스타일,
             "설명": "전투 스타일 하나를 고른다(job_level_000x_style.py).",
         },
     },
