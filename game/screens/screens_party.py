@@ -964,10 +964,68 @@ class 파티원화면(Screen):
                 Label(text=f"{이름} {유효[이름]}" + (f"({차이:+d})" if 차이 else ""))
             )
         창.add_widget(능력치판)
-        상세버튼 = Button(text="상세보기", size_hint=(1, 0.26))
+        버튼줄 = BoxLayout(orientation="horizontal", size_hint=(1, 0.26), spacing=6)
+        상세버튼 = Button(text="상세보기")
         상세버튼.bind(on_release=lambda *_: self._상세정보_팝업(게임상태, 캐릭터))
-        창.add_widget(상세버튼)
+        버튼줄.add_widget(상세버튼)
+        포션버튼 = Button(text="포션 사용")
+        포션버튼.bind(on_release=lambda *_: self._포션_팝업(게임상태, 캐릭터))
+        버튼줄.add_widget(포션버튼)
+        창.add_widget(버튼줄)
         return 창
+
+    def _포션_팝업(self, 게임상태, 캐릭터):
+        """소지품의 회복포션 목록 - 누르면 이 캐릭터에게 1개 쓰고 결과를 보여준다.
+        팝업은 열어 둔 채 목록을 다시 그린다(여러 개 연달아 마실 수 있게)."""
+        본문 = BoxLayout(orientation="vertical", spacing=6, padding=10)
+        안내 = Label(text="", size_hint=(1, 0.12))
+        목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=6)
+        목록틀.bind(minimum_height=목록틀.setter("height"))
+        스크롤 = ScrollView(size_hint=(1, 0.76))
+        스크롤.add_widget(목록틀)
+
+        def 다시그리기():
+            목록틀.clear_widgets()
+            목록 = gameflow.캐릭터_회복포션_목록(게임상태, 캐릭터)
+            if not 목록:
+                목록틀.add_widget(
+                    Label(text="(회복포션이 없습니다)", size_hint_y=None, height=dp(48))
+                )
+            for 이름, 개수, 사유 in 목록:
+                버튼 = Button(
+                    text=f"{이름} x{개수}" + (f"\n({사유})" if 사유 else ""),
+                    size_hint_y=None,
+                    height=dp(56),
+                    disabled=사유 is not None,
+                    halign="center",
+                )
+                버튼.bind(on_release=lambda inst, n=이름: 마시기(n))
+                목록틀.add_widget(버튼)
+
+        def 마시기(이름):
+            try:
+                대상, 회복 = gameflow.캐릭터_포션사용(게임상태, 캐릭터, 이름)
+            except ValueError as 오류:
+                안내.text = str(오류)
+                return
+            안내.text = f"{이름}: {대상} {회복} 회복"
+            다시그리기()
+            self.갱신()
+
+        다시그리기()
+        본문.add_widget(안내)
+        본문.add_widget(스크롤)
+        팝업 = Popup(
+            title=f"{캐릭터['캐릭터명']} 포션 사용",
+            content=본문,
+            size_hint=(0.9, 0.75),
+            auto_dismiss=False,
+        )
+        닫기 = Button(text="닫기", size_hint=(1, 0.12))
+        뒤로키_버튼(닫기)
+        닫기.bind(on_release=lambda *_: 팝업.dismiss())
+        본문.add_widget(닫기)
+        팝업.open()
 
     def _상세정보_팝업(self, 게임상태, 캐릭터):
         본문 = BoxLayout(orientation="vertical", spacing=6, padding=10)
