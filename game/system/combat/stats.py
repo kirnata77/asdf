@@ -1,6 +1,7 @@
 # 전투 시스템 - 수치 집계 - 버프/디버프/장비/특성 반영 능력치, AC/방어력/보호률/최대HP, 이니셔티브/우선도, 수식 컨텍스트.
 # (combat 패키지에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
 
+from game.system import character_data_system as 캐릭터데이터
 from game.system import equipment_system
 from game.system.combat import core, formula, participants, status, traits
 
@@ -164,9 +165,7 @@ def 평타_능력치_보정치(전투상태, 참가자):
 def 주문시전_보정치(전투상태, 참가자):
     if 참가자["진영"] != "아군":
         return 0
-    스탯 = 참가자["원본"]["주문시전능력치"]
-    if 스탯 is None:
-        return 0
+    스탯 = 캐릭터데이터.주문시전능력치(참가자["원본"])
     return 유효_능력치_보정치(전투상태, 참가자, 스탯)
 
 
