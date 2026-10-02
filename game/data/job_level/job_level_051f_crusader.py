@@ -1,8 +1,6 @@
 # 크루세이더 레벨업 테이블 (분류번호 051f, 레벨 6~10)
 # 양식: job_level_format.py
 
-from game.data.job_level.job_level_000x_style import 선택가능_전투스타일
-
 # 직업 스타일(job_level_000x_style.py "직업스타일" 중 하나)
 직업스타일 = "하이브리드"
 
@@ -10,8 +8,6 @@ from game.data.job_level.job_level_000x_style import 선택가능_전투스타�
     6: {
         "분류": "레벨진행",
         "타입": "특성획득",
-        # 전직하며 전투 스타일을 다시 고른다(기존 스타일과 교체)
-        "스타일선택지": 선택가능_전투스타일,
         "클래스": "크루세이더",
         "주문시전능력치": "지혜",
         "획득": {

@@ -264,6 +264,13 @@ class 파티관리화면(Screen):
                 배분점수,
                 확인콜백=lambda 배분: self._레벨업_확정(캐릭터, 배분=배분),
             )
+        elif 타입 == "마스터리선택":
+            self._마스터리선택_팝업(
+                캐릭터,
+                확인콜백=lambda 무기, 방어구: self._레벨업_확정(
+                    캐릭터, 무기마스터리=무기, 방어구마스터리=방어구
+                ),
+            )
         elif 타입 == "스타일선택":
             self._스타일선택_팝업(
                 캐릭터,
@@ -448,6 +455,65 @@ class 파티관리화면(Screen):
     # -------------------------------------------------
     # 퍽 선택 팝업 ("퍽획득" 타입)
     # -------------------------------------------------
+
+    def _마스터리선택_팝업(self, 캐릭터, 확인콜백):
+        """레벨 2 "마스터리선택" - 무기 숙련/방어구 숙련을 하나씩 골라(토글) [확인]."""
+        무기목록, 방어구목록 = gameflow.캐릭터_마스터리_선택지(캐릭터)
+        고른 = {"무기": None, "방어구": None}
+
+        본문 = BoxLayout(orientation="vertical", spacing=6, padding=10)
+        목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=4)
+        목록틀.bind(minimum_height=목록틀.setter("height"))
+        스크롤 = ScrollView(size_hint=(1, 0.78))
+        스크롤.add_widget(목록틀)
+        본문.add_widget(스크롤)
+        확인 = Button(text="확인", size_hint=(1, 0.11), disabled=True)
+
+        def 고르기(종류, 이름):
+            고른[종류] = 이름
+            확인.disabled = None in 고른.values()
+
+        for 종류, 목록 in (("무기", 무기목록), ("방어구", 방어구목록)):
+            목록틀.add_widget(
+                Label(text=f"{종류} 마스터리", size_hint=(1, None), height=dp(32))
+            )
+            for 이름, 설명 in 목록:
+                버튼 = ToggleButton(
+                    text=f"{이름} - {설명}",
+                    group=f"마스터리_{종류}",
+                    size_hint=(1, None),
+                    height=dp(48),
+                    font_size="13sp",
+                    halign="center",
+                )
+                버튼.bind(
+                    size=lambda inst, sz: setattr(inst, "text_size", (sz[0] - 12, None))
+                )
+                버튼.bind(
+                    on_release=lambda inst, k=종류, n=이름: 고르기(
+                        k, n if inst.state == "down" else None
+                    )
+                )
+                목록틀.add_widget(버튼)
+
+        팝업 = Popup(
+            title=f"{캐릭터['캐릭터명']} 마스터리 선택",
+            content=본문,
+            size_hint=(0.92, 0.9),
+            auto_dismiss=False,
+        )
+
+        def 확인_클릭(*_):
+            팝업.dismiss()
+            확인콜백(고른["무기"], 고른["방어구"])
+
+        확인.bind(on_release=확인_클릭)
+        본문.add_widget(확인)
+        취소 = Button(text="취소", size_hint=(1, 0.11))
+        뒤로키_버튼(취소)
+        취소.bind(on_release=lambda *_: 팝업.dismiss())
+        본문.add_widget(취소)
+        팝업.open()
 
     def _스타일선택_팝업(self, 캐릭터, 획득, 확인콜백):
         """레벨 2 "스타일선택" - 스타일마다 이름+설명 버튼, 맨 아래 [취소]."""
