@@ -14,6 +14,7 @@ from kivy.uix.popup import Popup
 from kivy.uix.image import Image
 from kivy.uix.spinner import Spinner
 from kivy.uix.textinput import TextInput
+from kivy.metrics import dp
 
 import gameflow
 from game.screens.screens_common import (
@@ -515,9 +516,21 @@ class 상점화면(Screen):
         목록스크롤.add_widget(목록틀)
         self.내용틀.add_widget(목록스크롤)
 
-        탭목록 = gameflow.상점_탭목록(대분류)
+        if 모드 == "해체":
+            self.내용틀.add_widget(self._일괄해체_줄(목록틀))
+            # 일괄해체 줄을 탭 줄 위로(탭/목록보다 먼저 보이게)
+            줄 = self.내용틀.children[0]
+            self.내용틀.remove_widget(줄)
+            self.내용틀.add_widget(줄, index=len(self.내용틀.children) - 1)
+            탭목록 = gameflow.상점_해체_탭목록
+        else:
+            탭목록 = gameflow.상점_탭목록(대분류)
         for 탭이름 in 탭목록:
-            탭버튼 = Button(text=탭이름, size_hint=(None, 1), width=140)
+            # 탭 너비는 글자 길이에 맞춘다(좌우 여백 dp(14)씩)
+            탭버튼 = Button(text=탭이름, size_hint=(None, 1), padding=(dp(14), 0))
+            탭버튼.bind(
+                texture_size=lambda inst, ts: setattr(inst, "width", ts[0] + dp(28))
+            )
             탭버튼.bind(
                 on_release=lambda inst, m=모드, d=대분류, t=탭이름, 목록틀=목록틀: (
                     self._아이템목록_그리기(m, d, t, 목록틀)
@@ -554,14 +567,21 @@ class 상점화면(Screen):
             항목목록 = gameflow.상점_판매목록(게임상태, 대분류, 탭)
             빈문구 = "팔 수 있는 물건이 없습니다."
 
+        self._현재탭 = 탭
         if not 항목목록:
             목록틀.add_widget(Label(text=빈문구, size_hint=(1, None), height=40))
             return
 
-        for 아이템, 최대수량 in 항목목록:
-            목록틀.add_widget(self._행_생성(모드, 대분류, 탭, 아이템, 최대수량, 목록틀))
+        for 항목 in 항목목록:
+            아이템, 최대수량 = 항목[0], 항목[1]
+            부위 = (
+                항목[2] if len(항목) > 2 else 탭
+            )  # 해체 [전체]는 장비마다 부위가 다르다
+            목록틀.add_widget(
+                self._행_생성(모드, 대분류, 부위, 아이템, 최대수량, 목록틀, 표시탭=탭)
+            )
 
-    def _행_생성(self, 모드, 대분류, 탭, 아이템, 최대수량, 목록틀):
+    def _행_생성(self, 모드, 대분류, 탭, 아이템, 최대수량, 목록틀, 표시탭=None):
         if 모드 == "구매":
             단가글 = f"{아이템['가격']}G"
         elif 모드 == "해체":
@@ -617,6 +637,7 @@ class 상점화면(Screen):
                 a["이름"],
                 수량상태,
                 목록틀,
+                표시탭=표시탭,
             )
         )
         행.add_widget(거래버튼)
@@ -627,7 +648,7 @@ class 상점화면(Screen):
     # 거래 처리
     # -------------------------------------------------
 
-    def _거래_클릭(self, 모드, 대분류, 탭, 이름, 수량상태, 목록틀):
+    def _거래_클릭(self, 모드, 대분류, 탭, 이름, 수량상태, 목록틀, 표시탭=None):
         앱 = App.get_running_app()
         게임상태 = 앱.게임상태
         수량 = 수량상태["값"]
@@ -659,7 +680,71 @@ class 상점화면(Screen):
         self._골드_갱신()
         # 판매는 보유 수량이 바뀌므로, 구매/판매 둘 다 목록을 다시 그려
         # (품절/재고 변화를) 반영한다.
-        self._아이템목록_그리기(모드, 대분류, 탭, 목록틀)
+        self._아이템목록_그리기(모드, 대분류, 표시탭 or 탭, 목록틀)
+
+    # -------------------------------------------------
+    # 일괄해체 - [일괄해체] + 등급/부위 범위(기본 커먼 / 전체)
+    # -------------------------------------------------
+
+    def _일괄해체_줄(self, 목록틀):
+        줄 = BoxLayout(
+            orientation="horizontal", size_hint=(1, None), height=_버튼_높이, spacing=4
+        )
+        일괄버튼 = Button(text="일괄해체", size_hint=(0.34, 1))
+        self.일괄등급 = Spinner(
+            text="커먼", values=gameflow.상점_해체_등급목록, size_hint=(0.33, 1)
+        )
+        self.일괄부위 = Spinner(
+            text="전체", values=gameflow.상점_해체_탭목록, size_hint=(0.33, 1)
+        )
+        일괄버튼.bind(on_release=lambda *_: self._일괄해체_확인(목록틀))
+        줄.add_widget(일괄버튼)
+        줄.add_widget(self.일괄등급)
+        줄.add_widget(self.일괄부위)
+        return 줄
+
+    def _일괄해체_확인(self, 목록틀):
+        게임상태 = App.get_running_app().게임상태
+        등급, 부위 = self.일괄등급.text, self.일괄부위.text
+        대상 = gameflow.상점_일괄해체_대상(게임상태, 등급, 부위)
+        if not 대상:
+            self.안내라벨.text = f"{등급} · {부위}: 해체할 장비가 없습니다."
+            return
+        개수 = sum(수량 for _, 수량, _ in 대상)
+        본문 = BoxLayout(orientation="vertical", spacing=8, padding=12)
+        본문.add_widget(
+            Label(
+                text=f"{등급} · {부위} 장비 {개수}개({len(대상)}종)를 모두 해체할까요?\n"
+                "되돌릴 수 없습니다. 장착 중인 장비는 빠집니다.",
+                halign="center",
+            )
+        )
+        팝업 = Popup(
+            title="일괄해체", content=본문, size_hint=(0.85, 0.45), auto_dismiss=False
+        )
+
+        def 해체(*_):
+            팝업.dismiss()
+            try:
+                수, 얻음 = gameflow.상점_일괄해체(게임상태, 등급, 부위)
+            except ValueError as 오류:
+                self.안내라벨.text = str(오류)
+                return
+            self.안내라벨.text = f"{수}개 해체: " + ", ".join(
+                f"{재료} {n}" for 재료, n in 얻음.items()
+            )
+            self._아이템목록_그리기("해체", "장비", self._현재탭, 목록틀)
+
+        버튼줄 = BoxLayout(orientation="horizontal", spacing=8, size_hint=(1, 0.35))
+        해체버튼 = Button(text="해체")
+        해체버튼.bind(on_release=해체)
+        취소버튼 = Button(text="취소")
+        뒤로키_버튼(취소버튼)
+        취소버튼.bind(on_release=lambda *_: 팝업.dismiss())
+        버튼줄.add_widget(해체버튼)
+        버튼줄.add_widget(취소버튼)
+        본문.add_widget(버튼줄)
+        팝업.open()
 
     # -------------------------------------------------
     # 자세히 보기 팝업

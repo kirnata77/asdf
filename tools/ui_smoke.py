@@ -152,7 +152,41 @@ class 스모크앱(main.DnfMobileApp):
         )
         assert 상태["소지품"]["재료"]["커먼 소울"] == 소울전 + 1
         _찍기("shop_dismantle_after")
-        결과["단계"].append("상점 해체(장비 -> 소울 + 큐브 조각)")
+
+        # [전체] 탭이 맨 앞, 일괄해체 기본 범위는 커먼 / 전체
+        탭글 = [
+            w.text
+            for w in 상점.내용틀.walk(restrict=True)
+            if isinstance(w, Button) and w.text in gf.상점_해체_탭목록
+        ]
+        assert 탭글[0] == "전체", 탭글
+        assert (상점.일괄등급.text, 상점.일괄부위.text) == ("커먼", "전체")
+        for 이름 in ("찢어진 천갑 하의", "조잡한 반지"):
+            상태["소지품"]["장비"][이름] = 상태["소지품"]["장비"].get(이름, 0) + 1
+        일괄 = next(
+            w
+            for w in 상점.내용틀.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "일괄해체"
+        )
+        일괄.dispatch("on_release")
+        yield 0.5
+        팝업 = list(Window.children)[0]
+        assert 팝업.title == "일괄해체", 팝업
+        _찍기("shop_dismantle_batch_confirm")
+        next(
+            w
+            for w in 팝업.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "해체"
+        ).dispatch("on_release")
+        yield 0.3
+        assert "해체:" in 상점.안내라벨.text and "커먼 소울" in 상점.안내라벨.text, (
+            상점.안내라벨.text
+        )
+        assert not gf.상점_일괄해체_대상(상태, "커먼", "전체")
+        _찍기("shop_dismantle_batch_after")
+        결과["단계"].append(
+            "상점 해체(장비 -> 소울 + 큐브 조각, [전체] 탭, 일괄해체 커먼/전체 확인 팝업)"
+        )
 
         매니저.current = "파티관리"
         매니저.get_screen("파티관리")._능력치배분_팝업(
