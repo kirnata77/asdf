@@ -383,6 +383,9 @@ class 마을이동목록화면(Screen):
 # 미구현이라 안내 문구만 보여준다.
 
 
+_행_글자크기 = "16sp"  # 상점 아이템 줄의 글자 크기(이름/버튼/가격/수량 모두)
+
+
 class 상점화면(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -524,10 +527,10 @@ class 상점화면(Screen):
         else:
             탭목록 = gameflow.상점_탭목록(대분류)
         for 탭이름 in 탭목록:
-            # 탭 너비는 글자 길이에 맞춘다(좌우 여백 dp(14)씩)
-            탭버튼 = Button(text=탭이름, size_hint=(None, 1), padding=(dp(14), 0))
+            # 탭 너비는 글자 길이에 맞춘다(좌우 여백 dp(8)씩)
+            탭버튼 = Button(text=탭이름, size_hint=(None, 1), padding=(dp(8), 0))
             탭버튼.bind(
-                texture_size=lambda inst, ts: setattr(inst, "width", ts[0] + dp(28))
+                texture_size=lambda inst, ts: setattr(inst, "width", ts[0] + dp(16))
             )
             탭버튼.bind(
                 on_release=lambda inst, m=모드, d=대분류, t=탭이름, 목록틀=목록틀: (
@@ -587,28 +590,37 @@ class 상점화면(Screen):
         else:
             단가글 = f"{gameflow.상점_판매가(아이템)}G"
 
+        행높이 = 56
+        글자 = _행_글자크기  # 이 줄의 글자/버튼은 모두 같은 크기, 세로 가운데
         행 = BoxLayout(
-            orientation="horizontal", size_hint=(1, None), height=56, spacing=4
+            orientation="horizontal", size_hint=(1, None), height=행높이, spacing=4
         )
 
         이름라벨 = Label(
-            text=아이템["이름"], size_hint=(0.3, 1), halign="left", font_size=22
+            text=아이템["이름"],
+            size_hint=(0.34, 1),
+            halign="left",
+            valign="middle",
+            font_size=글자,
+            shorten=True,
+            shorten_from="right",
         )
         이름라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
         행.add_widget(이름라벨)
 
-        자세히버튼 = Button(text="자세히", size_hint=(0.16, 1))
+        자세히버튼 = Button(text="자세히", size_hint=(0.16, 1), font_size=글자)
         자세히버튼.bind(on_release=lambda *_, a=아이템: self._자세히보기(a))
         행.add_widget(자세히버튼)
 
-        단가라벨 = Label(text=단가글, size_hint=(0.14, 1), font_size=22)
+        단가라벨 = Label(text=단가글, size_hint=(0.14, 1), font_size=글자)
         행.add_widget(단가라벨)
 
         수량상태 = {"값": 1}
 
-        감소버튼 = Button(text="-", size_hint=(0.1, 1))
-        수량라벨 = Label(text="1", size_hint=(0.08, 1))
-        증가버튼 = Button(text="+", size_hint=(0.1, 1))
+        # -/+ 는 줄 높이와 같은 정사각형
+        감소버튼 = Button(text="-", size_hint=(None, 1), width=행높이, font_size=글자)
+        수량라벨 = Label(text="1", size_hint=(0.08, 1), font_size=글자)
+        증가버튼 = Button(text="+", size_hint=(None, 1), width=행높이, font_size=글자)
 
         def 감소(*_):
             if 수량상태["값"] > 1:
@@ -626,7 +638,7 @@ class 상점화면(Screen):
         행.add_widget(수량라벨)
         행.add_widget(증가버튼)
 
-        거래버튼 = Button(text=모드, size_hint=(0.12, 1))
+        거래버튼 = Button(text=모드, size_hint=(0.12, 1), font_size=글자)
         거래버튼.bind(
             on_release=lambda *_, a=아이템: self._거래_클릭(
                 모드,
