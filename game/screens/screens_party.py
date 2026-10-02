@@ -264,6 +264,21 @@ class 파티관리화면(Screen):
                 배분점수,
                 확인콜백=lambda 배분: self._레벨업_확정(캐릭터, 배분=배분),
             )
+        elif 타입 == "스타일선택":
+            self._스타일선택_팝업(
+                캐릭터,
+                항목["획득"],
+                확인콜백=lambda 스타일: self._레벨업_확정(캐릭터, 스타일=스타일),
+            )
+        elif 타입 == "스탯성장":
+            획득 = 항목["획득"]
+            self._능력치배분_팝업(
+                캐릭터,
+                획득["배분점수"],
+                확인콜백=lambda 배분: self._레벨업_확정(캐릭터, 배분=배분),
+                스탯당최대=획득["스탯당최대"],
+                약점제외=True,
+            )
         elif 타입 == "퍽획득":
             self._퍽선택_팝업(
                 캐릭터,
@@ -339,11 +354,18 @@ class 파티관리화면(Screen):
     # 능력치 배분 팝업 ("스탯획득" 타입 / "능력치향상" 퍽 공용)
     # -------------------------------------------------
 
-    def _능력치배분_팝업(self, 캐릭터, 배분점수, 확인콜백):
+    def _능력치배분_팝업(
+        self, 캐릭터, 배분점수, 확인콜백, 스탯당최대=None, 약점제외=False
+    ):
+        """스탯당최대: 한 능력치에 넣을 수 있는 최대 점수(None이면 제한 없음).
+        약점제외: 약점제거 특성이 있어도 약점스탯에는 못 넣는다("스탯성장")."""
         배분 = {이름: 0 for 이름 in self._능력치_목록}
         투자가능 = {
-            이름: gameflow.약점스탯_투자가능(캐릭터, 이름) for 이름 in self._능력치_목록
+            이름: gameflow.약점스탯_투자가능(캐릭터, 이름)
+            and not (약점제외 and 이름 == 캐릭터.get("약점스탯"))
+            for 이름 in self._능력치_목록
         }
+        한도 = 배분점수 if 스탯당최대 is None else 스탯당최대
 
         본문 = BoxLayout(orientation="vertical", spacing=6, padding=12)
         남은점수라벨 = Label(text="", size_hint=(1, 0.12))
@@ -379,12 +401,16 @@ class 파티관리화면(Screen):
             for 이름, (감소버튼, 값라벨, 증가버튼) in 행위젯.items():
                 값라벨.text = str(배분[이름])
                 감소버튼.disabled = 배분[이름] <= 0
-                증가버튼.disabled = not (투자가능[이름] and 남은 > 0)
+                증가버튼.disabled = not (
+                    투자가능[이름] and 남은 > 0 and 배분[이름] < 한도
+                )
             확인버튼.disabled = 남은 != 0
 
         def 증감(이름, 증감값):
             if 증감값 > 0:
                 if not 투자가능[이름] or (배분점수 - sum(배분.values())) <= 0:
+                    return
+                if 배분[이름] >= 한도:
                     return
             elif 배분[이름] <= 0:
                 return
@@ -407,6 +433,31 @@ class 파티관리화면(Screen):
     # -------------------------------------------------
     # 퍽 선택 팝업 ("퍽획득" 타입)
     # -------------------------------------------------
+
+    def _스타일선택_팝업(self, 캐릭터, 획득, 확인콜백):
+        """레벨 2 "스타일선택" - 선택지 버튼과 설명, 맨 아래 [취소]."""
+        본문 = BoxLayout(orientation="vertical", spacing=8, padding=12)
+        본문.add_widget(_줄바꿈_라벨(획득["설명"]))
+        팝업 = Popup(
+            title=f"{캐릭터['캐릭터명']} 스타일 선택",
+            content=본문,
+            size_hint=(0.85, 0.6),
+            auto_dismiss=False,
+        )
+
+        def 고르기(스타일):
+            팝업.dismiss()
+            확인콜백(스타일)
+
+        for 스타일 in 획득["선택지"]:
+            버튼 = Button(text=스타일, size_hint=(1, None), height=dp(52))
+            버튼.bind(on_release=lambda inst, s=스타일: 고르기(s))
+            본문.add_widget(버튼)
+        취소 = Button(text="취소", size_hint=(1, None), height=dp(44))
+        뒤로키_버튼(취소)
+        취소.bind(on_release=lambda *_: 팝업.dismiss())
+        본문.add_widget(취소)
+        팝업.open()
 
     def _퍽선택_팝업(self, 캐릭터, 확인콜백):
         목록 = gameflow.선택가능_퍽목록(캐릭터)
