@@ -538,7 +538,7 @@ class 스모크앱(main.DnfMobileApp):
             버튼.dispatch("on_release")
 
         _팝업_닫기()
-        gf.던전_진입(상태, "map_01A_D01_Lorien")
+        gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
         for 몬스터들, 끝내기, 첫줄, 전리품줄, 도착, 사진 in (
             (
                 ["고블린", "겁쟁이 고블린"],
@@ -647,7 +647,7 @@ class 스모크앱(main.DnfMobileApp):
             yield 0.5
             assert 매니저.current == 도착, 매니저.current
             if 도착 == "마을":
-                gf.던전_진입(상태, "map_01A_D01_Lorien")
+                gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
         결과["단계"].append(
             "전투 종료 팝업(승리 전리품/없음, 도망, 패배) + 전투 보상 선택/포기"
         )

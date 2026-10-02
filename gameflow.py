@@ -100,16 +100,24 @@ from game.data.monster.monster_drop import 드랍표_모음
 from game.data.item.item_consumable import 소모품_데이터
 from game.data.item.item_food import 음식_데이터
 
-from game.data.MAP.map_01A_D01_Lorien import 맵정보 as _로리엔
-from game.data.MAP.map_01A_D02_Hollow_Lorien import 맵정보 as _로리엔안쪽
-from game.data.MAP.map_01A_D03_mirkwood import 맵정보 as _머크우드
-from game.data.MAP.map_01A_D04_Hollow_mirkwood import 맵정보 as _머크우드깊숙한곳
-from game.data.MAP.map_01A_D05_thunderland import 맵정보 as _선더랜드
-from game.data.MAP.map_01A_D06_poison_thunderland import 맵정보 as _포이즌선더랜드
-from game.data.MAP.map_01A_D07_frost_mirkwood import 맵정보 as _프로스트머크우드
-from game.data.MAP.map_01A_D08_grakquarak import 맵정보 as _그락카락
-from game.data.MAP.map_01A_D09_blazing_grakquarak import 맵정보 as _불타는그락카락
-from game.data.MAP.map_01A_D10_shadow_thunderland import 맵정보 as _어둠의선더랜드
+from game.data.dungeon.dungeon_01A_D01_Lorien import 맵정보 as _로리엔
+from game.data.dungeon.dungeon_01A_D02_Hollow_Lorien import 맵정보 as _로리엔안쪽
+from game.data.dungeon.dungeon_01A_D03_mirkwood import 맵정보 as _머크우드
+from game.data.dungeon.dungeon_01A_D04_Hollow_mirkwood import (
+    맵정보 as _머크우드깊숙한곳,
+)
+from game.data.dungeon.dungeon_01A_D05_thunderland import 맵정보 as _선더랜드
+from game.data.dungeon.dungeon_01A_D06_poison_thunderland import (
+    맵정보 as _포이즌선더랜드,
+)
+from game.data.dungeon.dungeon_01A_D07_frost_mirkwood import 맵정보 as _프로스트머크우드
+from game.data.dungeon.dungeon_01A_D08_grakquarak import 맵정보 as _그락카락
+from game.data.dungeon.dungeon_01A_D09_blazing_grakquarak import (
+    맵정보 as _불타는그락카락,
+)
+from game.data.dungeon.dungeon_01A_D10_shadow_thunderland import (
+    맵정보 as _어둠의선더랜드,
+)
 from game.data.town.town_01A_T01_Elvengard import 마을정보 as _엘븐가드
 from game.data.town.town_01A_T02_hendonmyre import 마을정보 as _헨돈마이어
 
@@ -269,16 +277,16 @@ for _직업정보 in 직업_레지스트리.values():
 # town_system.py의 "기본_마을목록()"과 같은 이유로, 새 던전 파일이
 # 추가되면 여기에도 손으로 import + 등록을 해줘야 한다.
 던전_레지스트리 = {
-    "map_01A_D01_Lorien": _로리엔,
-    "map_01A_D02_Hollow_Lorien": _로리엔안쪽,
-    "map_01A_D03_mirkwood": _머크우드,
-    "map_01A_D04_Hollow_mirkwood": _머크우드깊숙한곳,
-    "map_01A_D05_thunderland": _선더랜드,
-    "map_01A_D06_poison_thunderland": _포이즌선더랜드,
-    "map_01A_D07_frost_mirkwood": _프로스트머크우드,
-    "map_01A_D08_grakquarak": _그락카락,
-    "map_01A_D09_blazing_grakquarak": _불타는그락카락,
-    "map_01A_D10_shadow_thunderland": _어둠의선더랜드,
+    "dungeon_01A_D01_Lorien": _로리엔,
+    "dungeon_01A_D02_Hollow_Lorien": _로리엔안쪽,
+    "dungeon_01A_D03_mirkwood": _머크우드,
+    "dungeon_01A_D04_Hollow_mirkwood": _머크우드깊숙한곳,
+    "dungeon_01A_D05_thunderland": _선더랜드,
+    "dungeon_01A_D06_poison_thunderland": _포이즌선더랜드,
+    "dungeon_01A_D07_frost_mirkwood": _프로스트머크우드,
+    "dungeon_01A_D08_grakquarak": _그락카락,
+    "dungeon_01A_D09_blazing_grakquarak": _불타는그락카락,
+    "dungeon_01A_D10_shadow_thunderland": _어둠의선더랜드,
 }
 
 # 연결지역의 "연결맵"(마을 파일명) -> 마을정보. 던전 끝의 "#"으로 나가면
@@ -292,11 +300,11 @@ for _직업정보 in 직업_레지스트리.values():
 # 처리). 로리엔(01)은 없음, 짝수 던전 보스마다 +2 - 로리엔 안쪽 2,
 # 머크우드 깊숙한곳 4, 포이즌 선더랜드 6, 그락카락 8, 어둠의 선더랜드 10.
 _플레이어레벨업_트리거 = {
-    ("map_01A_D02_Hollow_Lorien", (15, 3)): 2,
-    ("map_01A_D04_Hollow_mirkwood", (15, 3)): 4,
-    ("map_01A_D06_poison_thunderland", (25, 3)): 6,
-    ("map_01A_D08_grakquarak", (25, 3)): 8,
-    ("map_01A_D10_shadow_thunderland", (35, 3)): 10,
+    ("dungeon_01A_D02_Hollow_Lorien", (15, 3)): 2,
+    ("dungeon_01A_D04_Hollow_mirkwood", (15, 3)): 4,
+    ("dungeon_01A_D06_poison_thunderland", (25, 3)): 6,
+    ("dungeon_01A_D08_grakquarak", (25, 3)): 8,
+    ("dungeon_01A_D10_shadow_thunderland", (35, 3)): 10,
 }
 
 
@@ -1572,7 +1580,7 @@ def 전투_결과_정리(게임상태):
     승리 시, 이 전투가 던전 오브젝트(보스 등) 클리어로 시작됐다면
     map_system.오브젝트_클리어_처리()(타일 상태 변경)와 함께
     town_system.오브젝트_클리어_기록()(진행도에 영구 기록 - 세이브에
-    반영되고, map_format.py "숏컷" 해금 조건에도 쓰인다)도 같이
+    반영되고, dungeon_format.py "숏컷" 해금 조건에도 쓰인다)도 같이
     호출한다.
 
     승리하면 전리품(쓰러뜨린 적의 획득골드/드랍표)도 굴려 소지품에 넣고

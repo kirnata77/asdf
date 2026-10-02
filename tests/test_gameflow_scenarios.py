@@ -21,16 +21,16 @@ from tests.support import 보스_처치, 새게임, 성장, 연결로_나가기
 
 def _던전(n):
     return {
-        1: "map_01A_D01_Lorien",
-        2: "map_01A_D02_Hollow_Lorien",
-        3: "map_01A_D03_mirkwood",
-        4: "map_01A_D04_Hollow_mirkwood",
-        5: "map_01A_D05_thunderland",
-        6: "map_01A_D06_poison_thunderland",
-        7: "map_01A_D07_frost_mirkwood",
-        8: "map_01A_D08_grakquarak",
-        9: "map_01A_D09_blazing_grakquarak",
-        10: "map_01A_D10_shadow_thunderland",
+        1: "dungeon_01A_D01_Lorien",
+        2: "dungeon_01A_D02_Hollow_Lorien",
+        3: "dungeon_01A_D03_mirkwood",
+        4: "dungeon_01A_D04_Hollow_mirkwood",
+        5: "dungeon_01A_D05_thunderland",
+        6: "dungeon_01A_D06_poison_thunderland",
+        7: "dungeon_01A_D07_frost_mirkwood",
+        8: "dungeon_01A_D08_grakquarak",
+        9: "dungeon_01A_D09_blazing_grakquarak",
+        10: "dungeon_01A_D10_shadow_thunderland",
     }[n]
 
 
