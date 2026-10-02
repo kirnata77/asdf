@@ -127,7 +127,7 @@ from game.data.buff.debuff import 디버프목록
 from game.data.buff.status_effects import 상태이상목록
 
 from game.data.ability.job_ability_0000 import 특성목록 as _공용특성
-from game.data.job_level.job_level_000x_style import 전투스타일, 직업유형
+from game.data.job_level.job_level_000x_style import 전투스타일
 from game.data.perks.perks_class_0000 import 퍽목록 as _공용퍽
 
 
@@ -226,12 +226,13 @@ def _전직정보_생성(항목):
         "구현": False,
         "레벨업테이블": {},
         "스킬목록": {},
+        "직업스타일": None,
     }
     if not 파일명:
         return 정보
-    정보["레벨업테이블"] = importlib.import_module(
-        f"game.data.job_level.{파일명}"
-    ).레벨업테이블
+    모듈 = importlib.import_module(f"game.data.job_level.{파일명}")
+    정보["레벨업테이블"] = 모듈.레벨업테이블
+    정보["직업스타일"] = getattr(모듈, "직업스타일", None)
     try:
         정보["스킬목록"] = importlib.import_module(
             f"game.data.job_skill.{파일명.replace('job_level_', 'job_skill_', 1)}"
@@ -2063,10 +2064,11 @@ def 전투스타일_목록():
     return [(이름, 정의["설명"]) for 이름, 정의 in 전투스타일.items()]
 
 
-def 캐릭터_직업유형(캐릭터):
-    """2차수부터 전직 직업에 따라 정해지는 밀리/캐스터/하이브리드. 전직 전이나
-    표에 없는 전직이면 None."""
-    return 직업유형.get(캐릭터.get("전직"))
+def 캐릭터_직업스타일(캐릭터):
+    """2차수부터 전직 직업에 따라 정해지는 밀리/캐스터/하이브리드(전직 레벨 파일의
+    "직업스타일"). 전직 전이나 적혀 있지 않으면 None."""
+    전직정보 = 전직_레지스트리.get(캐릭터["직업"], {}).get(캐릭터.get("전직"))
+    return (전직정보 or {}).get("직업스타일")
 
 
 def 캐릭터_상세정보(게임상태, 캐릭터):
@@ -2081,7 +2083,11 @@ def 캐릭터_상세정보(게임상태, 캐릭터):
         + (f" → {캐릭터['전직']}" if 캐릭터.get("전직") else ""),
         f"레벨: {캐릭터['레벨']}   차수: {core.차수(참가자)}"
         + (f"   스타일: {캐릭터['스타일']}" if 캐릭터.get("스타일") else "")
-        + (f"   유형: {캐릭터_직업유형(캐릭터)}" if 캐릭터_직업유형(캐릭터) else ""),
+        + (
+            f"   직업스타일: {캐릭터_직업스타일(캐릭터)}"
+            if 캐릭터_직업스타일(캐릭터)
+            else ""
+        ),
         f"HP: {캐릭터['현재HP']}/{캐릭터_최대HP(게임상태, 캐릭터)}   "
         f"MP: {캐릭터['현재MP']}/{캐릭터_최대MP(게임상태, 캐릭터)}",
     ]

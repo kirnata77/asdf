@@ -10,6 +10,7 @@ import random
 import pytest
 
 import gameflow as gf
+from game.data.job_level import job_level_000x_style as 스타일파일
 from game.system.combat import damage, flow, stats, traits
 from game.system import dice_utils, map_system
 from game.system import skill_system as ss
@@ -1447,7 +1448,7 @@ def test_1차수_레벨2_스타일_레벨4_퍽_레벨5_스탯성장():
     assert c["스타일"] is None
     assert 표[2]["획득"]["선택지"] == ["강타", "급소", "연타", "정밀", "수호"]
     with pytest.raises(ValueError, match="스타일은"):
-        gf.캐릭터_레벨업_적용(c, 스타일="밀리")  # 밀리는 2차수 직업유형이다
+        gf.캐릭터_레벨업_적용(c, 스타일="밀리")  # 밀리는 2차수 직업 스타일이다
     assert c["레벨"] == 1
     gf.캐릭터_레벨업_적용(c, 스타일="정밀")
     assert (c["레벨"], c["스타일"]) == (2, "정밀") and "정밀" in c["보유특성"]
@@ -1497,19 +1498,26 @@ def test_전투스타일은_특성으로_전투에_적용된다(스타일, 대�
     assert traits.특성_수치(상태["전투상태"], p, 대상) == 전 + 값
 
 
-def test_수호는_어그로배율을_올리고_직업유형은_전직으로_정해진다():
+def test_수호는_어그로배율을_올리고_직업스타일은_전직으로_정해진다():
     상태 = 새게임([("", "귀검사")])
     c = 상태["파티"]["파티원"][0]
     배율 = c["어그로배율"]
     gf.캐릭터_레벨업_적용(c, 스타일="수호")
     assert c["어그로배율"] == 배율 * 1.5
-    assert gf.캐릭터_직업유형(c) is None  # 전직 전
+    assert gf.캐릭터_직업스타일(c) is None  # 전직 전
     성장(상태, c, 6, 전직="웨펀마스터")
-    assert gf.캐릭터_직업유형(c) == "밀리"
-    assert {gf.직업유형[전직] for 전직 in 구현된_전직.values()} <= {
-        "밀리",
-        "캐스터",
-        "하이브리드",
+    assert gf.캐릭터_직업스타일(c) == "밀리"
+    assert any("직업스타일: 밀리" in 줄 for 줄 in gf.캐릭터_상세정보(상태, c)[0][1])
+    배정 = {
+        전직: gf.전직_레지스트리[직업][전직]["직업스타일"]
+        for 직업, 전직 in 구현된_전직.items()
     }
-    assert set(구현된_전직.values()) <= set(gf.직업유형)
+    assert 배정 == {
+        "웨펀마스터": "밀리",
+        "스트라이커": "밀리",
+        "레인저": "밀리",
+        "엘리멘탈마스터": "캐스터",
+        "크루세이더": "하이브리드",
+    }
+    assert set(배정.values()) <= set(스타일파일.직업스타일)
     assert [n for n, _ in gf.전투스타일_목록()] == list(gf.전투스타일)
