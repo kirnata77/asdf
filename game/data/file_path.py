@@ -130,7 +130,7 @@
     "dice_utils": "game.system.dice_utils",
     "effect_engine": "game.system.effect_engine",
     "monster_ai": "game.system.monster_ai",
-    "map_system": "game.system.map_system",
+    "dungeon_system": "game.system.dungeon_system",
     "party_system": "game.system.party_system",
     "player_system": "game.system.player_system",
     "save_system": "game.system.save_system",

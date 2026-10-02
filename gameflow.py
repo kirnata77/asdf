@@ -45,7 +45,7 @@ from game.system import character_creation_system as 캐릭터생성
 from game.system import character_data_system as 캐릭터데이터
 from game.system import character_levelup_system as 캐릭터레벨업
 from game.system import party_system
-from game.system import map_system
+from game.system import dungeon_system
 from game.system.combat import (
     attacks,
     core,
@@ -719,7 +719,7 @@ def 휴식(게임상태):
 
 def 던전_진입(게임상태, 던전파일명):
     맵정보 = 던전_레지스트리[던전파일명]
-    게임상태["던전상태"] = map_system.던전_시작(
+    게임상태["던전상태"] = dungeon_system.던전_시작(
         맵정보,
         던전파일명,
         진행도=게임상태["진행도"],
@@ -744,7 +744,7 @@ def 연결지역_처리(게임상태, 연결정보):
     if 연결맵 in 던전_레지스트리:
         # 던전 -> 던전 연결(로리엔 -> 로리엔 안쪽, 숏컷 등). "진입좌표"로
         # 다음 던전에 들어간다.
-        게임상태["던전상태"] = map_system.던전_시작(
+        게임상태["던전상태"] = dungeon_system.던전_시작(
             던전_레지스트리[연결맵],
             연결맵,
             시작좌표=연결정보.get("진입좌표"),
@@ -1008,13 +1008,13 @@ def 파티_인카운트없음(게임상태):
 
 def 던전_이동(게임상태, 방향):
     """방향("위"/"아래"/"왼쪽"/"오른쪽")으로 한 칸 이동을 시도한다.
-    map_system.이동_시도()의 결과를 그대로 돌려주되, 이동 중 무작위
+    dungeon_system.이동_시도()의 결과를 그대로 돌려주되, 이동 중 무작위
     인카운트가 뜨면 그 자리에서 전투를 시작하고 "결과"를 "전투시작"으로
     바꿔서 알려준다. "연결지역"(마을/다음 던전 연결)이 함께 오면
     화면 쪽에서 연결지역_처리()를 호출해 실제로 마을로 돌아갈지, 아직
     지원하지 않는 곳인지 판단한다. 파티_인카운트없음()이면 무작위
     인카운트가 없다(오브젝트/보스 등 이벤트 전투는 그대로)."""
-    이동결과 = map_system.이동_시도(
+    이동결과 = dungeon_system.이동_시도(
         게임상태["던전상태"], 방향, 인카운트없음=파티_인카운트없음(게임상태)
     )
 
@@ -1578,7 +1578,7 @@ def 전투_결과_정리(게임상태):
     다음 전투/던전 진행에 반영하려면 호출하는 쪽이 직접 챙겨야 한다.
 
     승리 시, 이 전투가 던전 오브젝트(보스 등) 클리어로 시작됐다면
-    map_system.오브젝트_클리어_처리()(타일 상태 변경)와 함께
+    dungeon_system.오브젝트_클리어_처리()(타일 상태 변경)와 함께
     town_system.오브젝트_클리어_기록()(진행도에 영구 기록 - 세이브에
     반영되고, dungeon_format.py "숏컷" 해금 조건에도 쓰인다)도 같이
     호출한다.
@@ -1607,7 +1607,7 @@ def 전투_결과_정리(게임상태):
                 던전파일명,
                 클리어위치,
             )
-            map_system.오브젝트_클리어_처리(던전상태, 클리어위치)
+            dungeon_system.오브젝트_클리어_처리(던전상태, 클리어위치)
             town_system.오브젝트_클리어_기록(
                 게임상태["진행도"],
                 던전파일명,
