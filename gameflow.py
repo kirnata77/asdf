@@ -42,6 +42,7 @@
 # 사본에 덮어써서 넘긴다(_몬스터원본목록_생성 참고).
 
 from game.system import character_creation_system as 캐릭터생성
+from game.system import character_data_system as 캐릭터데이터
 from game.system import character_levelup_system as 캐릭터레벨업
 from game.system import party_system
 from game.system import map_system
@@ -1979,7 +1980,7 @@ def 캐릭터_상세정보(게임상태, 캐릭터):
         f"방어력: {stats.유효_방어력(전투상태, 참가자)}   보호률: {stats.유효_보호률(전투상태, 참가자)}",
         f"치명타범위: {치명}~20" if 치명 < 20 else "치명타범위: 20",
     ]
-    주문스탯 = 캐릭터.get("주문시전능력치")
+    주문스탯 = 캐릭터데이터.주문시전능력치(캐릭터)
     if 주문스탯:
         주문보정 = stats.주문시전_보정치(전투상태, 참가자)
         주문명중 = (
