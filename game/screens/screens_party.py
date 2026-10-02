@@ -435,13 +435,13 @@ class 파티관리화면(Screen):
     # -------------------------------------------------
 
     def _스타일선택_팝업(self, 캐릭터, 획득, 확인콜백):
-        """레벨 2 "스타일선택" - 선택지 버튼과 설명, 맨 아래 [취소]."""
+        """레벨 2 "스타일선택" - 스타일마다 이름+설명 버튼, 맨 아래 [취소]."""
         본문 = BoxLayout(orientation="vertical", spacing=8, padding=12)
         본문.add_widget(_줄바꿈_라벨(획득["설명"]))
         팝업 = Popup(
             title=f"{캐릭터['캐릭터명']} 스타일 선택",
             content=본문,
-            size_hint=(0.85, 0.6),
+            size_hint=(0.9, 0.85),
             auto_dismiss=False,
         )
 
@@ -449,8 +449,18 @@ class 파티관리화면(Screen):
             팝업.dismiss()
             확인콜백(스타일)
 
+        설명 = dict(gameflow.전투스타일_목록())
         for 스타일 in 획득["선택지"]:
-            버튼 = Button(text=스타일, size_hint=(1, None), height=dp(52))
+            버튼 = Button(
+                text=f"{스타일}\n{설명.get(스타일, '')}",
+                size_hint=(1, None),
+                height=dp(64),
+                halign="center",
+                font_size="13sp",
+            )
+            버튼.bind(
+                size=lambda inst, sz: setattr(inst, "text_size", (sz[0] - 12, None))
+            )
             버튼.bind(on_release=lambda inst, s=스타일: 고르기(s))
             본문.add_widget(버튼)
         취소 = Button(text="취소", size_hint=(1, None), height=dp(44))
