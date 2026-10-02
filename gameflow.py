@@ -60,6 +60,7 @@ from game.system.combat import (
 from game.system import skill_system
 from game.system import skill_learn_system
 from game.system import lodge_system
+from game.system import dismantle_system
 from game.system import town_system
 from game.system import save_system
 from game.system import shop_system
@@ -781,6 +782,41 @@ def 상점_구매(게임상태, 대분류, 탭, 이름, 수량, 상점판매목�
         이름,
         수량,
         상점판매목록=상점판매목록,
+    )
+
+
+상점_해체_탭목록 = dismantle_system.해체_탭목록()
+상점_해체_등급목록 = list(dismantle_system.소울_레어도)
+
+
+def 상점_해체목록(게임상태, 탭):
+    """[(장비데이터, 해체가능수량, 부위탭)] - 장착 중이 아닌 보유 장비(dismantle_system).
+    탭이 "전체"면 모든 부위."""
+    return dismantle_system.해체목록(
+        _플레이어뷰(게임상태), 게임상태["상점카탈로그"], 탭
+    )
+
+
+def 상점_해체(게임상태, 탭, 이름, 수량):
+    """장비를 해체해 소울/큐브 조각을 소지품 "재료"에 넣는다. 얻은 {재료: 개수}를
+    반환한다. 실패하면 ValueError."""
+    return dismantle_system.해체_처리(
+        _플레이어뷰(게임상태), 게임상태["상점카탈로그"], 탭, 이름, 수량
+    )
+
+
+def 상점_일괄해체_대상(게임상태, 레어도, 탭):
+    """[(이름, 수량, 부위탭)] - 일괄해체 확인 팝업용."""
+    return dismantle_system.일괄해체_대상(
+        _플레이어뷰(게임상태), 게임상태["상점카탈로그"], 레어도, 탭
+    )
+
+
+def 상점_일괄해체(게임상태, 레어도, 탭):
+    """그 레어도 + 부위(또는 "전체")의 해체 가능한 장비를 전부 해체한다.
+    (해체한 수, {재료: 개수}). 대상이 없으면 ValueError."""
+    return dismantle_system.일괄해체(
+        _플레이어뷰(게임상태), 게임상태["상점카탈로그"], 레어도, 탭
     )
 
 

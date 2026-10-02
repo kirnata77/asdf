@@ -28,6 +28,7 @@ import main  # noqa: E402 - 크래시 로그 훅/폰트 등록 등 앱 초기화
 from kivy.clock import Clock  # noqa: E402
 from kivy.core.window import Window  # noqa: E402
 from kivy.uix.button import Button  # noqa: E402
+from kivy.uix.scrollview import ScrollView  # noqa: E402
 
 import gameflow as gf  # noqa: E402
 from game.screens import screens_party  # noqa: E402
@@ -48,6 +49,32 @@ from tests import support  # noqa: E402
 def _찍기(이름):
     os.makedirs(스크린샷폴더, exist_ok=True)
     Window.screenshot(name=os.path.join(스크린샷폴더, 이름 + ".png"))
+
+
+def _스크롤_확인(스크롤, 이름):
+    """목록이 화면보다 길고, 손가락으로 끌어 올리면 내려가며, 맨 아래 항목까지 보이는지.
+    제너레이터 - 단계 안에서 yield from 으로 부른다."""
+    from kivy.tests.common import UnitTestTouch
+
+    내용 = 스크롤.children[0]
+    assert 내용.height > 스크롤.height + 10, (이름, 내용.height, 스크롤.height)
+    스크롤.scroll_y = 1
+    yield 0.2
+    x, y = 스크롤.to_window(스크롤.center_x, 스크롤.center_y)
+    손 = UnitTestTouch(x, y - 스크롤.height * 0.3)
+    손.touch_down()
+    for i in range(1, 13):
+        손.touch_move(x, y - 스크롤.height * 0.3 + i * 25)
+    손.touch_up()
+    yield 0.6
+    assert 스크롤.scroll_y < 0.99, (이름, "끌어도 안 내려감", 스크롤.scroll_y)
+    yield 1.5  # 끌고 난 뒤 관성 스크롤이 멈출 때까지
+    스크롤.scroll_y = 0
+    yield 0.8
+    마지막 = 내용.children[0]  # BoxLayout은 마지막에 넣은 위젯이 children[0]
+    _, 아래 = 마지막.to_window(*마지막.pos)
+    _, 바닥 = 스크롤.to_window(*스크롤.pos)
+    assert 바닥 - 4 <= 아래 <= 바닥 + 스크롤.height, (이름, 아래, 바닥)
 
 
 def _팝업_닫기():
@@ -121,6 +148,72 @@ class 스모크앱(main.DnfMobileApp):
         yield 0.5
         _찍기("shop_sell")
         결과["단계"].append("상점 구매/판매 목록")
+
+        # 해체: 메인에 [해체], 장비 목록에서 해체하면 소울/큐브 조각이 재료로
+        상점._메인_그리기()
+        assert any(
+            getattr(w, "text", "") == "해체" for w in 상점.내용틀.walk(restrict=True)
+        ), "상점에 해체 버튼 없음"
+        상태["소지품"]["장비"]["찢어진 천갑 상의"] = (
+            상태["소지품"]["장비"].get("찢어진 천갑 상의", 0) + 1
+        )
+        상점._탭목록_그리기("해체", "장비")
+        탭 = next(
+            w
+            for w in 상점.내용틀.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "상의"
+        )
+        탭.dispatch("on_release")
+        yield 0.3
+        _찍기("shop_dismantle")
+        해체버튼 = next(
+            w
+            for w in 상점.내용틀.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "해체"
+        )
+        소울전 = 상태["소지품"]["재료"].get("커먼 소울", 0)
+        해체버튼.dispatch("on_release")
+        yield 0.3
+        assert "해체" in 상점.안내라벨.text and "커먼 소울" in 상점.안내라벨.text, (
+            상점.안내라벨.text
+        )
+        assert 상태["소지품"]["재료"]["커먼 소울"] == 소울전 + 1
+        _찍기("shop_dismantle_after")
+
+        # [전체] 탭이 맨 앞, 일괄해체 기본 범위는 커먼 / 전체
+        탭글 = [
+            w.text
+            for w in 상점.내용틀.walk(restrict=True)
+            if isinstance(w, Button) and w.text in gf.상점_해체_탭목록
+        ]
+        assert 탭글[0] == "전체", 탭글
+        assert (상점.일괄등급.text, 상점.일괄부위.text) == ("커먼", "전체")
+        for 이름 in ("찢어진 천갑 하의", "조잡한 반지"):
+            상태["소지품"]["장비"][이름] = 상태["소지품"]["장비"].get(이름, 0) + 1
+        일괄 = next(
+            w
+            for w in 상점.내용틀.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "일괄해체"
+        )
+        일괄.dispatch("on_release")
+        yield 0.5
+        팝업 = list(Window.children)[0]
+        assert 팝업.title == "일괄해체", 팝업
+        _찍기("shop_dismantle_batch_confirm")
+        next(
+            w
+            for w in 팝업.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "해체"
+        ).dispatch("on_release")
+        yield 0.3
+        assert "해체:" in 상점.안내라벨.text and "커먼 소울" in 상점.안내라벨.text, (
+            상점.안내라벨.text
+        )
+        assert not gf.상점_일괄해체_대상(상태, "커먼", "전체")
+        _찍기("shop_dismantle_batch_after")
+        결과["단계"].append(
+            "상점 해체(장비 -> 소울 + 큐브 조각, [전체] 탭, 일괄해체 커먼/전체 확인 팝업)"
+        )
 
         매니저.current = "파티관리"
         매니저.get_screen("파티관리")._능력치배분_팝업(
@@ -432,7 +525,14 @@ class 스모크앱(main.DnfMobileApp):
                 "battle_end_lose",
             ),
         ):
+            원래맵 = 상태["던전상태"]["맵정보"]
+            if 전리품줄 is False:
+                # "전리품 없음": 던전 공용 드랍도, 골드도 없는 전투로 만든다
+                상태["던전상태"]["맵정보"] = {**원래맵, "드랍표": []}
             gf._전투_시작(상태, 몬스터들, 레벨=6, 차수=2)  # 시작 반응에 안 쓰러지게
+            if 전리품줄 is False:
+                for 적 in gf.적_목록(상태):
+                    적["원본"]["획득골드"] = "미정"
             support.반응_처리(상태)
             매니저.current = "전투"
             전투.갱신(신규=True)
@@ -465,6 +565,8 @@ class 스모크앱(main.DnfMobileApp):
                 assert "전리품" not in 줄들, 글
             if 사진:
                 _찍기(사진)
+            if 상태.get("던전상태"):
+                상태["던전상태"]["맵정보"] = 원래맵
             if 첫줄 == "전투 승리!":
                 # [확인]은 전투 보상을 받거나 포기하기 전까지 잠겨 있다
                 assert (
@@ -680,6 +782,48 @@ class 스모크앱(main.DnfMobileApp):
         assert "추방했습니다" in 주점.안내라벨.text, 주점.안내라벨.text
         _찍기("tavern_after")
         결과["단계"].append("주점(영입 -> 숙소, 대기, 합류, 추방 확인 팝업)")
+
+        # 목록 스크롤: 상점 구매/판매/해체[전체], 장비 교체 팝업(소지품) - 항목이 많을 때
+        카탈로그 = 상태["상점카탈로그"]["장비"]
+        for 이름 in 카탈로그["무기"]:
+            if 카탈로그["무기"][이름].get("레어도") != "치트":
+                상태["소지품"]["장비"][이름] = 상태["소지품"]["장비"].get(이름, 0) + 1
+        for 탭 in ("상의", "하의", "어깨", "벨트", "신발"):
+            for 이름 in 카탈로그[탭]:
+                상태["소지품"]["장비"][이름] = 상태["소지품"]["장비"].get(이름, 0) + 1
+        매니저.current = "상점"
+        상점 = 매니저.get_screen("상점")
+
+        def 목록스크롤():
+            return next(
+                w
+                for w in 상점.내용틀.walk(restrict=True)
+                if isinstance(w, ScrollView) and w.do_scroll_y
+            )
+
+        for 모드, 이름 in (
+            ("구매", "shop_scroll_buy"),
+            ("판매", "shop_scroll_sell"),
+            ("해체", "shop_scroll_dismantle"),
+        ):
+            상점._탭목록_그리기(모드, "장비")
+            yield 0.4
+            yield from _스크롤_확인(목록스크롤(), f"상점 {모드}")
+            _찍기(이름)
+        매니저.current = "파티원"
+        screens_party._장비교체_팝업(상태["파티"]["파티원"][0], "무기", lambda: None)
+        yield 0.5
+        팝업스크롤 = next(
+            w
+            for w in list(Window.children)[0].walk(restrict=True)
+            if isinstance(w, ScrollView)
+        )
+        yield from _스크롤_확인(팝업스크롤, "장비 교체 팝업")
+        _찍기("equip_swap_scroll")
+        _팝업_닫기()
+        결과["단계"].append(
+            "목록 스크롤(상점 구매/판매/해체, 장비 교체 팝업 - 끌어서 내림, 맨 아래 보임)"
+        )
 
 
 if __name__ == "__main__":
