@@ -1011,8 +1011,8 @@ def test_퍽_선택가능_규칙():
     assert "훔쳐배우기" not in 이름들  # 획득스킬 None -> 선택 불가
     assert "초대형무기" not in 이름들  # 근력 18 필요
     assert "삼중극점" not in 이름들  # 이중극점(문자열 선행조건) 필요
-    assert "오토가드" not in 이름들  # 스킬보유(가드) 선행조건 - 가드는 레벨 2에 얻는다
-    assert "가드" not in 이름들  # 레벨 2 지급이라 퍽 목록에 없다
+    assert "오토가드" not in 이름들  # 스킬보유(가드) 선행조건
+    assert "가드" not in 이름들
     assert "중갑숙련" in 이름들  # 방어구 착용 제한이 없어 선행조건 없음
     c["근력"] = 18
     c["보유특성"].append("이중극점")
