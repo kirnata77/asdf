@@ -23,14 +23,29 @@
 #
 # 세이브 파일은 game/saves/slot_N.json에 저장되며 폴더가 없으면 자동
 # 생성한다.
+#
+# 쓰기는 원자적이다: 임시 파일(slot_N.json.tmp)에 다 쓰고 fsync한 뒤 os.replace로
+# 바꿔치기하므로, 쓰다가 앱이 죽어도 이전 세이브가 그대로 남는다. 덮어쓰기 직전에
+# 읽을 수 있는 이전 세이브를 slot_N.json.bak으로 남긴다. 읽을 때 본 파일이 망가졌으면
+# .bak으로 돌아가고, 둘 다 못 읽으면 세이브_손상오류다(슬롯 목록은 예외 없이 "손상"으로
+# 표시한다 - 슬롯 하나가 메인 메뉴를 막으면 안 된다).
 
 import json
 import os
+import shutil
 from datetime import datetime
 
 from game.system import player_system
 
 최대세이브슬롯 = 3
+
+
+class 세이브_손상오류(Exception):
+    """슬롯 파일은 있는데 읽을 수 없고 백업(.bak)도 읽을 수 없다."""
+
+    def __init__(self, 슬롯번호):
+        super().__init__(f"{슬롯번호}번 슬롯의 세이브가 손상되어 불러올 수 없다.")
+        self.슬롯번호 = 슬롯번호
 
 
 def _세이브_폴더():
@@ -43,8 +58,63 @@ def _세이브_경로(슬롯번호):
     return os.path.join(_세이브_폴더(), f"slot_{슬롯번호}.json")
 
 
+def _백업_경로(슬롯번호):
+    return _세이브_경로(슬롯번호) + ".bak"
+
+
 def 세이브_존재(슬롯번호):
     return os.path.isfile(_세이브_경로(슬롯번호))
+
+
+def _파일_읽기(경로):
+    """경로의 세이브를 읽어 딕셔너리로 돌려준다. 파일이 없거나(OSError) JSON이 아니거나
+    세이브 형태가 아니면(ValueError) 예외 - 호출하는 쪽이 손상으로 다룬다."""
+    with open(경로, "r", encoding="utf-8") as f:
+        데이터 = json.load(f)
+    if not isinstance(데이터, dict) or not isinstance(데이터.get("진행도"), dict):
+        raise ValueError("세이브 형태가 아니다")
+    return 데이터
+
+
+def _슬롯_읽기(슬롯번호):
+    """(저장데이터, 복구본여부). 본 파일을 못 읽으면 .bak을 쓴다(복구본 True).
+    슬롯 파일이 없으면 FileNotFoundError, 본 파일도 .bak도 못 읽으면 세이브_손상오류."""
+    경로 = _세이브_경로(슬롯번호)
+    if not os.path.isfile(경로):
+        raise FileNotFoundError(f"{슬롯번호}번 슬롯에는 저장된 게임이 없다.")
+    try:
+        return _파일_읽기(경로), False
+    except (OSError, ValueError):
+        pass
+    try:
+        return _파일_읽기(_백업_경로(슬롯번호)), True
+    except (OSError, ValueError):
+        raise 세이브_손상오류(슬롯번호) from None
+
+
+def _원자적_쓰기(경로, 텍스트):
+    """임시 파일에 다 쓴 뒤 바꿔치기한다. 이전 세이브가 읽을 수 있는 상태면 .bak으로 남긴다.
+    중간에 실패하면 임시 파일을 지우고 예외를 그대로 올린다(본 파일은 그대로)."""
+    임시 = 경로 + ".tmp"
+    try:
+        with open(임시, "w", encoding="utf-8") as f:
+            f.write(텍스트)
+            f.flush()
+            os.fsync(f.fileno())
+        try:
+            _파일_읽기(경로)
+            이전은_정상 = True
+        except (OSError, ValueError):
+            이전은_정상 = False  # 없거나 망가진 파일은 좋은 .bak을 덮어쓰지 않는다
+        if 이전은_정상:
+            shutil.copyfile(경로, 경로 + ".bak.tmp")
+            os.replace(경로 + ".bak.tmp", 경로 + ".bak")
+        os.replace(임시, 경로)
+    except BaseException:
+        for 남은 in (임시, 경로 + ".bak.tmp"):
+            if os.path.exists(남은):
+                os.remove(남은)
+        raise
 
 
 def 게임_저장(슬롯번호, 플레이어, 진행도):
@@ -69,8 +139,9 @@ def 게임_저장(슬롯번호, 플레이어, 진행도):
         "진행도": 저장할_진행도,
         "저장시각": datetime.now().isoformat(timespec="seconds"),
     }
-    with open(_세이브_경로(슬롯번호), "w", encoding="utf-8") as f:
-        json.dump(저장데이터, f, ensure_ascii=False, indent=2)
+    # 직렬화를 먼저 끝낸다 - 직렬화 중 예외가 나도 파일을 건드리지 않는다.
+    텍스트 = json.dumps(저장데이터, ensure_ascii=False, indent=2)
+    _원자적_쓰기(_세이브_경로(슬롯번호), 텍스트)
 
 
 def _던전파일명_호환(던전파일명):
@@ -83,14 +154,10 @@ def _던전파일명_호환(던전파일명):
 
 def 게임_불러오기(슬롯번호):
     """(플레이어, 진행도)를 반환한다. 슬롯이 비어 있으면
-    FileNotFoundError. 구버전 세이브(플레이어 키 없음)는 "파티" 키를
+    FileNotFoundError, 본 파일과 백업을 둘 다 못 읽으면 세이브_손상오류(본 파일만
+    망가졌으면 백업으로 불러온다). 구버전 세이브(플레이어 키 없음)는 "파티" 키를
     새 구조로 감싸 호환한다("골드"는 소지품["골드"]로 옮긴다)."""
-    경로 = _세이브_경로(슬롯번호)
-    if not os.path.isfile(경로):
-        raise FileNotFoundError(f"{슬롯번호}번 슬롯에는 저장된 게임이 없다.")
-
-    with open(경로, "r", encoding="utf-8") as f:
-        저장데이터 = json.load(f)
+    저장데이터, _ = _슬롯_읽기(슬롯번호)
 
     if "플레이어" in 저장데이터:
         플레이어 = 저장데이터["플레이어"]
@@ -118,21 +185,26 @@ def 게임_불러오기(슬롯번호):
 
 
 def 세이브_삭제(슬롯번호):
-    """슬롯을 비운다. 이미 비어 있으면 아무 일도 하지 않는다."""
+    """슬롯을 비운다(백업/임시 파일 포함). 이미 비어 있으면 아무 일도 하지 않는다."""
     경로 = _세이브_경로(슬롯번호)
-    if os.path.isfile(경로):
-        os.remove(경로)
+    for 대상 in (경로, 경로 + ".bak", 경로 + ".tmp", 경로 + ".bak.tmp"):
+        if os.path.isfile(대상):
+            os.remove(대상)
 
 
 def 세이브_요약(슬롯번호):
     """슬롯 선택 화면용 요약. 비어 있으면 None, 있으면 {"슬롯번호",
-    "저장시각", "현재마을", "대표캐릭터명", "파티인원수"}."""
+    "저장시각", "현재마을", "대표캐릭터명", "파티인원수"}. 본 파일이 망가져 백업으로
+    읽었으면 "복구본": True가 더 붙고, 백업도 못 읽으면 {"슬롯번호", "손상": True}다
+    (예외를 내지 않는다 - 슬롯 하나가 메인 메뉴/슬롯 목록을 막으면 안 된다)."""
     경로 = _세이브_경로(슬롯번호)
     if not os.path.isfile(경로):
         return None
 
-    with open(경로, "r", encoding="utf-8") as f:
-        저장데이터 = json.load(f)
+    try:
+        저장데이터, 복구본 = _슬롯_읽기(슬롯번호)
+    except 세이브_손상오류:
+        return {"슬롯번호": 슬롯번호, "손상": True}
 
     파티원 = (
         저장데이터.get("플레이어", {}).get("파티", {}).get("파티원", [])
@@ -140,13 +212,16 @@ def 세이브_요약(슬롯번호):
     )
     진행도 = 저장데이터.get("진행도", {})
 
-    return {
+    요약 = {
         "슬롯번호": 슬롯번호,
         "저장시각": 저장데이터.get("저장시각"),
         "현재마을": 진행도.get("현재마을"),
         "대표캐릭터명": 파티원[0]["캐릭터명"] if 파티원 else "-",
         "파티인원수": len(파티원),
     }
+    if 복구본:
+        요약["복구본"] = True
+    return 요약
 
 
 def 전체_세이브_요약():

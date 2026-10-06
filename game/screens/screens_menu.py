@@ -93,8 +93,10 @@ class 메인메뉴화면(Screen):
         self.add_widget(레이아웃)
 
     def on_pre_enter(self, *args):
+        # 손상된 슬롯(백업도 못 읽음)은 불러올 수 없으므로 세지 않는다
         저장된_슬롯_있음 = any(
-            not 요약.get("비어있음") for 요약 in gameflow.전체_세이브_요약()
+            not 요약.get("비어있음") and not 요약.get("손상")
+            for 요약 in gameflow.전체_세이브_요약()
         )
         self.불러오기버튼.disabled = not 저장된_슬롯_있음
 
@@ -396,9 +398,14 @@ class _슬롯목록화면(Screen):
 
             if 요약.get("비어있음"):
                 설명 = f"{요약['슬롯번호']}번 슬롯 - (비어 있음)"
+            elif 요약.get("손상"):
+                설명 = f"{요약['슬롯번호']}번 슬롯 - (손상됨, 불러올 수 없음)"
             else:
+                표시 = (
+                    " [백업]" if 요약.get("복구본") else ""
+                )  # 길어서 잘리는 줄 끝 말고 앞에 둔다
                 설명 = (
-                    f"{요약['슬롯번호']}번 슬롯 - {요약['대표캐릭터명']} 외 "
+                    f"{요약['슬롯번호']}번 슬롯{표시} - {요약['대표캐릭터명']} 외 "
                     f"{요약['파티인원수']}명 / {요약['현재마을']} / {요약['저장시각']}"
                 )
             줄.add_widget(Label(text=설명, font_size=26, halign="left"))
@@ -423,13 +430,13 @@ class 불러오기목록화면(_슬롯목록화면):
     돌아갈화면 = "메인메뉴"
 
     def _비활성(self, 요약):
-        return bool(요약.get("비어있음"))
+        return bool(요약.get("비어있음") or 요약.get("손상"))
 
     def _선택(self, 슬롯번호):
         앱 = App.get_running_app()
         try:
             앱.게임상태 = gameflow.게임_불러오기(슬롯번호)
-        except FileNotFoundError as 오류:
+        except (FileNotFoundError, gameflow.세이브_손상오류) as 오류:
             self.안내라벨.text = str(오류)
             return
         self.manager.get_screen("마을").갱신()

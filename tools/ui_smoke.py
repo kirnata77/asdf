@@ -16,7 +16,9 @@ tests/는 kivy 없이 gameflow 이하만 검사한다. 화면(game/screens) 코�
 import json
 import os
 import random
+import shutil
 import sys
+import tempfile
 import traceback
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -32,7 +34,7 @@ from kivy.uix.scrollview import ScrollView  # noqa: E402
 
 import gameflow as gf  # noqa: E402
 from game.screens import screens_party  # noqa: E402
-from game.system import dice_utils  # noqa: E402
+from game.system import dice_utils, save_system  # noqa: E402
 from game.system.combat import flow  # noqa: E402
 from tests import support  # noqa: E402
 
@@ -917,6 +919,66 @@ class 스모크앱(main.DnfMobileApp):
         결과["단계"].append(
             "목록 스크롤(상점 구매/판매/해체, 장비 교체 팝업 - 끌어서 내림, 맨 아래 보임)"
         )
+
+        # 세이브 슬롯: 슬롯 하나가 망가져도 메인 메뉴/슬롯 목록이 열린다(구조 점검 W-1).
+        # 실제 game/saves/ 대신 임시 폴더를 쓴다.
+        세이브폴더 = tempfile.mkdtemp(prefix="ui_smoke_saves_")
+        원래폴더 = save_system._세이브_폴더
+        save_system._세이브_폴더 = lambda: 세이브폴더
+        try:
+            self.게임상태 = 상태
+            gf.게임_저장(상태, 1)
+            gf.게임_저장(상태, 3)
+            gf.게임_저장(상태, 3)  # 두 번째 저장이 .bak을 만든다
+            with open(
+                os.path.join(세이브폴더, "slot_2.json"), "w", encoding="utf-8"
+            ) as f:
+                f.write('{"플레이어": {"파')  # 쓰다 끊긴 파일, 백업 없음 -> 손상
+            with open(
+                os.path.join(세이브폴더, "slot_3.json"), "w", encoding="utf-8"
+            ) as f:
+                f.write('{"플레이어": {"파')  # 본 파일만 끊김, .bak이 있음 -> 복구본
+            매니저.current = "메인메뉴"
+            yield 0.3
+            assert not 매니저.get_screen("메인메뉴").불러오기버튼.disabled
+            매니저.current = "불러오기목록"
+            yield 0.4
+            _찍기("save_slots_corrupt")
+            불러오기 = 매니저.get_screen("불러오기목록")
+            줄들 = list(reversed(불러오기.목록틀.children))  # 위에서 아래(슬롯 1, 2, 3)
+
+            def 줄_글(줄):
+                return next(
+                    w.text for w in 줄.children if w.__class__.__name__ == "Label"
+                )
+
+            def 줄_버튼(줄):
+                return next(w for w in 줄.children if isinstance(w, Button))
+
+            assert "(손상됨" in 줄_글(줄들[1]), 줄_글(줄들[1])
+            assert "[백업]" in 줄_글(줄들[2]), 줄_글(줄들[2])
+            assert not 줄_버튼(줄들[0]).disabled and not 줄_버튼(줄들[2]).disabled
+            assert 줄_버튼(줄들[1]).disabled, "손상 슬롯은 불러올 수 없다"
+
+            불러오기._선택(2)  # 막혀 있어도 호출되면 앱이 죽지 않고 안내만 한다
+            assert 매니저.current == "불러오기목록" and "손상" in 불러오기.안내라벨.text
+            불러오기._선택(3)  # 백업으로 불러온다
+            assert 매니저.current == "마을"
+
+            self.게임상태 = 상태
+            매니저.current = "저장목록"
+            yield 0.3
+            매니저.get_screen("저장목록")._선택(2)  # 손상 슬롯 덮어쓰기
+            yield 0.2
+            assert save_system.세이브_요약(2).get("손상") is None
+            assert "저장했습니다" in 매니저.get_screen("저장목록").안내라벨.text
+            결과["단계"].append(
+                "세이브 슬롯(손상/복구본 표시, 메인 메뉴 정상, 손상 슬롯 덮어쓰기)"
+            )
+        finally:
+            save_system._세이브_폴더 = 원래폴더
+            shutil.rmtree(세이브폴더, ignore_errors=True)
+            매니저.current = "마을"
 
 
 if __name__ == "__main__":

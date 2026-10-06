@@ -337,6 +337,129 @@ def test_세이브_폴더는_game_saves(monkeypatch):
     assert save_system._세이브_폴더().replace("\\", "/").endswith("game/saves")
 
 
+# 세이브 안정화(N1a) - 원자적 쓰기, 백업(.bak), 손상 슬롯. 구조 점검 W-1.
+
+
+def _저장(슬롯번호, 마을="엘븐가드", 이름="철수"):
+    플레이어 = player_system.빈_플레이어()
+    플레이어["파티"]["파티원"] = [{"캐릭터명": 이름}]
+    save_system.게임_저장(슬롯번호, 플레이어, {"현재마을": 마을})
+
+
+def test_세이브_원자적_쓰기는_임시파일을_남기지_않고_이전_세이브를_백업한다(
+    임시_세이브폴더,
+):
+    _저장(1, 마을="엘븐가드")
+    assert not (
+        임시_세이브폴더 / "slot_1.json.bak"
+    ).exists()  # 처음엔 백업할 이전 세이브가 없다
+    첫내용 = (임시_세이브폴더 / "slot_1.json").read_text(encoding="utf-8")
+
+    _저장(1, 마을="헨돈마이어")
+    assert sorted(p.name for p in 임시_세이브폴더.iterdir()) == [
+        "slot_1.json",
+        "slot_1.json.bak",
+    ]  # .tmp 같은 찌꺼기가 없다
+    assert (임시_세이브폴더 / "slot_1.json.bak").read_text(encoding="utf-8") == 첫내용
+    assert save_system.세이브_요약(1)["현재마을"] == "헨돈마이어"
+
+
+def test_세이브_저장이_중간에_실패하면_이전_세이브가_그대로다(
+    임시_세이브폴더, monkeypatch
+):
+    _저장(1, 마을="엘븐가드")
+    이전 = (임시_세이브폴더 / "slot_1.json").read_text(encoding="utf-8")
+
+    def 실패(*args, **kwargs):
+        raise OSError("디스크가 가득 찼다")
+
+    # 임시 파일에 쓴 뒤 바꿔치기 직전(fsync)에 실패하는 경우
+    with monkeypatch.context() as m:
+        m.setattr(save_system.os, "fsync", 실패)
+        with pytest.raises(OSError):
+            _저장(1, 마을="헨돈마이어")
+    assert (임시_세이브폴더 / "slot_1.json").read_text(encoding="utf-8") == 이전
+    assert [p.name for p in 임시_세이브폴더.iterdir()] == [
+        "slot_1.json"
+    ]  # 임시 파일 정리
+
+    # 직렬화 단계에서 실패해도 본 파일은 그대로다(파일을 열기 전에 끝낸다)
+    with monkeypatch.context() as m:
+        m.setattr(save_system.json, "dumps", 실패)
+        with pytest.raises(OSError):
+            _저장(1, 마을="헨돈마이어")
+    assert (임시_세이브폴더 / "slot_1.json").read_text(encoding="utf-8") == 이전
+
+
+def test_세이브_본파일이_잘리면_백업으로_불러오고_요약에_복구본이_뜬다(임시_세이브폴더):
+    _저장(2, 마을="엘븐가드", 이름="철수")
+    _저장(2, 마을="헨돈마이어", 이름="영희")  # .bak = 앞의 세이브
+    잘린 = (임시_세이브폴더 / "slot_2.json").read_text(encoding="utf-8")[:30]
+    (임시_세이브폴더 / "slot_2.json").write_text(
+        잘린, encoding="utf-8"
+    )  # 쓰다 끊긴 파일
+
+    플레이어, 진행도 = save_system.게임_불러오기(2)
+    assert 플레이어["파티"]["파티원"][0]["캐릭터명"] == "철수"
+    assert 진행도["현재마을"] == "엘븐가드"
+    assert save_system.세이브_요약(2)["복구본"] is True
+    assert save_system.세이브_요약(2)["대표캐릭터명"] == "철수"
+
+
+def test_세이브_본파일도_백업도_못_읽으면_손상오류_요약은_예외없이_손상(
+    임시_세이브폴더,
+):
+    _저장(1, 이름="온전")
+    (임시_세이브폴더 / "slot_2.json").write_text(
+        '{"플레이어": {"파티": {"파', encoding="utf-8"
+    )
+
+    with pytest.raises(save_system.세이브_손상오류) as 오류:
+        save_system.게임_불러오기(2)
+    assert 오류.value.슬롯번호 == 2 and "손상" in str(오류.value)
+    assert save_system.세이브_요약(2) == {"슬롯번호": 2, "손상": True}
+
+    # 슬롯 하나가 망가져도 목록은 만들어지고 다른 슬롯은 그대로다(메인 메뉴가 막히지 않는다)
+    요약 = save_system.전체_세이브_요약()
+    assert 요약[0]["대표캐릭터명"] == "온전"
+    assert 요약[1] == {"슬롯번호": 2, "손상": True}
+    assert 요약[2] == {"슬롯번호": 3, "비어있음": True}
+
+    # 형태가 틀린 JSON(리스트, 진행도 없음)도 손상으로 본다
+    (임시_세이브폴더 / "slot_3.json").write_text("[1, 2]", encoding="utf-8")
+    assert save_system.세이브_요약(3) == {"슬롯번호": 3, "손상": True}
+    (임시_세이브폴더 / "slot_3.json").write_text('{"플레이어": {}}', encoding="utf-8")
+    assert save_system.세이브_요약(3) == {"슬롯번호": 3, "손상": True}
+
+
+def test_세이브_망가진_본파일을_덮어써도_좋은_백업은_지켜진다(임시_세이브폴더):
+    _저장(1, 이름="첫째")
+    _저장(1, 이름="둘째")  # .bak = 첫째
+    (임시_세이브폴더 / "slot_1.json").write_text("{끊김", encoding="utf-8")
+    _저장(1, 이름="셋째")  # 망가진 본 파일은 백업하지 않는다
+    assert (임시_세이브폴더 / "slot_1.json.bak").read_text(encoding="utf-8").count(
+        "첫째"
+    ) == 1
+    assert save_system.게임_불러오기(1)[0]["파티"]["파티원"][0]["캐릭터명"] == "셋째"
+
+
+def test_세이브_삭제는_백업과_임시파일도_지운다(임시_세이브폴더):
+    _저장(1)
+    _저장(1)
+    (임시_세이브폴더 / "slot_1.json.tmp").write_text("x", encoding="utf-8")
+    save_system.세이브_삭제(1)
+    assert list(임시_세이브폴더.iterdir()) == []
+    assert save_system.세이브_요약(1) is None
+
+
+def test_gameflow는_손상오류를_그대로_올린다(임시_세이브폴더):
+    (임시_세이브폴더 / "slot_1.json").write_text("{", encoding="utf-8")
+    assert gf.세이브_손상오류 is save_system.세이브_손상오류
+    with pytest.raises(gf.세이브_손상오류):
+        gf.게임_불러오기(1)
+    assert gf.전체_세이브_요약()[0] == {"슬롯번호": 1, "손상": True}
+
+
 # ---------------------------------------------------------------- levelup
 
 
