@@ -20,6 +20,7 @@ import shutil
 import sys
 import tempfile
 import traceback
+import types
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
@@ -86,6 +87,9 @@ def _팝업_닫기():
 
 
 class 스모크앱(main.DnfMobileApp):
+    def _세이브_폴더_준비(self):
+        pass  # 이 스모크는 세이브를 임시 폴더로 바꿔서 쓴다(실제 앱 데이터 폴더를 건드리지 않는다)
+
     def on_start(self):
         self._단계 = self._단계들()
         Clock.schedule_once(self._다음, 1)
@@ -981,6 +985,35 @@ class 스모크앱(main.DnfMobileApp):
             assert "저장했습니다" in 매니저.get_screen("저장목록").안내라벨.text
             결과["단계"].append(
                 "세이브 슬롯(새버전/손상/복구본 표시, 메인 메뉴 정상, 손상 슬롯 덮어쓰기)"
+            )
+
+            # 앱 시작 때 세이브 폴더를 앱 데이터 폴더로 옮기고 옛 세이브를 한 번 가져온다(임시 폴더만 씀)
+            앱데이터 = tempfile.mkdtemp(prefix="ui_smoke_appdata_")
+            옛위치 = tempfile.mkdtemp(prefix="ui_smoke_legacy_")
+            with open(os.path.join(옛위치, "slot_2.json"), "w", encoding="utf-8") as f:
+                f.write("{}")
+
+            # App을 하나 더 만들면 App.get_running_app()이 바뀌므로 자리표시 객체로 부른다
+            임시앱 = types.SimpleNamespace(user_data_dir=앱데이터)
+
+            save_system._세이브_폴더 = 원래폴더  # 임시 폴더 바꿔치기를 잠깐 푼다
+            기본폴더 = save_system._기본_세이브_폴더
+            save_system._기본_세이브_폴더 = lambda: 옛위치
+            try:
+                main.DnfMobileApp._세이브_폴더_준비(임시앱)
+                assert save_system._세이브_폴더() == os.path.join(앱데이터, "saves")
+                assert os.path.isfile(os.path.join(앱데이터, "saves", "slot_2.json"))
+                assert os.path.isfile(os.path.join(옛위치, "slot_2.json")), (
+                    "옛 파일은 남는다"
+                )
+            finally:
+                save_system._기본_세이브_폴더 = 기본폴더
+                save_system._폴더_재정의 = None
+                save_system._세이브_폴더 = lambda: 세이브폴더
+                shutil.rmtree(앱데이터, ignore_errors=True)
+                shutil.rmtree(옛위치, ignore_errors=True)
+            결과["단계"].append(
+                "앱 시작 시 세이브 폴더를 앱 데이터 폴더로(옛 세이브 한 번 복사)"
             )
         finally:
             save_system._세이브_폴더 = 원래폴더

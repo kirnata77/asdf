@@ -137,12 +137,26 @@ from game.screens.screens_dungeon import 던전목록화면, 던전화면
 from game.screens.screens_battle import 전투화면
 from game.screens.screens_party import 파티관리화면, 파티원화면
 from game.screens.screens_common import 뒤로키_처리
+import gameflow
 
 
 class DnfMobileApp(App):
     title = "던전앤파이터 모바일 프로토타입"
 
+    def _세이브_폴더_준비(self):
+        """세이브를 앱 소스 폴더(업데이트하면 사라질 수 있다) 대신 앱 데이터 폴더에 둔다.
+        옛 위치의 세이브는 처음 한 번 복사해 온다. 폴더를 못 만들면 옛 위치를 그대로 쓴다."""
+        try:
+            가져옴 = gameflow.세이브_폴더_설정(
+                os.path.join(self.user_data_dir, "saves")
+            )
+            if 가져옴:
+                print("옛 세이브를 가져왔다:", ", ".join(가져옴))
+        except OSError as 오류:
+            print("세이브 폴더를 앱 데이터 폴더로 옮기지 못했다:", 오류)
+
     def build(self):
+        self._세이브_폴더_준비()
         self.게임상태 = None
 
         매니저 = ScreenManager(transition=NoTransition())

@@ -14,7 +14,7 @@ pip install kivy
 python main.py
 ```
 
-세이브는 `game/saves/slot_N.json`에 저장된다(JSON, 슬롯 3개). 화면은 한글 폰트(`game/assets/font/`)를 쓴다.
+세이브는 앱 데이터 폴더의 `saves/slot_N.json`(JSON, 슬롯 3개, 쓰기는 원자적이고 `.bak` 백업을 남긴다)에 저장된다. 옛 위치 `game/saves/`의 세이브는 처음 실행할 때 한 번 복사해 온다. 화면은 한글 폰트(`game/assets/font/`)를 쓴다.
 
 ## 개발
 

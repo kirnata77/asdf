@@ -21,8 +21,9 @@
 # 튜플 set)는 JSON이 못 담는 타입이라 저장/불러오기 시 리스트로
 # 변환한다.
 #
-# 세이브 파일은 game/saves/slot_N.json에 저장되며 폴더가 없으면 자동
-# 생성한다.
+# 세이브 파일은 slot_N.json이고 폴더가 없으면 자동 생성한다. 폴더는 기본이 game/saves/(이
+# 파일 기준)이지만 앱은 시작할 때 세이브_폴더_설정()으로 앱 데이터 폴더(Kivy user_data_dir -
+# 앱 업데이트에도 남는다)로 바꾸고, 옛 위치의 세이브를 한 번 복사해 온다.
 #
 # 쓰기는 원자적이다: 임시 파일(slot_N.json.tmp)에 다 쓰고 fsync한 뒤 os.replace로
 # 바꿔치기하므로, 쓰다가 앱이 죽어도 이전 세이브가 그대로 남는다. 덮어쓰기 직전에
@@ -56,10 +57,56 @@ class 세이브_손상오류(Exception):
         self.슬롯번호 = 슬롯번호
 
 
-def _세이브_폴더():
-    """이 파일 기준으로 game/saves/ 경로를 계산한다(cwd 무관)."""
+_폴더_재정의 = None
+_가져옴_표시파일 = ".옛_세이브_가져옴"
+
+
+def _기본_세이브_폴더():
+    """이 파일 기준으로 game/saves/ 경로를 계산한다(cwd 무관). 옛 세이브가 있던 곳이다."""
     game_루트 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(game_루트, "saves")
+
+
+def _세이브_폴더():
+    return _폴더_재정의 or _기본_세이브_폴더()
+
+
+def 세이브_폴더_설정(새폴더):
+    """세이브를 새폴더에 저장/불러오게 바꾸고, 옛 위치(game/saves)의 세이브를 **처음
+    한 번만** 복사해 온다(슬롯 파일과 .bak, 새폴더에 이미 있는 슬롯은 덮어쓰지 않는다).
+    옛 파일은 지우지 않는다. 복사한 파일 이름 목록을 돌려준다. 복사하다 실패한 파일이
+    있으면 표시 파일을 남기지 않아 다음 실행 때 다시 시도한다(앱 시작을 막지 않는다).
+    표시 파일이 있으면 다시 가져오지 않는다 - 세이브를 지웠는데 옛 위치에서 되살아나면 안 된다."""
+    global _폴더_재정의
+    os.makedirs(새폴더, exist_ok=True)
+    _폴더_재정의 = 새폴더
+    표시파일 = os.path.join(새폴더, _가져옴_표시파일)
+    if os.path.exists(표시파일):
+        return []
+    옛폴더 = _기본_세이브_폴더()
+    복사 = []
+    실패 = False
+    if os.path.abspath(옛폴더) != os.path.abspath(새폴더) and os.path.isdir(옛폴더):
+        for 슬롯번호 in range(1, 최대세이브슬롯 + 1):
+            for 접미 in ("", ".bak"):
+                이름 = f"slot_{슬롯번호}.json{접미}"
+                옛, 새 = os.path.join(옛폴더, 이름), os.path.join(새폴더, 이름)
+                if not os.path.isfile(옛) or os.path.exists(새):
+                    continue
+                try:
+                    shutil.copy2(옛, 새 + ".tmp")
+                    os.replace(새 + ".tmp", 새)
+                    복사.append(이름)
+                except OSError:
+                    실패 = True
+                    if os.path.exists(새 + ".tmp"):
+                        os.remove(새 + ".tmp")
+    if not 실패:
+        with open(표시파일, "w", encoding="utf-8") as f:
+            f.write(
+                "옛 위치(game/saves)의 세이브를 가져왔다. 이 파일이 있으면 다시 가져오지 않는다.\n"
+            )
+    return 복사
 
 
 def _세이브_경로(슬롯번호):

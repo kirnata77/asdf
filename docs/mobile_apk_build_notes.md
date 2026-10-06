@@ -57,7 +57,7 @@ spec을 다음에 바꿀 때(캐시 키가 어차피 바뀐다) 주석을 이 �
 ## 6. 앱 ID와 세이브
 
 - `package.domain = org.test`는 원래 값을 몰라 buildozer 기본값을 쓴 것이다. 예전 APK와 다르면 폰에 별도 앱으로 설치되고 세이브가 이어지지 않는다. 확인 안 됨.
-- 세이브 저장 위치는 `game/saves/slot_N.json`(앱 소스 폴더)이었다. 업데이트 시 사라질 수 있어 앱 데이터 폴더로 옮기는 중이다(`docs/architecture_review.md` W-1, `.memory/roadmap/refactor.md` N1c).
+- 세이브는 예전에 `game/saves/slot_N.json`(앱 소스 폴더)에 저장돼 앱을 업데이트하면 사라질 수 있었다. 2026-10-06부터 앱 데이터 폴더(Kivy `user_data_dir`/`saves/`)에 저장하고, 옛 위치의 세이브는 처음 실행할 때 한 번 복사해 온다(`save_system.세이브_폴더_설정`, `main.py`). **실기기에서 업데이트 후 세이브가 남는지는 확인하지 못했다.**
 
 ## 7. 포함 범위
 

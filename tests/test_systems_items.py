@@ -578,6 +578,111 @@ def test_세이브_버전이나_구조가_이상하면_손상으로_본다(임�
     assert save_system.게임_불러오기(1)[0]["파티"]["파티원"][0]["캐릭터명"] == "온전"
 
 
+# 세이브 폴더를 앱 데이터 폴더로 옮기기(N1c) - 옛 위치(game/saves)의 세이브는 한 번만 복사한다.
+
+_원래_세이브_폴더 = (
+    save_system._세이브_폴더
+)  # conftest의 자동 픽스처가 바꿔치기하기 전 함수
+
+
+@pytest.fixture
+def 폴더_설정(tmp_path, monkeypatch):
+    """옛 폴더(= 기본 위치)와 새 폴더를 tmp에 두고 실제 폴더 계산 함수를 되살린다."""
+    옛 = tmp_path / "옛"
+    옛.mkdir()
+    새 = tmp_path / "새" / "saves"  # 아직 없는 폴더 - 설정이 만든다
+    monkeypatch.setattr(save_system, "_세이브_폴더", _원래_세이브_폴더)
+    monkeypatch.setattr(save_system, "_기본_세이브_폴더", lambda: str(옛))
+    monkeypatch.setattr(save_system, "_폴더_재정의", None)
+    return 옛, 새
+
+
+def test_세이브_폴더_설정은_옛_세이브를_한번_복사하고_옛_파일은_남긴다(폴더_설정):
+    옛, 새 = 폴더_설정
+    (옛 / "slot_1.json").write_text("{옛1}", encoding="utf-8")
+    (옛 / "slot_1.json.bak").write_text("{옛1백업}", encoding="utf-8")
+    (옛 / "slot_3.json").write_text("{옛3}", encoding="utf-8")
+    (옛 / "slot_9.json").write_text("{범위 밖}", encoding="utf-8")
+
+    복사 = save_system.세이브_폴더_설정(str(새))
+    assert 복사 == ["slot_1.json", "slot_1.json.bak", "slot_3.json"]
+    assert save_system._세이브_폴더() == str(새)
+    assert (새 / "slot_1.json").read_text(encoding="utf-8") == "{옛1}"
+    assert (새 / "slot_1.json.bak").read_text(encoding="utf-8") == "{옛1백업}"
+    assert not (새 / "slot_9.json").exists()
+    assert (옛 / "slot_1.json").exists() and (
+        옛 / "slot_3.json"
+    ).exists()  # 옛 파일은 지우지 않는다
+    assert not list(새.glob("*.tmp"))
+
+
+def test_세이브_폴더_설정_후_저장은_새_폴더에_된다(폴더_설정):
+    옛, 새 = 폴더_설정
+    save_system.세이브_폴더_설정(str(새))
+    _저장(1)
+    assert (새 / "slot_1.json").exists() and not (옛 / "slot_1.json").exists()
+    assert save_system.세이브_요약(1)["대표캐릭터명"] == "철수"
+
+
+def test_옛_세이브는_두번_가져오지_않아_지운_슬롯이_되살아나지_않는다(폴더_설정):
+    옛, 새 = 폴더_설정
+    (옛 / "slot_1.json").write_text("{옛}", encoding="utf-8")
+    save_system.세이브_폴더_설정(str(새))
+    save_system.세이브_삭제(1)  # 사용자가 슬롯을 지웠다
+    assert save_system.세이브_폴더_설정(str(새)) == []  # 다음 실행
+    assert not (새 / "slot_1.json").exists()
+
+
+def test_새_폴더에_이미_있는_슬롯은_덮어쓰지_않는다(폴더_설정):
+    옛, 새 = 폴더_설정
+    새.mkdir(parents=True)
+    (새 / "slot_1.json").write_text("{새}", encoding="utf-8")
+    (옛 / "slot_1.json").write_text("{옛}", encoding="utf-8")
+    (옛 / "slot_2.json").write_text("{옛2}", encoding="utf-8")
+    assert save_system.세이브_폴더_설정(str(새)) == ["slot_2.json"]
+    assert (새 / "slot_1.json").read_text(encoding="utf-8") == "{새}"
+
+
+def test_옛_폴더가_없거나_같은_폴더면_복사하지_않고_표시만_남긴다(
+    폴더_설정, tmp_path, monkeypatch
+):
+    옛, 새 = 폴더_설정
+    monkeypatch.setattr(
+        save_system, "_기본_세이브_폴더", lambda: str(tmp_path / "없음")
+    )
+    assert save_system.세이브_폴더_설정(str(새)) == []
+    assert (새 / save_system._가져옴_표시파일).exists()
+
+    같은 = tmp_path / "같은"
+    같은.mkdir()
+    (같은 / "slot_1.json").write_text("{x}", encoding="utf-8")
+    monkeypatch.setattr(save_system, "_기본_세이브_폴더", lambda: str(같은))
+    assert save_system.세이브_폴더_설정(str(같은)) == []
+
+
+def test_복사에_실패해도_앱은_계속되고_다음_실행에_다시_시도한다(
+    폴더_설정, monkeypatch
+):
+    옛, 새 = 폴더_설정
+    (옛 / "slot_1.json").write_text("{옛}", encoding="utf-8")
+
+    def 실패(*args, **kwargs):
+        raise OSError("읽기 실패")
+
+    with monkeypatch.context() as m:
+        m.setattr(save_system.shutil, "copy2", 실패)
+        assert save_system.세이브_폴더_설정(str(새)) == []
+    assert not (새 / save_system._가져옴_표시파일).exists()  # 표시가 없어 다시 시도한다
+    assert save_system.세이브_폴더_설정(str(새)) == ["slot_1.json"]
+    assert (새 / save_system._가져옴_표시파일).exists()
+
+
+def test_gameflow는_세이브_폴더_설정을_내보낸다(폴더_설정):
+    옛, 새 = 폴더_설정
+    assert gf.세이브_폴더_설정(str(새)) == []
+    assert save_system._세이브_폴더() == str(새)
+
+
 # ---------------------------------------------------------------- levelup
 
 
