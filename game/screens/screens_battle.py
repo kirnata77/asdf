@@ -436,7 +436,7 @@ class 전투화면(Screen):
         def 일():
             try:
                 결과, 오류 = 작업(), None
-            except Exception as 예외:
+            except Exception as 예외:  # 모두 받아 메인 스레드의 끝()에서 다시 던진다
                 결과, 오류 = None, 예외
             Clock.schedule_once(lambda dt: 끝(결과, 오류))
 

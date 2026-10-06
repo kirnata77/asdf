@@ -34,7 +34,7 @@ from kivy.uix.button import Button  # noqa: E402
 from kivy.uix.scrollview import ScrollView  # noqa: E402
 
 import gameflow as gf  # noqa: E402
-from game.screens import screens_party  # noqa: E402
+from game.screens import screens_common, screens_party  # noqa: E402
 from game.system import dice_utils, save_system, skill_system  # noqa: E402
 from game.system.combat import flow  # noqa: E402
 from tests import support  # noqa: E402
@@ -123,6 +123,7 @@ class 스모크앱(main.DnfMobileApp):
         yield from self._단계_전투종료_자동전투_주점(상태, 매니저, 전투)
         yield from self._단계_목록_스크롤(상태, 매니저)
         yield from self._단계_세이브(상태, 매니저)
+        yield from self._단계_설정(매니저)
 
     def _단계_파티생성(self, 상태, 매니저):
         """파티 구성 화면 - 이름칸(안내/글자 수 제한)과 이름 중복"""
@@ -1042,6 +1043,47 @@ class 스모크앱(main.DnfMobileApp):
         finally:
             save_system._세이브_폴더 = 원래폴더
             shutil.rmtree(세이브폴더, ignore_errors=True)
+            매니저.current = "마을"
+
+    def _단계_설정(self, 매니저):
+        """설정 파일이 없거나 깨졌거나 쓸 수 없어도 옵션 화면/설정 저장이 죽지 않는다"""
+        폴더 = tempfile.mkdtemp(prefix="ui_smoke_settings_")
+        경로 = os.path.join(폴더, "설정.json")
+        원래경로 = screens_common._설정_경로
+        원래반응 = gf.반응_자동_여부()
+        screens_common._설정_경로 = lambda: 경로
+        try:
+            assert screens_common.설정_불러오기() == {}  # 파일 없음
+            for 내용 in (
+                '{"반응자',
+                "[1, 2]",
+                "\udcff",
+            ):  # 끊긴 JSON, 딕셔너리 아님, 깨진 글자
+                with open(경로, "w", encoding="utf-8", errors="surrogateescape") as f:
+                    f.write(내용)
+                assert screens_common.설정_불러오기() == {}, 내용
+            screens_common.설정_저장(
+                "반응자동", True
+            )  # 깨진 파일을 새 설정으로 덮어쓴다
+            with open(경로, encoding="utf-8") as f:
+                assert json.load(f) == {"반응자동": True}
+            assert screens_common.설정_불러오기() == {"반응자동": True}
+            assert gf.반응_자동_여부()
+            screens_common._설정_경로 = lambda: (
+                폴더
+            )  # 폴더라 쓸 수 없다 -> 조용히 넘어간다
+            screens_common.설정_저장("반응자동", False)
+            screens_common._설정_경로 = lambda: 경로
+            매니저.current = "옵션"
+            yield 0.3
+            _찍기("settings")
+            결과["단계"].append(
+                "설정 파일(없음/깨짐/딕셔너리 아님/쓰기 실패) - 기본값으로 계속"
+            )
+        finally:
+            screens_common._설정_경로 = 원래경로
+            gf.반응_자동_설정(원래반응)
+            shutil.rmtree(폴더, ignore_errors=True)
             매니저.current = "마을"
 
 

@@ -124,7 +124,7 @@ class 던전맵위젯(Widget):
                     텍스처 = CoreImage(경로).texture
                     텍스처.mag_filter = "nearest"
                     텍스처.min_filter = "nearest"
-                except Exception:
+                except Exception:  # kivy는 못 읽는 그림에 Exception 자체를 던진다
                     텍스처 = None
             self._타일_캐시[파일명] = 텍스처
         return self._타일_캐시[파일명]
@@ -157,7 +157,7 @@ class 던전맵위젯(Widget):
         if 코드 not in self._텍스처_캐시:
             try:
                 self._텍스처_캐시[코드] = CoreImage(_캐릭터이미지_경로(코드)).texture
-            except Exception:
+            except Exception:  # kivy는 못 읽는 그림에 Exception 자체를 던진다
                 self._텍스처_캐시[코드] = None
         return self._텍스처_캐시[코드]
 

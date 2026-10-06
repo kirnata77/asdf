@@ -27,7 +27,7 @@ def _크래시로그_저장(exc_type, exc_value, exc_tb):
         저장경로 = "/storage/emulated/0/Download/dnf_crash_log.txt"
         with open(저장경로, "w", encoding="utf-8") as f:
             f.write(오류내용)
-    except Exception:
+    except Exception:  # 크래시 처리 중이다 - 로그 저장 실패로 원래 오류를 가리지 않는다
         pass
 
 
@@ -111,7 +111,7 @@ class _오류처리기(ExceptionHandler):
         print(내용)
         try:
             _오류_팝업_띄우기(내용)
-        except Exception:
+        except Exception:  # 오류 팝업이 또 실패해도 원래 오류 처리는 계속한다
             pass
         return ExceptionManager.PASS
 
