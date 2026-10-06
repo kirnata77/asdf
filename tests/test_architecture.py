@@ -142,3 +142,19 @@ def test_다른_모듈의_밑줄_이름을_쓰지_않는다():
     assert not 위반, (
         "다른 모듈의 밑줄 이름을 쓴다(공개 이름으로 바꾼다):\n" + "\n".join(위반)
     )
+
+
+def test_게임_코드는_eval_exec_compile을_쓰지_않는다():
+    """수식은 formula.안전_평가(제한된 AST 평가기)로만 계산한다(구조 점검 W-2). 데이터가 문자열을
+    실행하는 길을 열어 두지 않는다."""
+    위반 = []
+    대상 = [루트 / "gameflow.py", 루트 / "main.py", *(루트 / "game").rglob("*.py")]
+    for 경로 in 대상:
+        for 노드 in ast.walk(ast.parse(경로.read_text(encoding="utf-8"))):
+            if (
+                isinstance(노드, ast.Call)
+                and isinstance(노드.func, ast.Name)
+                and 노드.func.id in ("eval", "exec", "compile")
+            ):
+                위반.append(f"{경로.relative_to(루트)}:{노드.lineno} {노드.func.id}()")
+    assert not 위반, "eval/exec/compile 사용:\n" + "\n".join(위반)

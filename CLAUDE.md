@@ -77,7 +77,8 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 | `test_combat_monsters.py` | 몬스터 고유 패턴 전수 + 보스 칭호 | 골든 |
 | `test_combat_effects.py` | 상태이상/버프/디버프 전수, 반응특성 전투 | 골든 |
 | `test_screen_api.py` | 화면용 gameflow 창구, 화면 -> system 직접 호출 금지 | 값 + 규칙 |
-| `test_architecture.py` | combat 모듈 순환은 허용 묶음뿐, combat은 skill_system을 안 부름, 다른 모듈의 밑줄 이름 금지 | 규칙 |
+| `test_formula_parity.py` | 수식 평가기가 옛 eval 구현과 같은 값을 내는지(데이터 수식 전부 + 무작위 식), 안전 평가기의 거부 규칙 | 기준 구현과 비교 |
+| `test_architecture.py` | combat 모듈 순환은 허용 묶음뿐, combat은 skill_system을 안 부름, 다른 모듈의 밑줄 이름 금지, 게임 코드에 eval/exec 금지 | 규칙 |
 | `test_data_integrity.py` | 데이터의 수식이 엄격하게 평가되는지, 몬스터/스킬/버프/던전/마을/상점의 키·이름 참조 | 규칙(허용 목록은 이유와 함께) |
 | `test_scenario_*.py` | 풀 시나리오(실제 전투로 처음부터 끝까지, 아래) | 요약 골든 + 값 |
 | `test_imports.py`, `test_repo_hygiene.py` | 모듈 import, file_path.py, LF 줄끝, 시나리오 장부 대조 | 규칙 |

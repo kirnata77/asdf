@@ -1,7 +1,10 @@
 # 전투 시스템 - 수식 평가 - 데미지 문법/다이스/무기공격력.
 # (combat 패키지에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
 
+import ast
+import functools
 import math
+import operator
 import re
 
 from game.system import dice_utils
@@ -12,11 +15,64 @@ from game.system import dice_utils
 
 _다이스_패턴 = re.compile(r"(\d+|\([^()]*\))d(\d+|\([^()]*\))")
 
+# 계산식에 쓸 수 있는 글자: 숫자, + - * / ( ) . 공백, 올림 함수. 이 밖의 표현은 평가하지 않는다.
+_허용_식 = re.compile(r"(?:[0-9+\-*/(). ]|_올림)+")
+
+_이항연산 = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.FloorDiv: operator.floordiv,
+    ast.Pow: operator.pow,
+}
+_단항연산 = {ast.UAdd: operator.pos, ast.USub: operator.neg}
+_최대_지수 = 64  # 2**9999999 같은 식이 계산을 붙잡지 못하게
+
+
+def _노드_평가(노드):
+    """허용한 노드(숫자, 사칙/거듭제곱, 부호, _올림(...))만 계산한다. eval을 쓰지 않는다."""
+    if isinstance(노드, ast.Expression):
+        return _노드_평가(노드.body)
+    if isinstance(노드, ast.Constant) and type(노드.value) in (int, float):
+        return 노드.value
+    if isinstance(노드, ast.BinOp) and type(노드.op) in _이항연산:
+        왼, 오 = _노드_평가(노드.left), _노드_평가(노드.right)
+        if isinstance(노드.op, ast.Pow) and abs(오) > _최대_지수:
+            raise ValueError(f"지수가 너무 크다: {오}")
+        return _이항연산[type(노드.op)](왼, 오)
+    if isinstance(노드, ast.UnaryOp) and type(노드.op) in _단항연산:
+        return _단항연산[type(노드.op)](_노드_평가(노드.operand))
+    if (
+        isinstance(노드, ast.Call)
+        and isinstance(노드.func, ast.Name)
+        and 노드.func.id == "_올림"
+        and len(노드.args) == 1
+        and not 노드.keywords
+    ):
+        return math.ceil(_노드_평가(노드.args[0]))
+    raise ValueError(f"수식에 쓸 수 없는 표현: {ast.dump(노드)}")
+
+
+@functools.lru_cache(maxsize=4096)
+def _계산(식):
+    # eval처럼 앞뒤 공백은 무시한다. 순수 함수라(같은 문자열 -> 같은 값) 결과를 캐시한다.
+    return _노드_평가(ast.parse(식.strip(), mode="eval"))
+
+
+def 안전_평가(식):
+    """숫자/사칙연산/괄호/올림만 든 계산식을 계산한다. 그 밖의 글자나 표현이 있으면 ValueError,
+    문법이 틀리면 SyntaxError, 0으로 나누면 ZeroDivisionError. eval을 쓰지 않는다(구조 점검 W-2).
+    수식_평가가 키워드/다이스를 숫자로 바꾼 뒤 마지막에 부르고, 장비 데이터의 숫자 수식도 쓴다."""
+    if not _허용_식.fullmatch(식):
+        raise ValueError(f"계산식에 쓸 수 없는 글자가 있다: {식!r}")
+    return _계산(식)
+
 
 def _다이스_치환(match, 치명타=False):
     개수식, 면수식 = match.group(1), match.group(2)
-    개수 = int(eval(개수식, {"__builtins__": {}}, {}))
-    면수 = int(eval(면수식, {"__builtins__": {}}, {}))
+    개수 = int(안전_평가(개수식))
+    면수 = int(안전_평가(면수식))
     if 개수 <= 0 or 면수 <= 0:  # 0개 항은 치명타여도 0 (귀신 0개인 귀참의 d8 등)
         return "0"
     개수 += int(치명타)  # True=1개, 정수면 그만큼(치명타주사위)
@@ -114,10 +170,10 @@ def 수식_평가(수식, 컨텍스트, 치명타=False):
 
     # "올림(...)"(몬스터 최대HP 공식) - 괄호 안을 계산해 올린다.
     식 = 식.replace("올림", "_올림")
-    if not re.fullmatch(r"(?:[0-9+\-*/(). ]|_올림)+", 식):
+    if not _허용_식.fullmatch(식):
         raise ValueError(
             f"수식_평가가 처리할 수 없는 표현이 남았다: {수식!r} -> {식!r} "
             f"(예: 전투 중 상태를 참조하는 동적 변수는 아직 미지원)"
         )
 
-    return eval(식, {"__builtins__": {}}, {"_올림": math.ceil})
+    return _계산(식)
