@@ -15,6 +15,7 @@
 # 방어구 슬롯 목록 (character_format.py "장착장비" 기준).
 from game.data.ability.job_ability_0000 import 특성목록 as _공용특성
 from game.system import character_data_system as 캐릭터데이터
+from game.system.combat import formula
 
 방어구_슬롯 = ["상의", "하의", "어깨", "벨트", "신발"]
 
@@ -194,7 +195,7 @@ def _방어구숙련_최대MP(캐릭터, 장착아이템데이터):
             식 = 값.replace("x", "*").replace(
                 "차수", str(캐릭터데이터.차수_계산(캐릭터))
             )
-            값 = eval(식, {"__builtins__": {}}, {})
+            값 = formula.안전_평가(식)
         합계 += 값
     return 합계
 

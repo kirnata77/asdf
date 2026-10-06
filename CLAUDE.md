@@ -10,7 +10,8 @@ Kivy로 만든 턴제 RPG 프로토타입이다. buildozer로 안드로이드 AP
 
 ```
 main.py            Kivy 앱 진입점, 화면 등록, 크래시 로그 훅
-gameflow.py        화면 <-> 로직/데이터 컨트롤러. 화면은 이 파일의 함수만 부른다
+gameflow.py        화면 <-> 로직/데이터 컨트롤러의 창구(재수출만). 화면은 이 파일의 함수만 부른다
+game/controller/   컨트롤러 구현 - 주제별 ctl_*.py 15개(battle/shop/party/levelup ...), gameflow.py가 다시 내보낸다
 game/screens/      Kivy 화면 (kivy 의존은 여기와 main.py에만)
 game/system/       전투, 스킬, 장비, 세이브 등 게임 로직
   combat/            전투 패키지(모듈 목록은 combat/__init__.py). 쓰는 쪽은
@@ -23,16 +24,20 @@ tools/check.py     완료 기준 게이트 (아래)
 tools/ui_smoke.py  화면 스모크(kivy + Xvfb, 스크린샷) - CI 밖, 화면 바꿀 때 직접
 tools/fix_eol.py   줄끝을 LF로 통일 (pre-commit 훅이 부른다)
 .githooks/         pre-commit (줄끝 통일)
-docs/              빌드 노트, 리뷰 보고서
+docs/              빌드 노트, 구조 점검 보고서, 리뷰 보고서, 시나리오 장부
+README.md          입구(실행/개발/구조/빌드 요약)
 .memory/           작업 기억 (MEMORY.md가 색인)
 ```
 
-**계층은 한 방향이다: `screens` -> `gameflow` -> `system` -> `data`.**
-- `game/system/`, `game/data/`, `gameflow.py`는 **kivy를 import하지 않는다.** 그래서
+**계층은 한 방향이다: `screens` -> `gameflow`(창구) -> `controller` -> `system` -> `data`.**
+- `game/system/`, `game/data/`, `game/controller/`, `gameflow.py`는 **kivy를 import하지 않는다.** 그래서
   테스트가 화면 없이 돈다(`test_헤드리스_계층은_kivy에_의존하지_않는다`가 지킨다).
-- 화면은 `game.system`을 직접 부르지 않고 `gameflow`를 거친다(`gameflow.xxx_system.`
-  으로 우회하는 것도 금지). 화면에 필요한 조회는 gameflow의 "화면용 조회" 절에 함수로
-  추가한다. `test_화면은_game_system을_직접_쓰지_않는다`가 지킨다.
+- 화면은 `game.system`/`game.controller`를 직접 부르지 않고 `gameflow`를 거친다(`gameflow.xxx_system.`
+  으로 우회하는 것도 금지). 화면에 필요한 조회/동작은 주제에 맞는 `game/controller/ctl_*.py`에 함수로
+  추가하고 그 모듈의 `__all__`에 넣는다(gameflow.py는 건드리지 않는다 - 창구에는 구현을 두지 않는다).
+  `test_화면은_game_system을_직접_쓰지_않는다`와 `test_controller_structure.py`가 지킨다.
+- 컨트롤러 모듈은 위에서 아래로만 부른다(registry -> party -> 기능 모듈 -> dungeon/potion/rewards/charview/tavern).
+  모듈끼리 순환하거나 다른 모듈의 밑줄 이름을 가져오면 테스트가 실패한다.
 - 모듈을 추가/이동/이름변경하면 `game/data/file_path.py`도 같은 커밋에서 고친다.
 
 ## 처음 한 번 (저장소마다)
@@ -47,7 +52,7 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 한 작업을 끝냈다고 하려면 다음을 모두 만족해야 한다:
 
 1. **`python tools/check.py` 통과** - compileall + `ruff check` + `ruff format --check` + `pytest` +
-   커버리지 하한(game/system + gameflow.py, `COVERAGE_FLOOR`). CI(`.github/workflows/check.yml`)도
+   커버리지 하한(game/system + game/controller + gameflow.py, `COVERAGE_FLOOR`). CI(`.github/workflows/check.yml`)도
    모든 push/PR에서 같은 명령을 돌린다. 서식이 걸리면 `python -m ruff format .`.
    **로직을 추가/변경하면 테스트도 같이 추가한다** - 어디에 넣을지는 아래 "테스트 지도".
 2. **골든 파일(`tests/golden/`)이 바뀌었다면 이유를 커밋에 적는다.** 리팩터링은
@@ -55,7 +60,8 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
    바꾼 경우만 `UPDATE_GOLDEN=1 python -m pytest`로 다시 쓰고 diff를 설명한다.
 3. **화면(kivy) 변경은 tests/가 못 잡는다.** `python tools/ui_smoke.py`(리눅스는
    `xvfb-run -a -s "-screen 0 720x1280x24"`를 앞에)로 실제 화면을 돌려 확인하고,
-   바꾼 동작이 스모크에 없으면 스모크에 단계를 추가한다.
+   바꾼 동작이 스모크에 없으면 스모크에 단계를 추가한다(주제별 `_단계_*` 제너레이터에 넣는다).
+   CI에도 같은 스모크를 도는 `ui-smoke` 잡이 있다(아직 실패해도 PR을 막지 않는다 - check.yml 주석).
 4. **기억 갱신** - `MEMORY.md`의 *Now*와 `.memory/`를 코드와 같은 커밋에서 고친다(아래).
 5. **큰 기능은 풀 시나리오로 검증한다** - 아래 "풀 시나리오 테스트".
 
@@ -75,12 +81,19 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 | `test_combat_skills.py` | 스킬 전수(기본/준비됨) | 골든 |
 | `test_combat_monsters.py` | 몬스터 고유 패턴 전수 + 보스 칭호 | 골든 |
 | `test_combat_effects.py` | 상태이상/버프/디버프 전수, 반응특성 전투 | 골든 |
-| `test_screen_api.py` | 화면용 gameflow 창구, 화면 -> system 직접 호출 금지 | 값 + 규칙 |
+| `test_screen_api.py` | 화면용 gameflow 창구, 화면 -> system/controller 직접 호출 금지 | 값 + 규칙 |
+| `test_controller_structure.py` | 창구에 구현 금지, 컨트롤러 `__all__` 완전성/이름 겹침/순환 금지, 창구가 쓰이는 이름을 다 내보냄 | 규칙 |
+| `test_formula_parity.py` | 수식 평가기가 옛 eval 구현과 같은 값을 내는지(데이터 수식 전부 + 무작위 식), 안전 평가기의 거부 규칙 | 기준 구현과 비교 |
+| `test_architecture.py` | combat 모듈 순환은 허용 묶음뿐, combat은 skill_system을 안 부름, 다른 모듈의 밑줄 이름 금지, 게임 코드에 eval/exec 금지 | 규칙 |
+| `test_state_schema.py` | 캐릭터/전투 참가자/게임상태가 `state_schema.py` 표대로인지(칸이 빠지거나 이름이 바뀌면 실패), 불러올 때 핵심 칸 검사 | 규칙 |
+| `test_data_integrity.py` | 데이터의 수식이 엄격하게 평가되는지, 몬스터/스킬/버프/던전/마을/상점의 키·이름 참조 | 규칙(허용 목록은 이유와 함께) |
 | `test_scenario_*.py` | 풀 시나리오(실제 전투로 처음부터 끝까지, 아래) | 요약 골든 + 값 |
 | `test_imports.py`, `test_repo_hygiene.py` | 모듈 import, file_path.py, LF 줄끝, 시나리오 장부 대조 | 규칙 |
 
 - 공용 도우미는 `tests/support.py`(자동 전투, 강제 승리/패배, 경로 걷기, 결정적 성장).
 - 무작위는 전부 전역 `random`이라 `random.seed()`로 재현된다. 골든은 시드를 고정해 만든다.
+- **데이터를 추가/수정하면** `test_data_integrity.py`가 오타(수식 변수, 특성/버프 이름, 그림 파일, 던전 연결)를 잡는다. 런타임은 평가할 수 없는
+  수식을 0으로, 정의 없는 특성을 건너뛰어 조용히 넘어가므로 이 테스트가 유일한 안전망이다. 새 변수/예외는 허용 목록에 이유와 함께 더한다.
 - **새 스킬/몬스터/버프/상태이상 데이터를 추가하면** 전수 스윕이 자동으로 포함해 골든이
   바뀐다 - `UPDATE_GOLDEN=1`로 다시 쓰고 새 항목이 맞는지 diff를 읽는다.
 
@@ -117,8 +130,9 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 - **되돌리기 어려운 명령은 실행하는 순간에 따로 허락을 받는다** - 원격 브랜치 강제 push,
   브랜치 삭제, PR 병합, `game/saves/` 삭제. 그 명령이 들어 있는 계획을 승인받은 것은
   실행 허락이 아니다.
-- **세이브 호환성.** `game/saves/*.json` 형식(세이브 키 이름 포함)을 바꾸면 이전
-  세이브를 불러오는 호환 처리(`gameflow.게임_불러오기` 참고)를 함께 넣는다.
+- **세이브 호환성.** `game/saves/*.json` 형식(세이브 키 이름 포함)을 바꾸면 `save_system.세이브_버전`을
+  올리고 `_마이그레이션` 표에 (새 버전, 변환 함수)를 더한다(옛 세이브 테스트 포함). 불러올 때마다 규칙에 맞춰
+  다시 계산하는 값(최대HP 등)은 형식이 아니라 규칙이라 `gameflow.게임_불러오기`가 한다.
 - **`buildozer.spec`을 바꾸면** CI 캐시 키가 바뀌어 다음 APK 빌드가 SDK/NDK를 새로
   받는다(수십 분). 꼭 필요할 때만 바꾼다.
 - **비밀값을 커밋하지 않는다** - 서명 키스토어, 토큰, 비밀번호. CI 비밀은 GitHub Secrets로.
@@ -136,7 +150,10 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 
 ## 기억 파일 (MEMORY.md / .memory/)
 
-- `MEMORY.md`는 **색인이다. 40줄 이하.** *Now* 절에는 다음에 할 일과 "써 놓았지만
+- `MEMORY.md`는 **색인이다. 40줄 이하, 6KB(6,144바이트) 이하.** 한글은 글자당 3바이트라
+  줄 수만 지켜서는 크기가 넘는다 - 둘 다 지킨다. 게이트(`tests/test_repo_hygiene.py`)가 검사하고,
+  넘으면 실패한다. 넘칠 때는 규칙/수치 설명을 `.memory/roadmap/game-rules.md`로, 경위는 `sessions/`로
+  옮기고 MEMORY.md에는 한 줄 링크만 남긴다. *Now* 절에는 다음에 할 일과 "써 놓았지만
   아직 확인 안 된 것"만 둔다. 세션마다 *Now*를 갱신한다(변화 없음이라도).
 - 자세한 내용은 `.memory/` 아래 - 숫자가 있는 사실은 `roadmap/`, 믿으면 안 되는 것은
   `active-issues/`, 헛발질을 포함한 경위는 `sessions/`(자세히는 `.memory/README.md`).

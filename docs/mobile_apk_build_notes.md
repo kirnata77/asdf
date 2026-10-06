@@ -1,108 +1,65 @@
 # 모바일 APK 빌드 노트
 
-> **주의: 2026-09-16 기준 기록이고 일부 낡았으며 끝이 잘려 있다.** 지금은 GitHub
-> Actions(`.github/workflows/build-apk.yml`)가 APK를 빌드한다. 낡은 부분 목록은
-> `.memory/active-issues/known-bugs.md`의 "문서" 절. (원래 위치: `game/`)
+2026-10-06에 현재 방식(GitHub Actions)에 맞게 다시 썼다. 예전 판(2026-09-16, Colab 기준)은 `git log -- docs/mobile_apk_build_notes.md`로
+볼 수 있다. 값이 맞는지는 `buildozer.spec`과 `.github/workflows/build-apk.yml`이 정답이다.
 
-작업 위치(클라우드 프로토타입): `/home/claude/dnf_mobile` (Kivy 이식판).
-실제 프로젝트 경로: `Z:\백업\코딩연습\game` (파일 배치는 `file_path.py` 참고).
+## 1. 빌드 방법 (GitHub Actions)
 
-## 1. 왜 APK 빌드를 이 세션(클라우드 샌드박스)에서 못 하는가
+워크플로 `.github/workflows/build-apk.yml`("Build APK")이 디버그 APK를 만든다.
 
-buildozer(python-for-android)는 빌드 중 Android SDK/NDK, Apache Ant 등을
-`dl.google.com`/`archive.apache.org`에서 내려받아야 하는데, 이 클라우드
-세션의 네트워크는 pypi/npm/github(git 프로토콜) 등으로만 제한돼 있어
-403/터널 실패가 난다. 이건 특정 회사 컴퓨터의 보안 정책이 아니라, 이
-클라우드 샌드박스 자체의 고정된 속성이다 - 어떤 기기로 접속해도 동일하다.
+- **언제 도나:** 수동 실행(`workflow_dispatch`)과, 이 워크플로 파일 자체가 바뀐 push에서만. **게임 코드 push/PR로는 돌지 않는다.**
+  그래서 게임 코드 변경이 빌드를 깨도 PR 단계에서는 모른다 - 릴리스 전에 Actions 탭에서 "Run workflow"로 한 번 돌린다.
+- **무엇을 하나:** JDK 17 + Python 3.11 + buildozer/cython 설치 -> `yes | buildozer -v android debug`(SDK 라이선스 자동 동의) -> APK 업로드.
+- **산출물:** 워크플로 아티팩트 `dnfmobile-apk`와 릴리스 `latest-apk`(매번 지우고 새로 만든다). 폰에서는 릴리스의 `*.apk`를 받아 설치한다.
+  파일 이름 예: `dnfmobile-0.1-arm64-v8a-debug.apk`.
+- **캐시:** `~/.buildozer`(SDK/NDK)를 `buildozer-<OS>-<buildozer.spec 해시>` 키로 캐시한다.
+  **`buildozer.spec`은 주석 한 글자만 바뀌어도 키가 바뀌어** 다음 빌드가 SDK/NDK를 새로 받는다(수십 분). 꼭 필요할 때만, 여러 변경을 묶어서 바꾼다.
+- 제한 시간 120분. 첫 빌드(캐시 없음)가 가장 오래 걸린다.
 
-**해결책: Google Colab**에서 빌드한다. Colab은 인터넷 제한이 없어서
-buildozer가 SDK/NDK/Ant를 정상적으로 받아 빌드를 끝까지 마칠 수 있다.
-(대안으로 GitHub Actions도 있으나, 이번엔 Colab을 선택해 진행했다.)
+## 2. 로컬/Colab에서 빌드하기 (대안)
 
-## 2. Colab에서 빌드하는 순서 (실제로 성공한 명령)
+클라우드 코딩 세션(이 저장소를 편집하는 샌드박스)은 네트워크가 막혀 SDK/NDK를 받을 수 없어 APK를 못 만든다. 직접 빌드가 필요하면:
 
-1. `dnf_mobile.zip`을 Colab 세션에 업로드한다.
-2. 압축 해제(재실행 시 덮어쓰기 프롬프트를 피하려면 `-o` 사용):
-   ```
-   !unzip -o -q dnf_mobile.zip
-   ```
-3. buildozer 설치:
-   ```
-   !pip install buildozer cython
-   ```
-4. `dnf_mobile/buildozer.spec`에서 `[buildozer]` 섹션에
-   `warn_on_root = 0`을 넣어야 한다 - `[app]` 섹션에 넣으면 인식하지 못하고
-   "Buildozer is running as root!" 프롬프트에서 `EOFError`로 멈춘다
-   (Colab은 항상 root로 실행되기 때문에 반드시 필요).
-5. 빌드 실행:
-   ```
-   %cd dnf_mobile
-   !buildozer android debug
-   ```
-6. Android SDK 라이선스 동의 프롬프트(`Accept? (y/N):`)가 뜨면 모바일에서는
-   응답하기 어려우므로, 셀을 중단하고 아래로 한 번에 전체 동의시킨 뒤
-   다시 `buildozer android debug`를 실행한다:
-   ```
-   !yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=~/.buildozer/android/platform/android-sdk --licenses
-   ```
-7. 빌드가 끝나면 `dnf_mobile/bin/dnfmobile-0.1-arm64-v8a-debug.apk`가
-   생성된다. Colab 파일 브라우저(모바일에서는 "파일 브라우저 표시" 메뉴)
-   에서 다운로드해 폰에 설치하면 된다.
+1. `pip install buildozer cython`
+2. 저장소 최상위에서 `buildozer android debug` (결과: `bin/*.apk`)
+3. 처음에 Android SDK 라이선스 질문(`Accept? (y/N):`)이 나오면 `yes | buildozer android debug`로 돌리거나 `android.accept_sdk_license = True`(이미 spec에 있음)에 맡긴다.
+4. **root로 실행하면**(Colab 등) `[buildozer]` 섹션의 `warn_on_root = 0`이 있어야 "Buildozer is running as root!" 질문에서 멈추지 않는다(이미 spec에 있고, `[app]`이 아니라 `[buildozer]`에 둬야 인식된다).
 
-## 3. 한글이 네모(□)로 깨지는 문제와 수정
+## 3. 한글이 네모(□)로 깨지는 문제
 
-**원인**: Kivy 기본 폰트 별칭 "Roboto"에는 한글 글리프가 없다.
+- **원인:** Kivy 기본 폰트 별칭 `Roboto`에 한글 글리프가 없다.
+- **수정:** `main.py`가 화면을 import하기 **전에** `LabelBase.register(name="Roboto", fn_regular=<폰트>)`로 별칭 자체를 나눔고딕으로 덮어쓴다.
+  위젯마다 `font_name`을 지정하지 않아도 모든 Label/Button에 적용된다. import 순서가 중요하다.
+- **폰트 파일:** `game/assets/font/NanumGothic-Diet.ttf` 1개(약 1.3MB, 렌더링에 불필요한 테이블만 뺀 나눔고딕 Regular). 볼드 파일은 없고,
+  Kivy가 볼드 스타일에도 이 파일을 대신 쓴다.
+- **`buildozer.spec`의 `source.include_exts`에 `ttf`가 있어야** APK에 폰트가 들어간다(빠지면 로컬에서는 되고 APK에서만 다시 깨진다).
+- Kivy `Window`/`App` 없이 `CoreLabel(...).refresh()`만 부르면 이 헤드리스 환경에서 세그폴트가 난다(폰트와 무관). 검증은 `App` 컨텍스트 안에서(`tools/ui_smoke.py`).
 
-**수정**: `main.py`에서 `screens.py`를 import하기 **전에**
-`kivy.core.text.LabelBase.register(name="Roboto", fn_regular=..., fn_bold=...)`
-로 "Roboto" 별칭 자체를 나눔고딕(NanumGothic) TTF로 덮어썼다. 이러면
-위젯마다 `font_name`을 따로 지정하지 않아도 모든 Label/Button 등에
-자동 적용된다.
+## 4. `buildozer.spec` 주석의 "빌드 노트 N절" 대응표
 
-- 폰트 파일 위치: `game/assets/font/NanumGothic-Regular.ttf`,
-  `NanumGothic-Bold.ttf` (실제 프로젝트 기준 - `file_path.py` 참고).
-- **buildozer.spec에 `source.include_exts`로 `ttf`/`otf`가 포함돼 있어야
-  APK 안에 폰트 파일이 실제로 패키징된다** - 빠지면 로컬에서는 되는데
-  APK에서는 다시 깨진다.
-- import 순서 중요: `LabelBase.register(...)`가 `from screens import ...`
-  보다 먼저 실행돼야 화면들이 만들어지는 시점에 이미 "Roboto" 별칭이
-  덮어써진 상태다.
+`buildozer.spec` 주석이 가리키는 절 번호는 예전 판의 번호라 이 문서에는 없다. 해당 내용은 다음과 같다.
 
-검증은 실제 Kivy `App` 컨텍스트 안에서 해야 한다 - `Window`/`App` 없이
-`CoreLabel(...).refresh()`만 단독으로 부르면 이 환경에서는 세그폴트가
-나는데, 이건 폰트 수정과 무관한 헤드리스 테스트 환경 자체의 특이 동작이다
-(전체 `App` 컨텍스트 안에서 테스트하면 정상 동작 확인됨).
+| spec 주석 | 내용 | 지금 어디 |
+|---|---|---|
+| "빌드 노트 2절 4번" | root 실행 시 `warn_on_root = 0`을 `[buildozer]`에 | 이 문서 2절 4번 |
+| "빌드 노트 11절" | `android.api = 33` - `HIDDeviceManager.java`의 `BLUETOOTH_CONNECT` 심볼 오류를 피하려고 | spec 주석이 근거의 전부다(원문 11절은 사라짐) |
+| "빌드 노트 13절" | 크래시 로그를 Download 폴더에 저장하는 `main.py` 안전장치와 그 권한 | 이 문서 5절 |
 
-## 4. 이번 빌드에 포함된 범위 (2026-09-16 확장판)
+spec을 다음에 바꿀 때(캐시 키가 어차피 바뀐다) 주석을 이 문서의 절 번호로 고친다.
 
-첫 APK는 귀검사 1명 + 로리엔 던전 + 세이브/마을 없음으로 최소 범위였고,
-이후 사용자 요청으로 아래 4가지를 전부 추가했다:
+## 5. 크래시 로그와 권한 (확인 안 됨)
 
-1. **메인 메뉴 + 세이브/불러오기** - `main.py`가 이제 "메인메뉴" 화면으로
-   시작한다(새로운 시작/불러오기/옵션/게임 종료). 원본 프로젝트의
-   `save_system.py`를 그대로 포팅(`game/system/save_system.py`) - JSON
-   기반, 3슬롯, `game/saves/slot_N.json`에 저장된다.
-2. **4인 파티** - 파티 생성 화면에서 최대 4명까지 이름+직업을 정해 시작할
-   수 있다(`party_system.py`의 `파티_최대인원 = 4`를 그대로 사용 -
-   combat 패키지/skill_system.py는 원래부터 다인원에 일반적으로
-   동작해서 전투 엔진 자체는 손댈 필요가 없었다).
-3. **5직업 전부** - 귀검사 외 격투가/거너/마법사/프리스트의 1차수 데이터
-   (job_skill/job_level/job_ability/무기 목록)를 전부 이식했다. 레벨
-   3까지만 자동 성장시키므로(2차전직은 레벨 6부터라 이번 범위 밖) 2차전직
-   직업 파일(웨폰마스터 등)은 옮기지 않았다.
-4. **마을 시스템** - `town_system.py`(원본의 실제 구현판, 스텁이 아님)와
-   시작 마을 "엘븐가드" 데이터를 이식했다. 마을에서 휴식(파티 전원
-   HP/MP 전량 회복), 던전 이동(로리엔), 저장하기를 할 수 있다. 로리엔
-   던전의 서쪽 끝 "#" 칸으로 나가면 다시 마을로 돌아온다.
-   **상점/NPC/창고는 버튼만 있고 비활성 상태다** - 원본 프로젝트에도
-   `shop_system.py`가 `"test"`라는 문자열뿐인 자리표시자이고
-   `item_potion.py`/`item_consumable.py`도 빈 `{}`라, 포팅할 실제
-   백엔드 자체가 없다(원본 tkinter판 `ui_town.py`도 동일하게 비활성
-   처리돼 있음 - 이번 프로토타입만의 임의 축소가 아니다).
+- `main.py`는 처리 못 한 예외를 `/storage/emulated/0/Download/dnf_crash_log.txt`에 쓴다(`sys.excepthook`). 앱이 Kivy 화면을 띄우기도 전에 죽는 경우를 잡으려는 임시 장치다.
+  이벤트 루프 안의 예외는 `ExceptionHandler`가 잡아 오류 팝업(복사 버튼 포함)으로 보여 준다.
+- `android.permissions = WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE`는 그 로그용이다. **API 33에서 이 권한이 실제로 효과가 있는지, 로그 파일이 써지는지는 실기기로 확인하지 못했다**
+  (`docs/architecture_review.md` W-7). 확인되면 로그 위치를 앱 전용 폴더로 옮기고 권한을 뺀다.
 
-파티 전멸 시에는 부활/페널티 시스템이 아직 없어서, HP/MP를 전부 회복시켜
-마을로 돌려보내는 것으로 임시 처리했다(`town_system.휴식_처리`의 주석에
-남긴 가정과 같은 맥락 - 추후 확인/조정 필요할 수 있음).
+## 6. 앱 ID와 세이브
 
-빌드/설치 절차 자체(2절)는 이전과 동일하다 - `dnf_mobile.zip`만
-새 버전으로 교체해서 같은 순서를 따르면 된다.
+- `package.domain = org.test`는 원래 값을 몰라 buildozer 기본값을 쓴 것이다. 예전 APK와 다르면 폰에 별도 앱으로 설치되고 세이브가 이어지지 않는다. 확인 안 됨.
+- 세이브는 예전에 `game/saves/slot_N.json`(앱 소스 폴더)에 저장돼 앱을 업데이트하면 사라질 수 있었다. 2026-10-06부터 앱 데이터 폴더(Kivy `user_data_dir`/`saves/`)에 저장하고, 옛 위치의 세이브는 처음 실행할 때 한 번 복사해 온다(`save_system.세이브_폴더_설정`, `main.py`). **실기기에서 업데이트 후 세이브가 남는지는 확인하지 못했다.**
+
+## 7. 포함 범위
+
+APK에는 `source.include_exts`에 맞는 파일이 `source.dir = .` 아래에서 들어간다. `tests/`, `bin/`, `원본/`은 `source.exclude_dirs`로 뺀다.
+`tools/`의 `.py`도 같이 들어가지만 무해하다(빼려면 spec 수정 = 캐시 무효화).

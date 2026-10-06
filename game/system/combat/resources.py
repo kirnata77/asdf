@@ -4,7 +4,7 @@
 from game.data.buff import buff
 from game.data.buff import debuff
 from game.data.buff import skill_effects
-from game.system.combat import formula, stats
+from game.system.combat import status
 
 # =====================================================
 # 효과 정의 조회 / 자원 (원래 skill_system.py에 있던 함수들)
@@ -59,28 +59,55 @@ def 자원_소모(전투상태, 참가자, 이름, 개수=1):
     return True, 실제소모
 
 
-def 장전소모_처리(전투상태, 참가자):
-    """ "장전 : OO"(은탄 등) 버프가 있으면 1개 소모하고 (이름, 속성변환,
-    추가피해값, 추가피해속성) 튜플을 반환한다. "추가피해"는 공격당 한 번만
-    굴려 모든 타격에 동일하게 더한다. "추가피해속성"이 있으면(은탄 - 명)
-    추가피해는 공격 속성과 따로 그 속성으로 저항/취약을 적용한다
-    (피해_적용의 추가피해목록). 소모할 장전 버프가 없으면
-    (None, None, 0, None). 일반공격_실행/skill_system.공격스킬_실행이 함께 쓴다."""
-    for 항목 in list(참가자["버프"]):
-        if 항목["이름"].startswith("장전 : "):
-            자원_소모(전투상태, 참가자, 항목["이름"], 1)
-            정의, _ = 효과정의_조회(항목["이름"])
-            효과 = (정의 or {}).get("효과", {})
-            추가피해식 = 효과.get("추가피해")
-            추가피해 = (
-                formula.수식_평가(추가피해식, stats.기본_컨텍스트(전투상태, 참가자))
-                if 추가피해식
-                else 0
-            )
-            return (
-                항목["이름"],
-                효과.get("속성변환"),
-                추가피해,
-                효과.get("추가피해속성"),
-            )
-    return None, None, 0, None
+# =====================================================
+# 몬스터 버프 부여
+# =====================================================
+# monster_actions(버프 패턴)와 reactions(반응 버프)가 같이 쓰는 최소판 - 거기 두면 reactions가
+# monster_actions를 불러 순환이 생겼다(구조 점검 R-3).
+
+
+def 몬스터_버프_부여(전투상태, 대상, 이름, 지속턴):
+    """skill_system.이름있는효과_부여의 최소판(combat 패키지는
+    skill_system을 부르지 않는다). buff.py/debuff.py의 "중첩":True는
+    인스턴스를 새로 추가, skill_effects.py 기술효과(소환:비명초 등)의
+    "중첩":True는 기존 인스턴스 중첩+1, 그 외는 지속턴만 갱신한다.
+    정의에 없는 이름도 이름만으로 등록한다.
+
+    이름이 버프/디버프/기술효과 정의에는 없고 status_effects.py 상태이상이면
+    (슈퍼아머 등) 상태이상 목록에 건다 - 면역 확인, 이미 있으면(비중첩)
+    지속턴만 갱신."""
+    정의, 출처 = 효과정의_조회(이름)
+    상태정의 = 전투상태.get("상태이상정의", {}).get(이름)
+    if 정의 is None and 상태정의 is not None:
+        if status.상태이상_면역(전투상태, 대상, 이름):
+            status.면역_로그(전투상태, 대상, 이름)
+            return
+        목록 = 대상.setdefault("상태이상", [])
+        기존 = next((i for i in 목록 if i.get("이름") == 이름), None)
+        if 기존 is not None and not 상태정의.get("중첩"):
+            if 지속턴 is not None:
+                기존["지속턴"] = 지속턴
+            return
+        새항목 = {"이름": 이름}
+        if 지속턴 is not None:
+            새항목["지속턴"] = 지속턴
+        if 상태정의.get("중첩"):
+            새항목["중첩"] = 1
+        목록.append(새항목)
+        return
+    목록이름 = "디버프" if 출처 == "디버프" else "버프"
+    if 지속턴 is None and 정의 is not None and isinstance(정의.get("지속턴"), int):
+        지속턴 = 정의["지속턴"]
+    중첩형 = bool(정의 and 정의.get("중첩"))
+
+    기존 = next((i for i in 대상[목록이름] if i.get("이름") == 이름), None)
+    if 기존 is not None and not (중첩형 and 출처 in ("버프", "디버프")):
+        if 중첩형:
+            기존["중첩"] = 기존.get("중첩", 1) + 1
+        if 지속턴 is not None:
+            기존["지속턴"] = 지속턴
+        return
+    새항목 = {"이름": 이름, "중첩": 1}
+    if 지속턴 is not None:
+        새항목["지속턴"] = 지속턴
+    대상[목록이름].append(새항목)

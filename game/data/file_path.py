@@ -159,6 +159,23 @@
     "lodge_system": "game.system.lodge_system",
     "dismantle_system": "game.system.dismantle_system",
     "potion_system": "game.system.potion_system",
+    "state_schema": "game.system.state_schema",
+    # game/controller/ (화면 <-> 로직/데이터 컨트롤러 - gameflow.py가 재수출하는 구현, N5)
+    "ctl_registry": "game.controller.ctl_registry",
+    "ctl_party": "game.controller.ctl_party",
+    "ctl_session": "game.controller.ctl_session",
+    "ctl_profile": "game.controller.ctl_profile",
+    "ctl_town": "game.controller.ctl_town",
+    "ctl_shop": "game.controller.ctl_shop",
+    "ctl_equip": "game.controller.ctl_equip",
+    "ctl_battle": "game.controller.ctl_battle",
+    "ctl_dungeon": "game.controller.ctl_dungeon",
+    "ctl_potion": "game.controller.ctl_potion",
+    "ctl_rewards": "game.controller.ctl_rewards",
+    "ctl_levelup": "game.controller.ctl_levelup",
+    "ctl_charview": "game.controller.ctl_charview",
+    "ctl_tavern": "game.controller.ctl_tavern",
+    "ctl_skills": "game.controller.ctl_skills",
     # game/screens/ (Kivy 화면)
     "screens_common": "game.screens.screens_common",
     "screens_menu": "game.screens.screens_menu",
@@ -180,11 +197,12 @@
 #
 # 코딩연습/
 # ├── main.py
-# ├── gameflow.py
+# ├── gameflow.py          (창구 - game/controller/ctl_*.py를 재수출)
 # ├── buildozer.spec
 # └── game/
 #     ├── data/            (직업/몬스터/맵 등 게임 콘텐츠 데이터)
 #     ├── system/          (전투/스킬 등 로직)
+#     ├── controller/      (화면 <-> 로직/데이터 컨트롤러 15개 모듈 - ctl_battle/shop/party ...)
 #     ├── screens/         (Kivy 화면 6개 - screens_common/menu/town/
 #     │                     dungeon/battle/party.py, main.py가 가져온다)
 #     ├── saves/           (세이브 파일)

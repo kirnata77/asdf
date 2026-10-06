@@ -16,8 +16,11 @@ tests/는 kivy 없이 gameflow 이하만 검사한다. 화면(game/screens) 코�
 import json
 import os
 import random
+import shutil
 import sys
+import tempfile
 import traceback
+import types
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
@@ -32,7 +35,7 @@ from kivy.uix.scrollview import ScrollView  # noqa: E402
 
 import gameflow as gf  # noqa: E402
 from game.screens import screens_party  # noqa: E402
-from game.system import dice_utils  # noqa: E402
+from game.system import dice_utils, save_system, skill_system  # noqa: E402
 from game.system.combat import flow  # noqa: E402
 from tests import support  # noqa: E402
 
@@ -84,6 +87,9 @@ def _팝업_닫기():
 
 
 class 스모크앱(main.DnfMobileApp):
+    def _세이브_폴더_준비(self):
+        pass  # 이 스모크는 세이브를 임시 폴더로 바꿔서 쓴다(실제 앱 데이터 폴더를 건드리지 않는다)
+
     def on_start(self):
         self._단계 = self._단계들()
         Clock.schedule_once(self._다음, 1)
@@ -110,6 +116,16 @@ class 스모크앱(main.DnfMobileApp):
         self.게임상태 = 상태
         매니저 = self.root
 
+        yield from self._단계_파티생성(상태, 매니저)
+        yield from self._단계_상점(상태, 매니저)
+        yield from self._단계_파티관리_팝업(상태, 매니저)
+        전투 = yield from self._단계_장비_포션_뒤로키_전투팝업(상태, 매니저)
+        yield from self._단계_전투종료_자동전투_주점(상태, 매니저, 전투)
+        yield from self._단계_목록_스크롤(상태, 매니저)
+        yield from self._단계_세이브(상태, 매니저)
+
+    def _단계_파티생성(self, 상태, 매니저):
+        """파티 구성 화면 - 이름칸(안내/글자 수 제한)과 이름 중복"""
         매니저.current = "파티생성"
         이름칸 = 매니저.get_screen("파티생성").슬롯목록[0]["이름입력"]
         assert 이름칸.hint_text == gf.캐릭터명_안내, 이름칸.hint_text
@@ -138,6 +154,8 @@ class 스모크앱(main.DnfMobileApp):
         _찍기("party_create_duplicate")
         결과["단계"].append("파티 구성 이름 중복 -> 시작 안 함")
 
+    def _단계_상점(self, 상태, 매니저):
+        """상점 - 구매/판매 목록과 해체(일괄해체 확인 팝업)"""
         매니저.current = "상점"
         상점 = 매니저.get_screen("상점")
         상점._대분류_그리기("구매")
@@ -215,6 +233,8 @@ class 스모크앱(main.DnfMobileApp):
             "상점 해체(장비 -> 소울 + 큐브 조각, [전체] 탭, 일괄해체 커먼/전체 확인 팝업)"
         )
 
+    def _단계_파티관리_팝업(self, 상태, 매니저):
+        """파티관리 - 능력치 배분, 스킬강화, 스킬습득 팝업"""
         매니저.current = "파티관리"
         매니저.get_screen("파티관리")._능력치배분_팝업(
             상태["파티"]["파티원"][0], 2, lambda 배분: None
@@ -293,6 +313,8 @@ class 스모크앱(main.DnfMobileApp):
             "스킬습득 팝업(한 줄: 이름/가격/상세보기, 가격 누르면 배움, 모자라면 잠금, 상세 팝업)"
         )
 
+    def _단계_장비_포션_뒤로키_전투팝업(self, 상태, 매니저):
+        """장비 교체/파티원 포션/뒤로 키, 전투 화면 팝업(스킬/대상/포션/행동 선택/도망)"""
         # 장비 교체 팝업: 칸마다 이름 + 간단요약(무기 공격력/AC) + [상세보기]
         for 슬롯 in ("무기", "상의"):
             for 이름 in list(상태["상점카탈로그"]["장비"][슬롯])[:3]:
@@ -382,7 +404,7 @@ class 스모크앱(main.DnfMobileApp):
         assert 매니저.current == "메인메뉴", 매니저.current
         결과["단계"].append("뒤로 키(팝업 겹침/파티원/파티관리/마을/상점/메인메뉴)")
 
-        gf._전투_시작(상태, ["타우 아미", "고블린", "고블린"], 레벨=6, 차수=2)
+        gf.전투_시작(상태, ["타우 아미", "고블린", "고블린"], 레벨=6, 차수=2)
         support.반응_처리(상태)
         전투 = 매니저.get_screen("전투")
         전투.갱신(신규=True)
@@ -397,7 +419,7 @@ class 스모크앱(main.DnfMobileApp):
                 if 이름 in (x["이름"], (x.get("원본") or {}).get("직업"))
             )
             전투상태["현재턴"] = 전투상태["참가자"].index(p)
-            flow._턴_시작_처리(전투상태, p)
+            flow.턴_시작_처리(전투상태, p)
             return p
 
         for 이름 in ("마법사", "거너", "귀검사", "프리스트"):
@@ -464,7 +486,7 @@ class 스모크앱(main.DnfMobileApp):
         전투._스킬_클릭("썬더콜링", 상태["스킬데이터모음"]["썬더콜링"])
         assert 전투.선택모드[0] == "반복지정", 전투.선택모드
         적 = [x for x in 전투상태["참가자"] if x["진영"] == "적" and x["생존"]]
-        gf.skill_system._상태이상_부여(전투상태, 적[1], "은신", 3, None)
+        skill_system.상태이상_부여(전투상태, 적[1], "은신", 3, None)
         yield 0.3
         _찍기("battle_target_popup_repeat")
         대상버튼들()[1].trigger_action(duration=0)
@@ -515,7 +537,7 @@ class 스모크앱(main.DnfMobileApp):
         거너 = next(
             x for x in 전투상태["참가자"] if (x.get("원본") or {}).get("직업") == "거너"
         )
-        gf.skill_system._상태이상_부여(전투상태, 거너, "구속", 3, None)
+        skill_system.상태이상_부여(전투상태, 거너, "구속", 3, None)
         로그수 = len(전투상태["로그"])
         전투._도망_클릭()
         yield 0.5
@@ -561,6 +583,10 @@ class 스모크앱(main.DnfMobileApp):
             or 전투상태["참가자"][전투상태["현재턴"]] is not 현재
         ), "도망에 실패하면 턴이 넘어가야 한다"
         결과["단계"].append("도망 실패 -> 현재 캐릭터 턴 종료")
+        return 전투  # 다음 단계(전투 종료/자동전투)가 이어서 쓴다
+
+    def _단계_전투종료_자동전투_주점(self, 상태, 매니저, 전투):
+        """전투 종료/보상, 자동전투, 몬스터 크기, 황금 고블린 도망, 주점"""
         _찍기("battle_after_flee_fail")
 
         # 전투 종료 팝업: 승리(전리품) -> 던전, 도망 -> 던전, 패배 -> 마을
@@ -622,7 +648,7 @@ class 스모크앱(main.DnfMobileApp):
             if 전리품줄 is False:
                 # "전리품 없음": 던전 공용 드랍도, 골드도 없는 전투로 만든다
                 상태["던전상태"]["맵정보"] = {**원래맵, "드랍표": []}
-            gf._전투_시작(상태, 몬스터들, 레벨=6, 차수=2)  # 시작 반응에 안 쓰러지게
+            gf.전투_시작(상태, 몬스터들, 레벨=6, 차수=2)  # 시작 반응에 안 쓰러지게
             if 전리품줄 is False:
                 for 적 in gf.적_목록(상태):
                     적["원본"]["획득골드"] = "미정"
@@ -715,9 +741,9 @@ class 스모크앱(main.DnfMobileApp):
         def 아군_차례로_맞추기():
             p = next(x for x in gf.아군_목록(상태) if x["생존"])
             상태["전투상태"]["현재턴"] = 상태["전투상태"]["참가자"].index(p)
-            flow._턴_시작_처리(상태["전투상태"], p)
+            flow.턴_시작_처리(상태["전투상태"], p)
 
-        gf._전투_시작(상태, ["타우 아미", "타우 아미"], 레벨=6, 차수=2)
+        gf.전투_시작(상태, ["타우 아미", "타우 아미"], 레벨=6, 차수=2)
         support.반응_처리(상태)
         매니저.current = "전투"
         아군_차례로_맞추기()
@@ -753,7 +779,7 @@ class 스모크앱(main.DnfMobileApp):
         # 몬스터 크기: 소형 0.75 / 중형 1 / 대형 1.25배, 칸 바닥(발바닥) 맞춤, 대형이 뒤(먼저 그림)
         from kivy.graphics import Rectangle
 
-        gf._전투_시작(상태, ["고블린", "타우 비스트", "타우 아미"], 레벨=6, 차수=2)
+        gf.전투_시작(상태, ["고블린", "타우 비스트", "타우 아미"], 레벨=6, 차수=2)
         support.반응_처리(상태)
         매니저.current = "전투"
         전투.갱신(신규=True)
@@ -782,7 +808,7 @@ class 스모크앱(main.DnfMobileApp):
         # 황금 고블린(도망턴 5): 자기 턴이 5번 끝나면 도망 -> 이름표 "(도망)", 그림 없음,
         # 적이 모두 도망쳤으면 "적이 도망쳤다!" 팝업 -> [확인] -> 던전
         _팝업_닫기()
-        gf._전투_시작(상태, ["황금 고블린"], 레벨=3, 차수=1)
+        gf.전투_시작(상태, ["황금 고블린"], 레벨=3, 차수=1)
         support.반응_처리(상태)
         매니저.current = "전투"
         황금 = gf.적_목록(상태)[0]
@@ -876,6 +902,8 @@ class 스모크앱(main.DnfMobileApp):
         _찍기("tavern_after")
         결과["단계"].append("주점(영입 -> 숙소, 대기, 합류, 추방 확인 팝업)")
 
+    def _단계_목록_스크롤(self, 상태, 매니저):
+        """상점/장비 교체 목록 스크롤(끌어서 내림)"""
         # 목록 스크롤: 상점 구매/판매/해체[전체], 장비 교체 팝업(소지품) - 항목이 많을 때
         카탈로그 = 상태["상점카탈로그"]["장비"]
         for 이름 in 카탈로그["무기"]:
@@ -917,6 +945,104 @@ class 스모크앱(main.DnfMobileApp):
         결과["단계"].append(
             "목록 스크롤(상점 구매/판매/해체, 장비 교체 팝업 - 끌어서 내림, 맨 아래 보임)"
         )
+
+    def _단계_세이브(self, 상태, 매니저):
+        """세이브 슬롯(새버전/손상/복구본)과 앱 시작 때 세이브 폴더 이전"""
+        # 세이브 슬롯: 슬롯 하나가 망가져도 메인 메뉴/슬롯 목록이 열린다(구조 점검 W-1).
+        # 실제 game/saves/ 대신 임시 폴더를 쓴다.
+        세이브폴더 = tempfile.mkdtemp(prefix="ui_smoke_saves_")
+        원래폴더 = save_system._세이브_폴더
+        save_system._세이브_폴더 = lambda: 세이브폴더
+        try:
+            self.게임상태 = 상태
+            gf.게임_저장(상태, 1)
+            경로1 = os.path.join(세이브폴더, "slot_1.json")
+            with open(경로1, encoding="utf-8") as f:
+                저장1 = json.load(f)
+            저장1["버전"] = save_system.세이브_버전 + 1  # 더 새로운 앱이 저장한 세이브
+            with open(경로1, "w", encoding="utf-8") as f:
+                json.dump(저장1, f, ensure_ascii=False)
+            gf.게임_저장(상태, 3)
+            gf.게임_저장(상태, 3)  # 두 번째 저장이 .bak을 만든다
+            with open(
+                os.path.join(세이브폴더, "slot_2.json"), "w", encoding="utf-8"
+            ) as f:
+                f.write('{"플레이어": {"파')  # 쓰다 끊긴 파일, 백업 없음 -> 손상
+            with open(
+                os.path.join(세이브폴더, "slot_3.json"), "w", encoding="utf-8"
+            ) as f:
+                f.write('{"플레이어": {"파')  # 본 파일만 끊김, .bak이 있음 -> 복구본
+            매니저.current = "메인메뉴"
+            yield 0.3
+            assert not 매니저.get_screen("메인메뉴").불러오기버튼.disabled
+            매니저.current = "불러오기목록"
+            yield 0.4
+            _찍기("save_slots_corrupt")
+            불러오기 = 매니저.get_screen("불러오기목록")
+            줄들 = list(reversed(불러오기.목록틀.children))  # 위에서 아래(슬롯 1, 2, 3)
+
+            def 줄_글(줄):
+                return next(
+                    w.text for w in 줄.children if w.__class__.__name__ == "Label"
+                )
+
+            def 줄_버튼(줄):
+                return next(w for w in 줄.children if isinstance(w, Button))
+
+            assert "(손상됨" in 줄_글(줄들[1]), 줄_글(줄들[1])
+            assert "[백업]" in 줄_글(줄들[2]), 줄_글(줄들[2])
+            assert "더 새로운 버전" in 줄_글(줄들[0]), 줄_글(줄들[0])
+            assert 줄_버튼(줄들[0]).disabled and not 줄_버튼(줄들[2]).disabled
+            assert 줄_버튼(줄들[1]).disabled, "손상 슬롯은 불러올 수 없다"
+
+            불러오기._선택(2)  # 막혀 있어도 호출되면 앱이 죽지 않고 안내만 한다
+            assert 매니저.current == "불러오기목록" and "손상" in 불러오기.안내라벨.text
+            불러오기._선택(3)  # 백업으로 불러온다
+            assert 매니저.current == "마을"
+
+            self.게임상태 = 상태
+            매니저.current = "저장목록"
+            yield 0.3
+            매니저.get_screen("저장목록")._선택(2)  # 손상 슬롯 덮어쓰기
+            yield 0.2
+            assert save_system.세이브_요약(2).get("손상") is None
+            assert "저장했습니다" in 매니저.get_screen("저장목록").안내라벨.text
+            결과["단계"].append(
+                "세이브 슬롯(새버전/손상/복구본 표시, 메인 메뉴 정상, 손상 슬롯 덮어쓰기)"
+            )
+
+            # 앱 시작 때 세이브 폴더를 앱 데이터 폴더로 옮기고 옛 세이브를 한 번 가져온다(임시 폴더만 씀)
+            앱데이터 = tempfile.mkdtemp(prefix="ui_smoke_appdata_")
+            옛위치 = tempfile.mkdtemp(prefix="ui_smoke_legacy_")
+            with open(os.path.join(옛위치, "slot_2.json"), "w", encoding="utf-8") as f:
+                f.write("{}")
+
+            # App을 하나 더 만들면 App.get_running_app()이 바뀌므로 자리표시 객체로 부른다
+            임시앱 = types.SimpleNamespace(user_data_dir=앱데이터)
+
+            save_system._세이브_폴더 = 원래폴더  # 임시 폴더 바꿔치기를 잠깐 푼다
+            기본폴더 = save_system._기본_세이브_폴더
+            save_system._기본_세이브_폴더 = lambda: 옛위치
+            try:
+                main.DnfMobileApp._세이브_폴더_준비(임시앱)
+                assert save_system._세이브_폴더() == os.path.join(앱데이터, "saves")
+                assert os.path.isfile(os.path.join(앱데이터, "saves", "slot_2.json"))
+                assert os.path.isfile(os.path.join(옛위치, "slot_2.json")), (
+                    "옛 파일은 남는다"
+                )
+            finally:
+                save_system._기본_세이브_폴더 = 기본폴더
+                save_system._폴더_재정의 = None
+                save_system._세이브_폴더 = lambda: 세이브폴더
+                shutil.rmtree(앱데이터, ignore_errors=True)
+                shutil.rmtree(옛위치, ignore_errors=True)
+            결과["단계"].append(
+                "앱 시작 시 세이브 폴더를 앱 데이터 폴더로(옛 세이브 한 번 복사)"
+            )
+        finally:
+            save_system._세이브_폴더 = 원래폴더
+            shutil.rmtree(세이브폴더, ignore_errors=True)
+            매니저.current = "마을"
 
 
 if __name__ == "__main__":

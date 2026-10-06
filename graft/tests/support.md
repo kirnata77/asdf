@@ -1,0 +1,15 @@
+# tests/support.py
+
+- 새게임 · function · L16-L17 — def 새게임(파티구성=None)
+- 반응_처리 · function · L23-L25 — def 반응_처리(상태)
+- 자동_전투 · function · L28-L40 — def 자동_전투(상태, 최대반복=500)
+- 강제_승리 · function · L43-L50 — def 강제_승리(상태)
+- 강제_패배 · function · L53-L58 — def 강제_패배(상태)
+- 경로 · function · L66-L95 — def 경로(그리드, 시작, 목표)
+- 걸어가기 · function · L98-L122 — def 걸어가기(상태, 목표, 기록=None, 전투처리=강제_승리)
+- 보스_처치 · function · L125-L143 — def 보스_처치(상태, 기록=None, 전투처리=강제_승리)
+- 연결로_나가기 · function · L146-L154 — def 연결로_나가기(상태, 연결맵, 기록=None, 전투처리=강제_승리)
+- 레벨업_선택 · function · L160-L193 — def 레벨업_선택(캐릭터, 퍽순번=0)
+- 스킬_전부_습득 · function · L196-L200 — def 스킬_전부_습득(상태, 캐릭터)
+- 성장 · function · L203-L223 — def 성장(상태, 캐릭터, 목표레벨, 전직=None, 퍽순번=0, 스킬습득=False)
+- 스냅샷 · function · L226-L244 — def 스냅샷(상태, 캐릭터, 선택=None)

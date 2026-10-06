@@ -14,7 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def _헤드리스_모듈목록():
     모듈들 = ["gameflow"]
-    for 하위 in ("game/system", "game/data"):
+    for 하위 in ("game/system", "game/controller", "game/data"):
         for 폴더, _, 파일들 in os.walk(os.path.join(ROOT, 하위)):
             for 파일 in sorted(파일들):
                 if 파일.endswith(".py") and 파일 != "__init__.py":

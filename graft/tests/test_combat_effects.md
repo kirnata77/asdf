@@ -1,0 +1,15 @@
+# tests/test_combat_effects.py
+
+- _전투 · function · L68-L76 — def _전투(시드, 적=("타우 아미", "고블린"), 파티구성=파티)
+- _적 · function · L79-L82 — def _적(전투상태, n=0)
+- _아군 · function · L85-L88 — def _아군(전투상태, n=0)
+- _차례 · function · L91-L93 — def _차례(전투상태, 참가자)
+- _라운드 · function · L96-L100 — def _라운드(상태, n)
+- _수치 · function · L103-L119 — def _수치(전투상태, p)
+- 상태이상_시나리오 · function · L125-L152 — def 상태이상_시나리오(이름)
+- test_상태이상_전수 · function · L155-L160 — def test_상태이상_전수(golden)
+- 효과_시나리오 · function · L166-L186 — def 효과_시나리오(이름)
+- test_버프_디버프_전수 · function · L190-L193 — def test_버프_디버프_전수(종류, golden)
+- 반응_전투 · function · L210-L264 — def 반응_전투(시드, 자동)
+- test_반응특성은_10종 · function · L267-L270 — def test_반응특성은_10종()
+- test_반응특성_전투 · function · L273-L277 — def test_반응특성_전투(golden)

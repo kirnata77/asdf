@@ -6,7 +6,7 @@
 2. ruff check  : 정의 안 된 이름, 안 쓰는 import 등 (pyproject.toml 설정)
    ruff format --check : 서식 검사 - 어긋나면 `python -m ruff format .`로 고친다
 3. pytest      : tests/ (kivy 없이 gameflow 이하 로직만 헤드리스로 검사)
-                pytest-cov가 설치돼 있으면 game/system + gameflow.py 커버리지가
+                pytest-cov가 설치돼 있으면 game/system + game/controller + gameflow.py 커버리지가
                 COVERAGE_FLOOR(%) 아래로 떨어져도 실패한다(CI는 항상 설치).
 
 하나라도 실패하면 0이 아닌 코드로 끝난다. Windows/리눅스 어디서나 돈다.
@@ -27,6 +27,7 @@ PYTEST = [sys.executable, "-m", "pytest"]
 if importlib.util.find_spec("pytest_cov") is not None:
     PYTEST += [
         "--cov=game.system",
+        "--cov=game.controller",
         "--cov=gameflow",
         "--cov-branch",
         "--cov-report=term:skip-covered",
