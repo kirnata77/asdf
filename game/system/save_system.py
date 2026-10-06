@@ -43,7 +43,7 @@ import os
 import shutil
 from datetime import datetime
 
-from game.system import player_system
+from game.system import player_system, state_schema
 
 최대세이브슬롯 = 3
 세이브_버전 = 1
@@ -225,6 +225,9 @@ def _읽고_올리기(경로, 슬롯번호):
     버전이면 세이브_버전오류(그대로 올라간다 - 백업으로 돌아가지 않는다)."""
     저장데이터 = _파일_읽기(경로)
     _마이그레이션_적용(저장데이터, 슬롯번호)
+    문제 = state_schema.세이브_핵심_문제목록(저장데이터)
+    if 문제:  # 캐릭터의 핵심 칸이 없으면 화면/전투가 어차피 KeyError로 죽는다 - 손상으로 보고 백업으로 돌아간다
+        raise ValueError("세이브의 필수 칸이 없다: " + "; ".join(문제[:3]))
     return 저장데이터
 
 

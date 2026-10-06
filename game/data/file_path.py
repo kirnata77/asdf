@@ -159,6 +159,7 @@
     "lodge_system": "game.system.lodge_system",
     "dismantle_system": "game.system.dismantle_system",
     "potion_system": "game.system.potion_system",
+    "state_schema": "game.system.state_schema",
     # game/controller/ (화면 <-> 로직/데이터 컨트롤러 - gameflow.py가 재수출하는 구현, N5)
     "ctl_registry": "game.controller.ctl_registry",
     "ctl_party": "game.controller.ctl_party",

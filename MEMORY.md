@@ -5,7 +5,7 @@
 ## Now - 2026-10-06 (`main`에 #39 레벨 12 스킬강화 + 레벨 16~20 테이블, #35~#38 풀 시나리오 규칙·P0·S1·S2 병합. 원격 브랜치는 `main`만. **미정(사용자가 정할 것)**: 16 각성 특성, 17 스킬 개화 선택지(조건부 추가효과), 18 각성 스킬, 13 스킬)
 **작업 흐름**(CLAUDE.md "Git"): 기능마다 `main`에서 브랜치 -> 게이트 통과 -> PR -> CI 초록이면 병합(병합은 사용자 확인). PR 전에 fetch로 main 최신 확인. 큰 기능은 풀 시나리오(`docs/scenarios.md`) - 풀 시나리오 S1~S6 구현(계획 [`scenario-tests.md`](.memory/roadmap/scenario-tests.md) 전부 완료). 확인 대기(known-bugs): 레벨 2 파티의 D04 밸런스(이슈 #41), 마법사 `빗자루` 착용 불가.
 graft(코드 그래프 CLI) 설치: 클라우드 세션 시작 훅(`.claude/hooks/session-start.sh`)이 `npm install -g @nanonets/graft` + `graft init --yes --no-global --no-agents --no-statusline`(연결 파일 재작성 + 그래프 빌드)을 돌린다(`graft/`는 로컬 캐시라 git 무시, 텔레메트리 끔). init이 `.claude/`를 안 바꾼다는 건 이 컨테이너에서만 확인 - **새 세션에서 `git status`가 깨끗한지 사용자가 확인 예정**. MCP `graft`는 훅이 설치하기 전에 떠서 첫 세션엔 연결 실패(CLI는 정상).
-push는 검증된 작업만, 자동 push 훅 없음. 줄끝은 pre-commit 훅. `main`(1cbeb02) 기준 테스트 493개 · 커버리지 94.10%. **다음 로드맵 = 구조 점검 N0~N7**(N0~N6 완료, N7부터): [`refactor.md`](.memory/roadmap/refactor.md), 근거 [`docs/architecture_review.md`](docs/architecture_review.md). 이 점검은 코드를 안 바꿨다.
+push는 검증된 작업만, 자동 push 훅 없음. 줄끝은 pre-commit 훅. 브랜치 `claude/trusting-brahmagupta-rorr60`(미병합, PR 없음) 기준 테스트 598개 · 커버리지 94.44%. **구조 점검 로드맵 N0~N7 전부 완료** - 결과는 [`docs/architecture_review.md`](docs/architecture_review.md) 10절, 계획/판단은 [`refactor.md`](.memory/roadmap/refactor.md). 사용자 결정 대기: `종족:루가루/인간` 특성 정의 누락(known-bugs).
 
 **실기기 미확인** - [뒤로] 키 전달, 한글 조합 입력 중 6자 자르기, 새 팝업들.
 
