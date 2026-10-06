@@ -1,6 +1,7 @@
 # 전투 시스템 - 수식 평가 - 데미지 문법/다이스/무기공격력.
 # (combat 패키지에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
 
+import math
 import re
 
 from game.system import dice_utils
@@ -107,10 +108,12 @@ def 수식_평가(수식, 컨텍스트, 치명타=False):
     # "×"(몬스터 최대HP/AC 수식 등)와 "÷"도 각각 곱셈/나눗셈 기호로 취급한다.
     식 = 식.replace("x", "*").replace("X", "*").replace("×", "*").replace("÷", "/")
 
-    if not re.fullmatch(r"[0-9+\-*/(). ]+", 식):
+    # "올림(...)"(몬스터 최대HP 공식) - 괄호 안을 계산해 올린다.
+    식 = 식.replace("올림", "_올림")
+    if not re.fullmatch(r"(?:[0-9+\-*/(). ]|_올림)+", 식):
         raise ValueError(
             f"수식_평가가 처리할 수 없는 표현이 남았다: {수식!r} -> {식!r} "
             f"(예: 전투 중 상태를 참조하는 동적 변수는 아직 미지원)"
         )
 
-    return eval(식, {"__builtins__": {}}, {})
+    return eval(식, {"__builtins__": {}}, {"_올림": math.ceil})
