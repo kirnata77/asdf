@@ -1,0 +1,15 @@
+# tests/scenario.py
+
+- 실전 · function · L14-L25 — def 실전(상태, 최대반복=300)
+- 인카운트까지_걷기 · function · L28-L38 — def 인카운트까지_걷기(상태, 최대걸음=400)
+- 보상_수령 · function · L41-L47 — def 보상_수령(상태)
+- 소지품_장비수 · function · L50-L51 — def 소지품_장비수(상태)
+- 파티_HP · function · L54-L55 — def 파티_HP(상태)
+- 전투중_아군_HP · function · L58-L60 — def 전투중_아군_HP(상태)
+- _살아있는_적 · function · L71-L74 — def _살아있는_적(상태)
+- _스킬_인수 · function · L77-L93 — def _스킬_인수(상태, 시전자, 이름)
+- _쓸_가치가_있나 · function · L96-L118 — def _쓸_가치가_있나(상태, 시전자, 이름, 사용기록)
+- 스킬_고르기 · function · L121-L136 — def 스킬_고르기(상태, 시전자, 사용기록)
+- 스킬_우선_턴 · function · L139-L187 — def 스킬_우선_턴(상태, 사용기록)
+- 효과_스냅샷 · function · L190-L200 — def 효과_스냅샷(상태)
+- 스킬_실전 · function · L203-L223 — def 스킬_실전(상태, 사용기록, 효과기록=None, 최대반복=300)

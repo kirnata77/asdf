@@ -1,0 +1,14 @@
+{
+  "nodeCount": 1491,
+  "edgeCount": 3091,
+  "languages": [
+    "python"
+  ],
+  "totalCount": 1491,
+  "readyCount": 0,
+  "staleCount": 0,
+  "dirty": false,
+  "syncing": false,
+  "syncedAt": "2026-10-06T22:30:37.674Z",
+  "lastFile": "state_schema.py"
+}

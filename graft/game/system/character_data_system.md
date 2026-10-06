@@ -1,0 +1,15 @@
+# game/system/character_data_system.py
+
+- 빈_캐릭터 · function · L29-L147 — def 빈_캐릭터()
+- 능력치_보정치 · function · L155-L159 — def 능력치_보정치(캐릭터, 능력치이름)
+- 특성_보유 · function · L162-L165 — def 특성_보유(캐릭터, 특성이름)
+- 스킬_보유 · function · L168-L169 — def 스킬_보유(캐릭터, 스킬이름)
+- 차수_계산 · function · L172-L175 — def 차수_계산(캐릭터)
+- 최대HP_공식 · function · L178-L183 — def 최대HP_공식(레벨, 레벨당체력증가, 건강보정치)
+- 기본최대HP_계산 · function · L186-L194 — def 기본최대HP_계산(캐릭터, 레벨당체력증가)
+- 주문시전능력치 · function · L197-L200 — def 주문시전능력치(캐릭터)
+- 스타일성장횟수 · function · L203-L205 — def 스타일성장횟수(레벨)
+- 직업스타일_성장값 · function · L208-L222 — def 직업스타일_성장값(캐릭터, 항목)
+- 추가공격_계산 · function · L225-L227 — def 추가공격_계산(캐릭터)
+- 기본최대MP_계산 · function · L230-L241 — def 기본최대MP_계산(캐릭터)
+- 기술판정 · function · L244-L279 — def 기술판정(캐릭터, 기술이름, 관련능력치, 난이도=None)
