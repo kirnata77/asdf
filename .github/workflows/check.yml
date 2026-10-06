@@ -1,8 +1,8 @@
 name: Check
 
 # 모든 push/PR에서 완료 기준(DoD) 게이트를 돌린다. 로컬의
-# `python tools/check.py`와 같은 명령이다(커버리지 하한 포함). kivy는 설치하지 않는다 -
-# tests/는 gameflow 이하 헤드리스 로직만 검사한다.
+# `python tools/check.py`와 같은 명령이다(커버리지 하한 포함). check 잡은 kivy를 설치하지 않는다 -
+# tests/는 gameflow 이하 헤드리스 로직만 검사한다. 화면은 아래 ui-smoke 잡이 따로 돌려 본다.
 on:
   push:
   pull_request:
@@ -28,3 +28,34 @@ jobs:
 
       - name: DoD gate
         run: python tools/check.py
+
+  # 화면(kivy) 스모크 - 실제 앱을 Xvfb에서 띄워 주요 화면을 돌려 본다(tools/ui_smoke.py).
+  # 새로 넣은 잡이라 안정될 때까지 실패해도 PR을 막지 않는다(continue-on-error) - 몇 번 초록으로
+  # 도는 걸 확인하면 이 줄을 지운다. 스크린샷은 아티팩트로 남는다.
+  ui-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install kivy and Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libmtdev1
+          pip install kivy
+
+      - name: UI smoke
+        run: xvfb-run -a -s "-screen 0 720x1280x24" python tools/ui_smoke.py ui_smoke_shots
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-smoke-shots
+          path: ui_smoke_shots
+          if-no-files-found: ignore
