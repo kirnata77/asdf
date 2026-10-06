@@ -403,7 +403,7 @@ class 스모크앱(main.DnfMobileApp):
                 if 이름 in (x["이름"], (x.get("원본") or {}).get("직업"))
             )
             전투상태["현재턴"] = 전투상태["참가자"].index(p)
-            flow._턴_시작_처리(전투상태, p)
+            flow.턴_시작_처리(전투상태, p)
             return p
 
         for 이름 in ("마법사", "거너", "귀검사", "프리스트"):
@@ -470,7 +470,7 @@ class 스모크앱(main.DnfMobileApp):
         전투._스킬_클릭("썬더콜링", 상태["스킬데이터모음"]["썬더콜링"])
         assert 전투.선택모드[0] == "반복지정", 전투.선택모드
         적 = [x for x in 전투상태["참가자"] if x["진영"] == "적" and x["생존"]]
-        gf.skill_system._상태이상_부여(전투상태, 적[1], "은신", 3, None)
+        gf.skill_system.상태이상_부여(전투상태, 적[1], "은신", 3, None)
         yield 0.3
         _찍기("battle_target_popup_repeat")
         대상버튼들()[1].trigger_action(duration=0)
@@ -521,7 +521,7 @@ class 스모크앱(main.DnfMobileApp):
         거너 = next(
             x for x in 전투상태["참가자"] if (x.get("원본") or {}).get("직업") == "거너"
         )
-        gf.skill_system._상태이상_부여(전투상태, 거너, "구속", 3, None)
+        gf.skill_system.상태이상_부여(전투상태, 거너, "구속", 3, None)
         로그수 = len(전투상태["로그"])
         전투._도망_클릭()
         yield 0.5
@@ -721,7 +721,7 @@ class 스모크앱(main.DnfMobileApp):
         def 아군_차례로_맞추기():
             p = next(x for x in gf.아군_목록(상태) if x["생존"])
             상태["전투상태"]["현재턴"] = 상태["전투상태"]["참가자"].index(p)
-            flow._턴_시작_처리(상태["전투상태"], p)
+            flow.턴_시작_처리(상태["전투상태"], p)
 
         gf._전투_시작(상태, ["타우 아미", "타우 아미"], 레벨=6, 차수=2)
         support.반응_처리(상태)

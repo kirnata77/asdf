@@ -8,7 +8,7 @@
 from collections import deque
 
 import gameflow as gf
-from game.system.combat import damage, flow
+from game.system.combat import core, damage
 
 기본_파티 = [("", "귀검사"), ("", "격투가"), ("", "거너"), ("", "프리스트")]
 
@@ -46,7 +46,7 @@ def 강제_승리(상태):
     for 적 in gf.적_목록(상태):
         if 적["생존"]:
             damage.피해_적용(전투상태, 적, 10**6, 피해감소무시=True)
-    flow._종료판정_갱신(전투상태)
+    core.종료판정_갱신(전투상태)
     assert 전투상태["종료"] == "아군승리"
 
 
@@ -54,7 +54,7 @@ def 강제_패배(상태):
     전투상태 = 상태["전투상태"]
     for 아군 in gf.아군_목록(상태):
         damage.피해_적용(전투상태, 아군, 10**6, 피해감소무시=True)
-    flow._종료판정_갱신(전투상태)
+    core.종료판정_갱신(전투상태)
     assert 전투상태["종료"] == "적승리"
 
 
