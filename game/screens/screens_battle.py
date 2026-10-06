@@ -230,10 +230,46 @@ class _대상선택팝업(Popup):
         self._취소콜백()
 
 
+class _행동선택팝업(Popup):
+    """스킬의 일반행동을 낼 수단이 여러 개일 때(쇼타임행동/일반행동/보조행동) 고르는
+    팝업 - 수단마다 버튼(남은 개수 표시)과 맨 아래 [취소]."""
+
+    def __init__(self, 제목, 선택지, 선택콜백, 취소콜백, **kwargs):
+        self._선택콜백 = 선택콜백
+        self._취소콜백 = 취소콜백
+
+        목록 = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(6))
+        for 수단, 표시 in 선택지:
+            버튼 = Button(text=표시)
+            버튼.bind(on_release=lambda inst, s=수단: self._선택(s))
+            목록.add_widget(버튼)
+        취소버튼 = Button(
+            text="취소", background_normal="", background_color=(0.3, 0.31, 0.35, 1)
+        )
+        뒤로키_버튼(취소버튼)
+        취소버튼.bind(on_release=lambda *_: self._취소())
+        목록.add_widget(취소버튼)
+
+        kwargs.setdefault("title", 제목)
+        kwargs.setdefault("size_hint", (0.5, None))
+        kwargs.setdefault("height", dp(110 + 54 * (len(선택지) + 1)))
+        kwargs.setdefault("auto_dismiss", False)
+        super().__init__(content=목록, **kwargs)
+
+    def _선택(self, 수단):
+        self.dismiss(animation=False)
+        self._선택콜백(수단)
+
+    def _취소(self):
+        self.dismiss(animation=False)
+        self._취소콜백()
+
+
 class 전투화면(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.선택모드 = None
+        self._행동지불 = None  # 행동 선택 팝업에서 고른 수단(스킬 실행 때 넘긴다)
         self._엔진중 = False
         self.자동전투 = False  # [자동전투] 켜짐 - 이 전투 동안만(끝나면 꺼진다)
 
@@ -697,6 +733,7 @@ class 전투화면(Screen):
 
     def _대상선택_취소(self):
         self.선택모드 = None
+        self._행동지불 = None
         참가자 = gameflow.현재_턴_참가자(App.get_running_app().게임상태)
         self.안내라벨.text = f"{참가자['이름']}의 턴 - 행동을 선택하세요."
 
@@ -705,6 +742,34 @@ class 전투화면(Screen):
         return gameflow.스킬_실제_타겟(App.get_running_app().게임상태, 스킬데이터)
 
     def _스킬_클릭(self, 이름, 스킬데이터):
+        """일반행동을 낼 수단이 둘 이상이면(쇼타임행동/일반행동/보조행동) 먼저
+        행동 선택 팝업을 띄우고, 고른 수단은 실행할 때 넘긴다(self._행동지불)."""
+        self._행동지불 = None
+        앱 = App.get_running_app()
+        참가자 = gameflow.현재_턴_참가자(앱.게임상태)
+        선택지 = gameflow.스킬_행동선택지(앱.게임상태, 참가자, 이름)
+        if len(선택지) < 2:
+            self._스킬_대상_고르기(이름, 스킬데이터)
+            return
+        남은 = {
+            "쇼타임행동": 참가자.get("기타행동", {}).get("쇼타임행동", 0),
+            "일반행동": 참가자["행동자원"].get("일반행동", 0),
+            "보조행동": 참가자["행동자원"].get("보조행동", 0),
+        }
+
+        def 고름(수단):
+            self._행동지불 = 수단
+            self._스킬_대상_고르기(이름, 스킬데이터)
+
+        self.안내라벨.text = f"'{이름}'에 사용할 행동을 선택하세요."
+        _행동선택팝업(
+            f"'{이름}' 사용 행동",
+            [(수단, f"{수단} (남은 {남은[수단]})") for 수단 in 선택지],
+            고름,
+            self._대상선택_취소,
+        ).open()
+
+    def _스킬_대상_고르기(self, 이름, 스킬데이터):
         타겟 = self._실제_타겟(스킬데이터)
         if 타겟 == "적단일":
             self.선택모드 = ("스킬", 이름)
@@ -799,9 +864,14 @@ class 전투화면(Screen):
 
     def _스킬_실행(self, 이름, 대상, 지정대상목록=None):
         앱 = App.get_running_app()
+        행동지불, self._행동지불 = self._행동지불, None
         self._오류표시_실행(
             lambda: gameflow.아군_스킬사용(
-                앱.게임상태, 이름, 대상, 지정대상목록=지정대상목록
+                앱.게임상태,
+                이름,
+                대상,
+                지정대상목록=지정대상목록,
+                행동지불=행동지불,
             )
         )
 
