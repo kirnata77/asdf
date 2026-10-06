@@ -11,11 +11,11 @@
   성장 정책(`support.성장` 재사용), 스냅샷(종료, 라운드, 생존, 소지품, 골드, 진행도, 레벨).
 - 검사는 **요약 골든 + 불변식**(HP 0 이하는 쓰러짐, 보상은 소지품에 들어감, 레벨은 플레이어레벨 이하 등).
   전체 로그 골든은 쓰지 않는다. 시드를 고정하고 `random` 전역 상태를 시나리오마다 초기화.
-- 마커 `@pytest.mark.scenario("S1")`(conftest/pytest 설정에 등록) + `docs/scenarios.md` 표와 ID 대조 테스트.
+- 마커 `@pytest.mark.scenario("S1")`(pyproject에 등록) + `docs/scenarios.md` 표와 ID 대조 테스트(P0 완료).
 
 ## 단계 (위에서부터, 한 단계 = 브랜치/PR 하나)
 
-- **P0 기반** - `tests/scenario.py`, 마커 등록, 대조 테스트(`test_repo_hygiene.py`), 문서 표 틀. 시나리오 0개로 게이트 통과.
+- ~~P0 기반~~ **완료 2026-10-06** - 마커 등록(`--strict-markers`), `tools/scenario_registry.py` + `test_repo_hygiene`의 장부 대조 테스트 3개, `docs/scenarios.md` 표(S1~S6 전부 `계획`). 도우미 `tests/scenario.py`(전투 정책/스냅샷)는 쓰는 P1에서 만든다(안 쓰는 코드를 먼저 넣지 않는다).
 - **P1 S1 첫 던전 실전** - 4인 파티 새 게임 -> 로리엔 인카운트 N회 + 보스, 모두 실전 -> 전리품 수령 ->
   장비 착용 -> 상점 판매 -> 세이브/불러오기 -> 이어서 한 번 더 전투. 기능: 새 게임, 이동/인카운트, 전투,
   전리품/보상, 장비, 상점, 세이브.
