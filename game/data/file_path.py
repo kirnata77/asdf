@@ -155,6 +155,13 @@
     "reactions": "game.system.combat.reactions",
     "flow": "game.system.combat.flow",
     "skill_system": "game.system.skill_system",
+    # game/system/skill/ (스킬 실행 엔진 패키지 - skill_system.py가 재수출하는 구현)
+    "skill_grant": "game.system.skill.skill_grant",
+    "skill_usage": "game.system.skill.skill_usage",
+    "skill_target": "game.system.skill.skill_target",
+    "skill_apply": "game.system.skill.skill_apply",
+    "skill_attack": "game.system.skill.skill_attack",
+    "skill_run": "game.system.skill.skill_run",
     "skill_learn_system": "game.system.skill_learn_system",
     "lodge_system": "game.system.lodge_system",
     "dismantle_system": "game.system.dismantle_system",

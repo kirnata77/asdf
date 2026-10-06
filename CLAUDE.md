@@ -16,6 +16,8 @@ game/screens/      Kivy 화면 (kivy 의존은 여기와 main.py에만)
 game/system/       전투, 스킬, 장비, 세이브 등 게임 로직
   combat/            전투 패키지(모듈 목록은 combat/__init__.py). 쓰는 쪽은
                      `from game.system.combat import flow, stats` 처럼 모듈을 직접 불러 쓴다
+  skill/             스킬 실행 엔진 모듈 6개(skill_grant -> usage/target -> apply -> attack -> run, 아래로만).
+                     쓰는 쪽은 `game.system.skill_system`(재수출 창구)을 부른다
 game/data/         직업, 몬스터, 맵, 아이템 데이터(파이썬 딕셔너리)
                      file_path.py = 모든 모듈의 import 경로표 (테스트가 실제 파일과 대조)
 game/assets/       폰트, 이미지
@@ -84,7 +86,7 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 | `test_screen_api.py` | 화면용 gameflow 창구, 화면 -> system/controller 직접 호출 금지 | 값 + 규칙 |
 | `test_controller_structure.py` | 창구에 구현 금지, 컨트롤러 `__all__` 완전성/이름 겹침/순환 금지, 창구가 쓰이는 이름을 다 내보냄 | 규칙 |
 | `test_formula_parity.py` | 수식 평가기가 옛 eval 구현과 같은 값을 내는지(데이터 수식 전부 + 무작위 식), 안전 평가기의 거부 규칙 | 기준 구현과 비교 |
-| `test_architecture.py` | combat 모듈 순환은 허용 묶음뿐, combat은 skill_system을 안 부름, 다른 모듈의 밑줄 이름 금지, 게임 코드에 eval/exec 금지 | 규칙 |
+| `test_architecture.py` | combat 모듈 순환은 허용 묶음뿐, combat은 skill_system/skill을 안 부름, skill 패키지는 아래로만, 다른 모듈의 밑줄 이름 금지, 게임 코드에 eval/exec 금지 | 규칙 |
 | `test_state_schema.py` | 캐릭터/전투 참가자/게임상태가 `state_schema.py` 표대로인지(칸이 빠지거나 이름이 바뀌면 실패), 불러올 때 핵심 칸 검사 | 규칙 |
 | `test_data_integrity.py` | 데이터의 수식이 엄격하게 평가되는지, 몬스터/스킬/버프/던전/마을/상점의 키·이름 참조 | 규칙(허용 목록은 이유와 함께) |
 | `test_scenario_*.py` | 풀 시나리오(실제 전투로 처음부터 끝까지, 아래) | 요약 골든 + 값 |
