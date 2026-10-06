@@ -50,13 +50,7 @@
 
 ## 문서
 
-- **`docs/mobile_apk_build_notes.md`가 낡고 잘려 있다** (2026-09-16 기준, 업로드 때
-  옮겨 온 것):
-  - 마지막 문장은 끝까지 있다(2026-10-03 확인 - 예전 "문장 중간에서 끝남" 기록은 틀림). 대신 내용이 빠졌다:
-    `buildozer.spec` 주석이 "빌드 노트 11절/13절"을 가리키는데 노트에는 4절까지만 있다.
-  - "상점/NPC/창고 비활성" - 상점은 이제 구현돼 있다(`shop_system.py`).
-  - 폰트를 `NanumGothic-Regular/Bold.ttf`라고 하지만 실제는 `NanumGothic-Diet.ttf` 1개.
-  - 빌드 방법이 Colab 기준 - 지금은 GitHub Actions(`build-apk.yml`)가 빌드한다.
+- **`buildozer.spec` 주석의 "빌드 노트 2절/11절/13절"은 옛 번호다** - 빌드 노트는 2026-10-06에 다시 썼고(4절에 대응표), spec은 캐시 키 때문에 건드리지 않았다. spec을 바꿀 때 주석도 고친다.
 - **`buildozer.spec`의 `package.domain = org.test`** - 원래 값을 몰라 기본값을 씀(spec 주석).
   예전 APK와 다르면 폰에 별도 앱으로 깔리고 세이브가 이어지지 않는다. 확인 안 됨.
 

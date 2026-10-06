@@ -23,7 +23,8 @@ tools/check.py     완료 기준 게이트 (아래)
 tools/ui_smoke.py  화면 스모크(kivy + Xvfb, 스크린샷) - CI 밖, 화면 바꿀 때 직접
 tools/fix_eol.py   줄끝을 LF로 통일 (pre-commit 훅이 부른다)
 .githooks/         pre-commit (줄끝 통일)
-docs/              빌드 노트, 리뷰 보고서
+docs/              빌드 노트, 구조 점검 보고서, 리뷰 보고서, 시나리오 장부
+README.md          입구(실행/개발/구조/빌드 요약)
 .memory/           작업 기억 (MEMORY.md가 색인)
 ```
 
@@ -136,7 +137,10 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 
 ## 기억 파일 (MEMORY.md / .memory/)
 
-- `MEMORY.md`는 **색인이다. 40줄 이하.** *Now* 절에는 다음에 할 일과 "써 놓았지만
+- `MEMORY.md`는 **색인이다. 40줄 이하, 6KB(6,144바이트) 이하.** 한글은 글자당 3바이트라
+  줄 수만 지켜서는 크기가 넘는다 - 둘 다 지킨다. 게이트(`tests/test_repo_hygiene.py`)가 검사하고,
+  넘으면 실패한다. 넘칠 때는 규칙/수치 설명을 `.memory/roadmap/game-rules.md`로, 경위는 `sessions/`로
+  옮기고 MEMORY.md에는 한 줄 링크만 남긴다. *Now* 절에는 다음에 할 일과 "써 놓았지만
   아직 확인 안 된 것"만 둔다. 세션마다 *Now*를 갱신한다(변화 없음이라도).
 - 자세한 내용은 `.memory/` 아래 - 숫자가 있는 사실은 `roadmap/`, 믿으면 안 되는 것은
   `active-issues/`, 헛발질을 포함한 경위는 `sessions/`(자세히는 `.memory/README.md`).

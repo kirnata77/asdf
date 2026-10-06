@@ -37,6 +37,28 @@ def test_gitattributes는_LF_정규화():
         assert 줄 in 결과.stdout, 결과.stdout
 
 
+# ------------------------------------------------------------ 기억 파일 크기
+
+MEMORY_최대_줄 = 40
+MEMORY_최대_바이트 = 6 * 1024  # 한글은 글자당 3바이트라 줄 수만으로는 크기가 안 막힌다
+
+
+def test_MEMORY_md는_줄과_크기_상한을_지킨다():
+    """CLAUDE.md "기억 파일" - 색인이 길어지면 매 세션 읽는 비용이 커지고 중요한 것이 묻힌다."""
+    경로 = os.path.join(fix_eol.ROOT, "MEMORY.md")
+    with open(경로, "rb") as f:
+        내용 = f.read()
+    줄수 = 내용.count(b"\n") + (0 if 내용.endswith(b"\n") or not 내용 else 1)
+    assert 줄수 <= MEMORY_최대_줄, (
+        f"MEMORY.md가 {줄수}줄이다(상한 {MEMORY_최대_줄}) - 규칙/수치 설명은 "
+        ".memory/roadmap/game-rules.md로 옮긴다"
+    )
+    assert len(내용) <= MEMORY_최대_바이트, (
+        f"MEMORY.md가 {len(내용)}바이트다(상한 {MEMORY_최대_바이트}) - 규칙/수치 설명은 "
+        ".memory/roadmap/game-rules.md로 옮긴다"
+    )
+
+
 # ------------------------------------------------------------ 풀 시나리오 장부
 
 
