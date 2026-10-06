@@ -19,10 +19,13 @@ game/saves/
 # 압축 파일 (업로드용으로 만든 zip 등)
 *.zip
 
-# Claude Code 로컬 설정
-.claude/
+# Claude Code 로컬 설정 (settings.json, hooks/, helpers/, skills/는 공유한다)
+.claude/settings.local.json
 
 # 운영체제가 만드는 파일
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
