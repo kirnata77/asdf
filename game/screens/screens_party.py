@@ -286,6 +286,12 @@ class 파티관리화면(Screen):
                 스탯당최대=획득["스탯당최대"],
                 약점제외=True,
             )
+        elif 타입 == "스킬강화":
+            self._스킬강화_팝업(
+                캐릭터,
+                항목,
+                확인콜백=lambda 스킬: self._레벨업_확정(캐릭터, 강화스킬=스킬),
+            )
         elif 타입 == "퍽획득":
             self._퍽선택_팝업(
                 캐릭터,
@@ -544,6 +550,54 @@ class 파티관리화면(Screen):
             )
             버튼.bind(on_release=lambda inst, s=스타일: 고르기(s))
             본문.add_widget(버튼)
+        취소 = Button(text="취소", size_hint=(1, None), height=dp(44))
+        뒤로키_버튼(취소)
+        취소.bind(on_release=lambda *_: 팝업.dismiss())
+        본문.add_widget(취소)
+        팝업.open()
+
+    def _스킬강화_팝업(self, 캐릭터, 항목, 확인콜백):
+        """레벨 12 "스킬강화" - 고를 수 있는 보유 스킬마다 이름+설명 버튼, 맨 아래 [취소]."""
+        목록 = gameflow.스킬강화_선택지(캐릭터, 항목)
+        본문 = BoxLayout(orientation="vertical", spacing=8, padding=12)
+        본문.add_widget(_줄바꿈_라벨(항목["획득"]["설명"]))
+        목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=6)
+        목록틀.bind(minimum_height=목록틀.setter("height"))
+        스크롤 = ScrollView(size_hint=(1, 1))
+        스크롤.add_widget(목록틀)
+        본문.add_widget(스크롤)
+        팝업 = Popup(
+            title=f"{캐릭터['캐릭터명']} 스킬 강화",
+            content=본문,
+            size_hint=(0.9, 0.85),
+            auto_dismiss=False,
+        )
+
+        def 고르기(스킬):
+            팝업.dismiss()
+            확인콜백(스킬)
+
+        if not 목록:
+            목록틀.add_widget(
+                Label(
+                    text="(강화할 수 있는 스킬이 없습니다)",
+                    size_hint=(1, None),
+                    height=40,
+                )
+            )
+        for 스킬, 설명 in 목록:
+            버튼 = Button(
+                text=f"{스킬}\n{설명}",
+                size_hint=(1, None),
+                height=dp(72),
+                halign="center",
+                font_size="13sp",
+            )
+            버튼.bind(
+                size=lambda inst, sz: setattr(inst, "text_size", (sz[0] - 12, None))
+            )
+            버튼.bind(on_release=lambda inst, n=스킬: 고르기(n))
+            목록틀.add_widget(버튼)
         취소 = Button(text="취소", size_hint=(1, None), height=dp(44))
         뒤로키_버튼(취소)
         취소.bind(on_release=lambda *_: 팝업.dismiss())
