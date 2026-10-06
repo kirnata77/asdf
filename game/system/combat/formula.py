@@ -16,8 +16,7 @@ def _다이스_치환(match, 치명타=False):
     개수식, 면수식 = match.group(1), match.group(2)
     개수 = int(eval(개수식, {"__builtins__": {}}, {}))
     면수 = int(eval(면수식, {"__builtins__": {}}, {}))
-    if 치명타:
-        개수 += 1
+    개수 += int(치명타)  # True=1개, 정수면 그만큼(치명타주사위 버프)
     if 개수 <= 0 or 면수 <= 0:
         return "0"
     return str(dice_utils.주사위_합(개수, 면수))
@@ -26,11 +25,11 @@ def _다이스_치환(match, 치명타=False):
 def 무기공격력_굴림(무기공격력_수식, 치명타=False):
     """무기공격력 수식(예: "1d6")을 굴린다. 치명타면 주사위 개수를
     1개 추가한다(표준 D&D처럼 2배가 아님) - 보정치/데미지보너스는
-    그대로 1회분."""
+    그대로 1회분. 치명타가 정수면 그 개수만큼 추가한다(stats.피해_굴림)."""
     match = re.fullmatch(r"(\d+)d(\d+)", 무기공격력_수식)
     if not match:
         raise ValueError(f"알 수 없는 무기공격력 표기: {무기공격력_수식!r}")
-    개수 = int(match.group(1)) + (1 if 치명타 else 0)
+    개수 = int(match.group(1)) + int(치명타)
     return dice_utils.주사위_합(개수, int(match.group(2)))
 
 
