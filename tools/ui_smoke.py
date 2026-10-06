@@ -224,6 +224,26 @@ class 스모크앱(main.DnfMobileApp):
         _팝업_닫기()
         결과["단계"].append("능력치 배분 팝업")
 
+        # 레벨 12 [스킬강화] 팝업: 보유 스킬마다 버튼, 누르면 그 스킬로 확정
+        고른 = []
+        강화항목 = gf.전직_레지스트리["귀검사"]["웨펀마스터"]["레벨업테이블"][12]
+        매니저.get_screen("파티관리")._스킬강화_팝업(
+            상태["파티"]["파티원"][0], 강화항목, 고른.append
+        )
+        yield 0.5
+        _찍기("skill_enhance_popup")
+        팝업 = list(Window.children)[0]
+        버튼들 = [
+            w
+            for w in 팝업.walk(restrict=True)
+            if isinstance(w, Button) and w.text.startswith("귀참")
+        ]
+        assert len(버튼들) == 1, [getattr(w, "text", "") for w in 팝업.walk()]
+        버튼들[0].dispatch("on_release")
+        yield 0.3
+        assert 고른 == ["귀참"] and len(Window.children) == 1, 고른
+        결과["단계"].append("스킬강화 팝업(보유 스킬 버튼 -> 그 스킬로 확정)")
+
         # [스킬습득] 팝업: 직업 계열 스킬 목록 + 비용, 골드가 모자라면 버튼 잠금, 누르면 배운다
         파티관리 = 매니저.get_screen("파티관리")
         파티관리.갱신()
