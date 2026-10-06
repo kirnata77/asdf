@@ -831,6 +831,11 @@ class 스모크앱(main.DnfMobileApp):
         확인_누르기()
         yield 0.5
         assert 매니저.current == "던전", 매니저.current
+        _팝업_닫기()
+        yield 0.3
+        _찍기(
+            "dungeon_map"
+        )  # 던전 지도(바닥/나무·게이트/플레이어) - 그리기 변경 전후 비교용
         결과["단계"].append(
             "황금 고블린 도망 -> (도망) 표시, 그림 없음, 적이 도망쳤다! -> 던전"
         )
