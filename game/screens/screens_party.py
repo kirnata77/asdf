@@ -31,6 +31,8 @@ from game.screens.screens_common import (
     _평면버튼,
     _흐린글자색,
     뒤로키_버튼,
+    스크롤_목록,
+    닫기_버튼,
 )
 
 
@@ -328,10 +330,7 @@ class 파티관리화면(Screen):
         본문 = BoxLayout(orientation="vertical", spacing=8, padding=12)
         본문.add_widget(Label(text="전직할 직업을 선택하세요.", size_hint=(1, 0.1)))
 
-        목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=6)
-        목록틀.bind(minimum_height=목록틀.setter("height"))
-        스크롤 = ScrollView(size_hint=(1, 0.76))
-        스크롤.add_widget(목록틀)
+        스크롤, 목록틀 = 스크롤_목록(0.76)
         본문.add_widget(스크롤)
 
         팝업 = Popup(
@@ -476,10 +475,7 @@ class 파티관리화면(Screen):
         고른 = {"무기": None, "방어구": None}
 
         본문 = BoxLayout(orientation="vertical", spacing=6, padding=10)
-        목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=4)
-        목록틀.bind(minimum_height=목록틀.setter("height"))
-        스크롤 = ScrollView(size_hint=(1, 0.78))
-        스크롤.add_widget(목록틀)
+        스크롤, 목록틀 = 스크롤_목록(0.78, 간격=4)
         본문.add_widget(스크롤)
         확인 = Button(text="확인", size_hint=(1, 0.11), disabled=True)
 
@@ -569,10 +565,7 @@ class 파티관리화면(Screen):
         목록 = gameflow.스킬강화_선택지(캐릭터, 항목)
         본문 = BoxLayout(orientation="vertical", spacing=8, padding=12)
         본문.add_widget(_줄바꿈_라벨(항목["획득"]["설명"]))
-        목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=6)
-        목록틀.bind(minimum_height=목록틀.setter("height"))
-        스크롤 = ScrollView(size_hint=(1, 1))
-        스크롤.add_widget(목록틀)
+        스크롤, 목록틀 = 스크롤_목록(1)
         본문.add_widget(스크롤)
         팝업 = Popup(
             title=f"{캐릭터['캐릭터명']} 스킬 강화",
@@ -618,10 +611,7 @@ class 파티관리화면(Screen):
         본문 = BoxLayout(orientation="vertical", spacing=8, padding=12)
         본문.add_widget(Label(text="퍽을 하나 선택하세요.", size_hint=(1, 0.1)))
 
-        목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=6)
-        목록틀.bind(minimum_height=목록틀.setter("height"))
-        스크롤 = ScrollView(size_hint=(1, 0.76))
-        스크롤.add_widget(목록틀)
+        스크롤, 목록틀 = 스크롤_목록(0.76)
         본문.add_widget(스크롤)
 
         팝업 = Popup(
@@ -696,10 +686,7 @@ class 파티관리화면(Screen):
         골드라벨 = Label(size_hint=(1, 0.1))
         본문.add_widget(골드라벨)
 
-        목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=6)
-        목록틀.bind(minimum_height=목록틀.setter("height"))
-        스크롤 = ScrollView(size_hint=(1, 0.76))
-        스크롤.add_widget(목록틀)
+        스크롤, 목록틀 = 스크롤_목록(0.76)
         본문.add_widget(스크롤)
 
         팝업 = Popup(
@@ -777,9 +764,7 @@ class 파티관리화면(Screen):
             다시그리기()
 
         다시그리기()
-        닫기버튼 = Button(text="닫기", size_hint=(1, 0.1))
-        뒤로키_버튼(닫기버튼)
-        닫기버튼.bind(on_release=lambda *_: 팝업.dismiss())
+        닫기버튼 = 닫기_버튼(팝업, size_hint=(1, 0.1))
         본문.add_widget(닫기버튼)
 
         팝업.open()
@@ -957,10 +942,7 @@ def _장비교체_팝업(캐릭터, 슬롯, 완료콜백):
     else:
         본문.add_widget(Label(text="현재: (없음)", size_hint=(1, None), height=dp(48)))
     안내 = Label(text="", size_hint=(1, 0.08))
-    목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(6))
-    목록틀.bind(minimum_height=목록틀.setter("height"))
-    스크롤 = ScrollView(size_hint=(1, 0.64))
-    스크롤.add_widget(목록틀)
+    스크롤, 목록틀 = 스크롤_목록(0.64, 간격=dp(6))
     본문.add_widget(스크롤)
     본문.add_widget(안내)
 
@@ -1183,10 +1165,7 @@ class 파티원화면(Screen):
         팝업은 열어 둔 채 목록을 다시 그린다(여러 개 연달아 마실 수 있게)."""
         본문 = BoxLayout(orientation="vertical", spacing=6, padding=10)
         안내 = Label(text="", size_hint=(1, 0.12))
-        목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=6)
-        목록틀.bind(minimum_height=목록틀.setter("height"))
-        스크롤 = ScrollView(size_hint=(1, 0.76))
-        스크롤.add_widget(목록틀)
+        스크롤, 목록틀 = 스크롤_목록(0.76)
 
         def 다시그리기():
             목록틀.clear_widgets()
@@ -1225,9 +1204,7 @@ class 파티원화면(Screen):
             size_hint=(0.9, 0.75),
             auto_dismiss=False,
         )
-        닫기 = Button(text="닫기", size_hint=(1, 0.12))
-        뒤로키_버튼(닫기)
-        닫기.bind(on_release=lambda *_: 팝업.dismiss())
+        닫기 = 닫기_버튼(팝업, size_hint=(1, 0.12))
         본문.add_widget(닫기)
         팝업.open()
 
@@ -1249,9 +1226,7 @@ class 파티원화면(Screen):
             size_hint=(0.95, 0.9),
             auto_dismiss=False,
         )
-        닫기 = Button(text="닫기", size_hint=(1, 0.12))
-        뒤로키_버튼(닫기)
-        닫기.bind(on_release=lambda *_: 팝업.dismiss())
+        닫기 = 닫기_버튼(팝업, size_hint=(1, 0.12))
         본문.add_widget(닫기)
         팝업.open()
 

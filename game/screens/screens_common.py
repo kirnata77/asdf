@@ -293,6 +293,22 @@ def 뒤로키_버튼(버튼):
     return 버튼
 
 
+def 닫기_버튼(팝업, **kwargs):
+    """누르면(또는 [뒤로] 키) 팝업을 닫는 [닫기] 버튼. kwargs는 Button에 그대로 넘긴다."""
+    버튼 = 뒤로키_버튼(Button(text="닫기", **kwargs))
+    버튼.bind(on_release=lambda *_: 팝업.dismiss())
+    return 버튼
+
+
+def 스크롤_목록(높이비율, 간격=6):
+    """세로로 쌓는 목록틀(내용 높이만큼 늘어남)과 그것을 감싼 ScrollView. (스크롤, 목록틀)을 돌려준다."""
+    목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=간격)
+    목록틀.bind(minimum_height=목록틀.setter("height"))
+    스크롤 = ScrollView(size_hint=(1, 높이비율))
+    스크롤.add_widget(목록틀)
+    return 스크롤, 목록틀
+
+
 def _뒤로키_버튼_찾기(위젯):
     for 자식 in 위젯.walk(restrict=True):
         if getattr(자식, "뒤로키", False) and not 자식.disabled:
