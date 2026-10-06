@@ -35,7 +35,7 @@ from kivy.uix.scrollview import ScrollView  # noqa: E402
 
 import gameflow as gf  # noqa: E402
 from game.screens import screens_party  # noqa: E402
-from game.system import dice_utils, save_system  # noqa: E402
+from game.system import dice_utils, save_system, skill_system  # noqa: E402
 from game.system.combat import flow  # noqa: E402
 from tests import support  # noqa: E402
 
@@ -388,7 +388,7 @@ class 스모크앱(main.DnfMobileApp):
         assert 매니저.current == "메인메뉴", 매니저.current
         결과["단계"].append("뒤로 키(팝업 겹침/파티원/파티관리/마을/상점/메인메뉴)")
 
-        gf._전투_시작(상태, ["타우 아미", "고블린", "고블린"], 레벨=6, 차수=2)
+        gf.전투_시작(상태, ["타우 아미", "고블린", "고블린"], 레벨=6, 차수=2)
         support.반응_처리(상태)
         전투 = 매니저.get_screen("전투")
         전투.갱신(신규=True)
@@ -470,7 +470,7 @@ class 스모크앱(main.DnfMobileApp):
         전투._스킬_클릭("썬더콜링", 상태["스킬데이터모음"]["썬더콜링"])
         assert 전투.선택모드[0] == "반복지정", 전투.선택모드
         적 = [x for x in 전투상태["참가자"] if x["진영"] == "적" and x["생존"]]
-        gf.skill_system.상태이상_부여(전투상태, 적[1], "은신", 3, None)
+        skill_system.상태이상_부여(전투상태, 적[1], "은신", 3, None)
         yield 0.3
         _찍기("battle_target_popup_repeat")
         대상버튼들()[1].trigger_action(duration=0)
@@ -521,7 +521,7 @@ class 스모크앱(main.DnfMobileApp):
         거너 = next(
             x for x in 전투상태["참가자"] if (x.get("원본") or {}).get("직업") == "거너"
         )
-        gf.skill_system.상태이상_부여(전투상태, 거너, "구속", 3, None)
+        skill_system.상태이상_부여(전투상태, 거너, "구속", 3, None)
         로그수 = len(전투상태["로그"])
         전투._도망_클릭()
         yield 0.5
@@ -628,7 +628,7 @@ class 스모크앱(main.DnfMobileApp):
             if 전리품줄 is False:
                 # "전리품 없음": 던전 공용 드랍도, 골드도 없는 전투로 만든다
                 상태["던전상태"]["맵정보"] = {**원래맵, "드랍표": []}
-            gf._전투_시작(상태, 몬스터들, 레벨=6, 차수=2)  # 시작 반응에 안 쓰러지게
+            gf.전투_시작(상태, 몬스터들, 레벨=6, 차수=2)  # 시작 반응에 안 쓰러지게
             if 전리품줄 is False:
                 for 적 in gf.적_목록(상태):
                     적["원본"]["획득골드"] = "미정"
@@ -723,7 +723,7 @@ class 스모크앱(main.DnfMobileApp):
             상태["전투상태"]["현재턴"] = 상태["전투상태"]["참가자"].index(p)
             flow.턴_시작_처리(상태["전투상태"], p)
 
-        gf._전투_시작(상태, ["타우 아미", "타우 아미"], 레벨=6, 차수=2)
+        gf.전투_시작(상태, ["타우 아미", "타우 아미"], 레벨=6, 차수=2)
         support.반응_처리(상태)
         매니저.current = "전투"
         아군_차례로_맞추기()
@@ -759,7 +759,7 @@ class 스모크앱(main.DnfMobileApp):
         # 몬스터 크기: 소형 0.75 / 중형 1 / 대형 1.25배, 칸 바닥(발바닥) 맞춤, 대형이 뒤(먼저 그림)
         from kivy.graphics import Rectangle
 
-        gf._전투_시작(상태, ["고블린", "타우 비스트", "타우 아미"], 레벨=6, 차수=2)
+        gf.전투_시작(상태, ["고블린", "타우 비스트", "타우 아미"], 레벨=6, 차수=2)
         support.반응_처리(상태)
         매니저.current = "전투"
         전투.갱신(신규=True)
@@ -788,7 +788,7 @@ class 스모크앱(main.DnfMobileApp):
         # 황금 고블린(도망턴 5): 자기 턴이 5번 끝나면 도망 -> 이름표 "(도망)", 그림 없음,
         # 적이 모두 도망쳤으면 "적이 도망쳤다!" 팝업 -> [확인] -> 던전
         _팝업_닫기()
-        gf._전투_시작(상태, ["황금 고블린"], 레벨=3, 차수=1)
+        gf.전투_시작(상태, ["황금 고블린"], 레벨=3, 차수=1)
         support.반응_처리(상태)
         매니저.current = "전투"
         황금 = gf.적_목록(상태)[0]

@@ -31,7 +31,8 @@ python tools/check.py                        # 완료 기준 게이트: compilea
 
 ```
 main.py            Kivy 앱 진입점
-gameflow.py        화면 <-> 로직 창구 (화면은 이 파일의 함수만 부른다)
+gameflow.py        화면 <-> 로직 창구(재수출만, 화면은 이 파일의 함수만 부른다)
+game/controller/   컨트롤러 구현(주제별 ctl_*.py - 전투/상점/파티/레벨업 ...)
 game/screens/      Kivy 화면
 game/system/       전투(combat/), 스킬, 장비, 세이브 등 게임 로직
 game/data/         직업, 몬스터, 던전, 아이템 데이터(파이썬 딕셔너리)
@@ -40,7 +41,7 @@ tests/  tools/    테스트, 게이트(check.py)와 화면 스모크(ui_smoke.py
 docs/  .memory/   빌드 노트, 구조 점검 보고서, 작업 기억
 ```
 
-계층은 한 방향이다: `screens -> gameflow -> system -> data`. 자세한 구조와 점검 결과는 [`docs/architecture_review.md`](docs/architecture_review.md).
+계층은 한 방향이다: `screens -> gameflow -> controller -> system -> data`. 자세한 구조와 점검 결과는 [`docs/architecture_review.md`](docs/architecture_review.md).
 
 ## 빌드
 

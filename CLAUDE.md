@@ -10,7 +10,8 @@ Kivy로 만든 턴제 RPG 프로토타입이다. buildozer로 안드로이드 AP
 
 ```
 main.py            Kivy 앱 진입점, 화면 등록, 크래시 로그 훅
-gameflow.py        화면 <-> 로직/데이터 컨트롤러. 화면은 이 파일의 함수만 부른다
+gameflow.py        화면 <-> 로직/데이터 컨트롤러의 창구(재수출만). 화면은 이 파일의 함수만 부른다
+game/controller/   컨트롤러 구현 - 주제별 ctl_*.py 15개(battle/shop/party/levelup ...), gameflow.py가 다시 내보낸다
 game/screens/      Kivy 화면 (kivy 의존은 여기와 main.py에만)
 game/system/       전투, 스킬, 장비, 세이브 등 게임 로직
   combat/            전투 패키지(모듈 목록은 combat/__init__.py). 쓰는 쪽은
@@ -28,12 +29,15 @@ README.md          입구(실행/개발/구조/빌드 요약)
 .memory/           작업 기억 (MEMORY.md가 색인)
 ```
 
-**계층은 한 방향이다: `screens` -> `gameflow` -> `system` -> `data`.**
-- `game/system/`, `game/data/`, `gameflow.py`는 **kivy를 import하지 않는다.** 그래서
+**계층은 한 방향이다: `screens` -> `gameflow`(창구) -> `controller` -> `system` -> `data`.**
+- `game/system/`, `game/data/`, `game/controller/`, `gameflow.py`는 **kivy를 import하지 않는다.** 그래서
   테스트가 화면 없이 돈다(`test_헤드리스_계층은_kivy에_의존하지_않는다`가 지킨다).
-- 화면은 `game.system`을 직접 부르지 않고 `gameflow`를 거친다(`gameflow.xxx_system.`
-  으로 우회하는 것도 금지). 화면에 필요한 조회는 gameflow의 "화면용 조회" 절에 함수로
-  추가한다. `test_화면은_game_system을_직접_쓰지_않는다`가 지킨다.
+- 화면은 `game.system`/`game.controller`를 직접 부르지 않고 `gameflow`를 거친다(`gameflow.xxx_system.`
+  으로 우회하는 것도 금지). 화면에 필요한 조회/동작은 주제에 맞는 `game/controller/ctl_*.py`에 함수로
+  추가하고 그 모듈의 `__all__`에 넣는다(gameflow.py는 건드리지 않는다 - 창구에는 구현을 두지 않는다).
+  `test_화면은_game_system을_직접_쓰지_않는다`와 `test_controller_structure.py`가 지킨다.
+- 컨트롤러 모듈은 위에서 아래로만 부른다(registry -> party -> 기능 모듈 -> dungeon/potion/rewards/charview/tavern).
+  모듈끼리 순환하거나 다른 모듈의 밑줄 이름을 가져오면 테스트가 실패한다.
 - 모듈을 추가/이동/이름변경하면 `game/data/file_path.py`도 같은 커밋에서 고친다.
 
 ## 처음 한 번 (저장소마다)
@@ -48,7 +52,7 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 한 작업을 끝냈다고 하려면 다음을 모두 만족해야 한다:
 
 1. **`python tools/check.py` 통과** - compileall + `ruff check` + `ruff format --check` + `pytest` +
-   커버리지 하한(game/system + gameflow.py, `COVERAGE_FLOOR`). CI(`.github/workflows/check.yml`)도
+   커버리지 하한(game/system + game/controller + gameflow.py, `COVERAGE_FLOOR`). CI(`.github/workflows/check.yml`)도
    모든 push/PR에서 같은 명령을 돌린다. 서식이 걸리면 `python -m ruff format .`.
    **로직을 추가/변경하면 테스트도 같이 추가한다** - 어디에 넣을지는 아래 "테스트 지도".
 2. **골든 파일(`tests/golden/`)이 바뀌었다면 이유를 커밋에 적는다.** 리팩터링은
@@ -76,7 +80,8 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 | `test_combat_skills.py` | 스킬 전수(기본/준비됨) | 골든 |
 | `test_combat_monsters.py` | 몬스터 고유 패턴 전수 + 보스 칭호 | 골든 |
 | `test_combat_effects.py` | 상태이상/버프/디버프 전수, 반응특성 전투 | 골든 |
-| `test_screen_api.py` | 화면용 gameflow 창구, 화면 -> system 직접 호출 금지 | 값 + 규칙 |
+| `test_screen_api.py` | 화면용 gameflow 창구, 화면 -> system/controller 직접 호출 금지 | 값 + 규칙 |
+| `test_controller_structure.py` | 창구에 구현 금지, 컨트롤러 `__all__` 완전성/이름 겹침/순환 금지, 창구가 쓰이는 이름을 다 내보냄 | 규칙 |
 | `test_formula_parity.py` | 수식 평가기가 옛 eval 구현과 같은 값을 내는지(데이터 수식 전부 + 무작위 식), 안전 평가기의 거부 규칙 | 기준 구현과 비교 |
 | `test_architecture.py` | combat 모듈 순환은 허용 묶음뿐, combat은 skill_system을 안 부름, 다른 모듈의 밑줄 이름 금지, 게임 코드에 eval/exec 금지 | 규칙 |
 | `test_data_integrity.py` | 데이터의 수식이 엄격하게 평가되는지, 몬스터/스킬/버프/던전/마을/상점의 키·이름 참조 | 규칙(허용 목록은 이유와 함께) |

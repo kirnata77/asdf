@@ -6,6 +6,7 @@ import random
 import pytest
 
 import gameflow as gf
+from game.data.equipment.eq_02_armor_set import 방어구세트목록
 from game.data.monster.monster_drop import 드랍표_모음
 from game.system import (
     character_data_system as 데이터,
@@ -156,30 +157,30 @@ def test_장착_가능여부_분기(카탈로그):
 def test_실데이터_세트는_같은_재질_5부위에서_발동(카탈로그):
     """eq_02_armor_set.py 머리말: "재질 5부위를 전부 갖추면 발동" - 세트 정의엔 "구성품"이 없고
     "타입"(재질)만 있다. 이름(마리아의 천 등)과 무관하게 재질만 본다."""
-    assert all("구성품" not in 정의 for 정의 in gf.방어구세트목록.values())
+    assert all("구성품" not in 정의 for 정의 in 방어구세트목록.values())
     탭 = 카탈로그["장비"]
 
     def 첫(슬롯, 재질):
         return next(i for i in 탭[슬롯].values() if i["재질"] == 재질)
 
-    for 세트명, 정의 in gf.방어구세트목록.items():
+    for 세트명, 정의 in 방어구세트목록.items():
         전부 = {슬롯: 첫(슬롯, 정의["타입"]) for 슬롯 in 장비.방어구_슬롯}
-        assert [s["세트명"] for s in 장비.세트효과_목록(전부, gf.방어구세트목록)] == [
+        assert [s["세트명"] for s in 장비.세트효과_목록(전부, 방어구세트목록)] == [
             세트명
         ]
         assert (
-            장비.장비_보너스_합산(전부, gf.방어구세트목록)["AC보너스"]
+            장비.장비_보너스_합산(전부, 방어구세트목록)["AC보너스"]
             == sum(i["AC보너스"] for i in 전부.values()) + 1
         )
         네부위 = dict(전부, 벨트=None)
-        assert 장비.세트효과_목록(네부위, gf.방어구세트목록) == []
+        assert 장비.세트효과_목록(네부위, 방어구세트목록) == []
     섞임 = {슬롯: 첫(슬롯, "경갑") for 슬롯 in 장비.방어구_슬롯}
     섞임["신발"] = 첫("신발", "천갑")
-    assert 장비.세트효과_목록(섞임, gf.방어구세트목록) == []
+    assert 장비.세트효과_목록(섞임, 방어구세트목록) == []
     마리아 = {
         슬롯: 탭[슬롯][f"마리아의 천 {슬롯}"] for 슬롯 in ("상의", "하의", "신발")
     }
-    assert 장비.세트효과_목록(마리아, gf.방어구세트목록) == []  # 3부위만으로는 안 된다
+    assert 장비.세트효과_목록(마리아, 방어구세트목록) == []  # 3부위만으로는 안 된다
 
 
 def test_세트_보너스_합산_합성데이터():

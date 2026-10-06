@@ -13,6 +13,7 @@ import random
 import pytest
 
 import gameflow as gf
+from game.data.buff.debuff import 디버프목록
 from game.system.combat import flow, stats
 from game.system import skill_system as ss
 from tests import support
@@ -40,7 +41,7 @@ def _스킬_소유직업():
 
 
 스킬_소유 = _스킬_소유직업()
-스킬데이터 = gf._스킬데이터모음_생성()
+스킬데이터 = gf.스킬데이터모음_생성()
 
 
 def 정리(값, 깊이=0):
@@ -86,7 +87,7 @@ def 전장_준비(직업, 시드):
     for c in 상태["파티"]["파티원"]:
         support.성장(상태, c, 10, 전직=전직[c["직업"]], 스킬습득=True)
     gf.파티_최대치로_회복(상태)
-    gf._전투_시작(상태, 적_구성, 레벨=6, 차수=2)
+    gf.전투_시작(상태, 적_구성, 레벨=6, 차수=2)
     support.반응_처리(상태)
     return 상태
 
@@ -110,7 +111,7 @@ def 준비됨_적용(상태, 시전자, 표적):
     아군 = [p for p in 전투상태["참가자"] if p["진영"] == "아군"]
     아군[1]["현재HP"] = max(1, 아군[1]["현재HP"] // 3)
     ss.이름있는효과_부여(전투상태, 표적, "속도증가", 1)
-    ss.이름있는효과_부여(전투상태, 아군[1], next(iter(gf.디버프목록)), 1)
+    ss.이름있는효과_부여(전투상태, 아군[1], next(iter(디버프목록)), 1)
 
 
 def 스킬_시나리오(스킬, 준비):

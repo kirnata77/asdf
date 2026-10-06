@@ -20,6 +20,21 @@ import pytest
 
 import game.data as 데이터패키지
 import gameflow as gf
+from game.data.equipment.eq_04_special_11_earring import 귀걸이목록
+from game.data.buff.debuff import 디버프목록
+from game.data.equipment.eq_04_special_10_magicstone import 마법석목록
+from game.data.equipment.eq_03_accessory_06_necklace import 목걸이목록
+from game.data.equipment.eq_03_accessory_07_ring import 반지목록
+from game.data.buff.buff import 버프목록
+from game.data.equipment.eq_02_armor_04_belt import 벨트목록
+from game.data.equipment.eq_04_special_09_subequipment import 보조장비목록
+from game.data.equipment.eq_02_armor_01_top import 상의목록
+from game.data.buff.status_effects import 상태이상목록
+from game.data.equipment.eq_02_armor_05_shoes import 신발목록
+from game.data.equipment.eq_02_armor_03_shoulder import 어깨목록
+from game.data.monster.monster_title import 칭호목록
+from game.data.equipment.eq_03_accessory_08_bracelet import 팔찌목록
+from game.data.equipment.eq_02_armor_02_bottom import 하의목록
 from game.system.combat import formula, resources
 
 루트 = pathlib.Path(__file__).resolve().parents[1]
@@ -230,13 +245,13 @@ def test_몬스터_데이터는_필수_키와_허용값을_지킨다():
             if 빠짐:
                 문제.append(f"{키} 패턴 {번호}: 없는 키 {sorted(빠짐)}")
         칭호 = 몬스터.get("칭호")
-        if 칭호 not in 칭호_자리표시자 and 칭호 not in gf.칭호목록:
+        if 칭호 not in 칭호_자리표시자 and 칭호 not in 칭호목록:
             문제.append(f"{키}: 칭호 {칭호!r}의 정의가 없다")
     assert not 문제, "\n".join(문제)
 
 
 def test_몬스터_특성_이름은_정의가_있다():
-    정의 = gf._전투용_몬스터특성정의
+    정의 = gf.전투용_몬스터특성정의
     없는 = collections.defaultdict(set)
     for 키, 몬스터 in gf.몬스터목록.items():
         for 이름 in 몬스터.get("특성") or []:
@@ -276,7 +291,7 @@ def _이름_참조_모으기(값, 결과):
 def _이름_풀림(이름):
     """런타임이 이 이름을 풀 수 있는가: 상태이상/버프/디버프/기술효과, 또는 "소환:<이름>"
     (combat.monster_actions._몬스터_소환수_목록이 접두어를 떼어 소환수 목록에서 찾는다)."""
-    if 이름 in gf.상태이상목록 or resources.효과정의_조회(이름)[0] is not None:
+    if 이름 in 상태이상목록 or resources.효과정의_조회(이름)[0] is not None:
         return True
     from game.data.buff import summon_00
 
@@ -317,9 +332,9 @@ def test_스킬_데이터는_필수_키를_가진다():
 @pytest.mark.parametrize(
     "이름,레지스트리",
     [
-        ("버프", lambda: gf.버프목록),
-        ("디버프", lambda: gf.디버프목록),
-        ("상태이상", lambda: gf.상태이상목록),
+        ("버프", lambda: 버프목록),
+        ("디버프", lambda: 디버프목록),
+        ("상태이상", lambda: 상태이상목록),
     ],
 )
 def test_버프_디버프_상태이상은_필수_키를_가진다(이름, 레지스트리):
@@ -408,17 +423,17 @@ def test_마을_데이터와_상점_품목이_맞는다():
 def test_장비_이름은_목록을_가로질러_겹치지_않는다():
     """같은 이름이 두 목록에 있으면 소지품/상점이 어느 쪽인지 가를 수 없다."""
     목록들 = {
-        "상의": gf.상의목록,
-        "하의": gf.하의목록,
-        "어깨": gf.어깨목록,
-        "벨트": gf.벨트목록,
-        "신발": gf.신발목록,
-        "목걸이": gf.목걸이목록,
-        "반지": gf.반지목록,
-        "팔찌": gf.팔찌목록,
-        "보조장비": gf.보조장비목록,
-        "마법석": gf.마법석목록,
-        "귀걸이": gf.귀걸이목록,
+        "상의": 상의목록,
+        "하의": 하의목록,
+        "어깨": 어깨목록,
+        "벨트": 벨트목록,
+        "신발": 신발목록,
+        "목걸이": 목걸이목록,
+        "반지": 반지목록,
+        "팔찌": 팔찌목록,
+        "보조장비": 보조장비목록,
+        "마법석": 마법석목록,
+        "귀걸이": 귀걸이목록,
     }
     주인 = collections.defaultdict(list)
     for 이름, 목록 in 목록들.items():

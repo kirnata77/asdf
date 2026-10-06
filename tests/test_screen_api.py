@@ -28,13 +28,14 @@ def test_화면은_game_system을_직접_쓰지_않는다():
             경로 = os.path.join(ROOT, 폴더, 파일)
             for 줄번호, 줄 in enumerate(open(경로, encoding="utf-8"), 1):
                 if re.search(
-                    r"(from|import)\s+game\.system|gameflow\.\w+_system\b", 줄
+                    r"(from|import)\s+game\.(system|controller)|gameflow\.\w+_system\b",
+                    줄,
                 ):
                     위반.append(f"{폴더}/{파일}:{줄번호}: {줄.strip()}")
     for 줄번호, 줄 in enumerate(
         open(os.path.join(ROOT, "main.py"), encoding="utf-8"), 1
     ):
-        if re.search(r"(from|import)\s+game\.system", 줄):
+        if re.search(r"(from|import)\s+game\.(system|controller)", 줄):
             위반.append(f"main.py:{줄번호}: {줄.strip()}")
     assert not 위반, "화면 -> gameflow -> system 계층 위반:\n" + "\n".join(위반)
 
@@ -53,7 +54,7 @@ def _전투(
     for c in 상태["파티"]["파티원"]:
         support.성장(상태, c, 레벨, 전직=전직[c["직업"]] if 레벨 >= 6 else None)
     gf.파티_최대치로_회복(상태)
-    gf._전투_시작(상태, ["타우 아미", "고블린", "고블린"], 레벨=6, 차수=2)
+    gf.전투_시작(상태, ["타우 아미", "고블린", "고블린"], 레벨=6, 차수=2)
     support.반응_처리(상태)
     return 상태
 

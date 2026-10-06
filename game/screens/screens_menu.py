@@ -184,7 +184,7 @@ class 파티생성화면(Screen):
     def _미리보기(self, 직업):
         """그 직업으로 새로 만든 캐릭터(시작 HP/MP/능력치 미리보기용)."""
         if 직업 not in self._미리보기_캐시:
-            self._미리보기_캐시[직업] = gameflow._캐릭터_생성("", 직업)
+            self._미리보기_캐시[직업] = gameflow.캐릭터_생성("", 직업)
         return self._미리보기_캐시[직업]
 
     def _카드_생성(self, i):

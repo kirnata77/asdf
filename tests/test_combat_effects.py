@@ -15,6 +15,9 @@ import random
 import pytest
 
 import gameflow as gf
+from game.data.buff.debuff import 디버프목록
+from game.data.buff.buff import 버프목록
+from game.data.buff.status_effects import 상태이상목록
 from game.system.combat import damage, flow, stats, status
 from game.system import skill_system as ss
 from tests import support
@@ -68,7 +71,7 @@ def _전투(시드, 적=("타우 아미", "고블린"), 파티구성=파티):
     for c in 상태["파티"]["파티원"]:
         support.성장(상태, c, 10, 전직=전직[c["직업"]], 스킬습득=True)
     gf.파티_최대치로_회복(상태)
-    gf._전투_시작(상태, list(적), 레벨=6, 차수=2)
+    gf.전투_시작(상태, list(적), 레벨=6, 차수=2)
     support.반응_처리(상태)
     return 상태
 
@@ -150,10 +153,10 @@ def 상태이상_시나리오(이름):
 
 
 def test_상태이상_전수(golden):
-    assert len(gf.상태이상목록) == 20
+    assert len(상태이상목록) == 20
     golden(
         "combat_status_effects",
-        {이름: 상태이상_시나리오(이름) for 이름 in gf.상태이상목록},
+        {이름: 상태이상_시나리오(이름) for 이름 in 상태이상목록},
     )
 
 
@@ -185,7 +188,7 @@ def 효과_시나리오(이름):
 
 @pytest.mark.parametrize("종류", ["버프", "디버프"])
 def test_버프_디버프_전수(종류, golden):
-    목록 = gf.버프목록 if 종류 == "버프" else gf.디버프목록
+    목록 = 버프목록 if 종류 == "버프" else 디버프목록
     assert len(목록) == {"버프": 26, "디버프": 22}[종류]
     golden(f"combat_{종류}", {이름: 효과_시나리오(이름) for 이름 in 목록})
 
@@ -193,7 +196,7 @@ def test_버프_디버프_전수(종류, golden):
 # ------------------------------------------------------------------ 반응특성
 
 반응특성 = {
-    n: d for n, d in gf._전투용_캐릭터특성정의.items() if d.get("분류") == "반응특성"
+    n: d for n, d in gf.전투용_캐릭터특성정의.items() if d.get("분류") == "반응특성"
 }
 반응_소유 = {
     "귀검사": ["공중연속베기", "백스텝커터"],
@@ -221,7 +224,7 @@ def 반응_전투(시드, 자동):
                     c["보유특성"].append(특성)
             c["보유스킬"].append("가드")
         gf.파티_최대치로_회복(상태)
-        gf._전투_시작(
+        gf.전투_시작(
             상태,
             ["칼카자크", "타우 아미", "결빙의 케라하", "굴 구위시"],
             레벨=8,
