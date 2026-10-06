@@ -1115,10 +1115,12 @@ def test_레벨업이_실패하면_캐릭터가_그대로다():
     gf.캐릭터_레벨업_적용(c, 전직="엘리멘탈마스터")
     assert (c["레벨"], c["전직"]) == (6, "엘리멘탈마스터")
 
-    전 = copy.deepcopy(c)  # 레벨 7 "스탯획득"
-    with pytest.raises(ValueError, match="필요합계"):
-        gf.캐릭터_레벨업_적용(c, 배분={"근력": 99})
+    전 = copy.deepcopy(c)  # 레벨 7 "스타일선택"
+    with pytest.raises(ValueError, match="스타일은"):
+        gf.캐릭터_레벨업_적용(c, 스타일="없는스타일")
     assert c == 전
+    gf.캐릭터_레벨업_적용(c, 스타일="강타")
+    assert (c["레벨"], c["스타일"]) == (7, "강타") and "강타" in c["보유특성"]
 
 
 @pytest.mark.parametrize("직업", list(구현된_전직))
