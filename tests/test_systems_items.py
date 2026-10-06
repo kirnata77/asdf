@@ -460,6 +460,124 @@ def test_gameflow는_손상오류를_그대로_올린다(임시_세이브폴더)
     assert gf.전체_세이브_요약()[0] == {"슬롯번호": 1, "손상": True}
 
 
+# 세이브 버전과 마이그레이션(N1b)
+
+
+def test_세이브에는_버전이_들어_있다(임시_세이브폴더):
+    _저장(1)
+    저장 = json.loads((임시_세이브폴더 / "slot_1.json").read_text(encoding="utf-8"))
+    assert 저장["버전"] == save_system.세이브_버전 == 1
+
+
+def test_버전_없는_세이브는_0으로_보고_현재_형태로_변환한다(임시_세이브폴더):
+    옛 = {
+        "파티": {
+            "파티원": [
+                {"캐릭터명": "철수", "보유특성": ["웨펀마스터", "엘레멘탈 번", "공용"]}
+            ],
+            "골드": 40,
+        },
+        "진행도": {
+            "클리어한던전": ["map_01A_D01_Lorien"],
+            "클리어한오브젝트": [["map_01A_D01_Lorien", [3, 4]]],
+        },
+    }
+    (임시_세이브폴더 / "slot_1.json").write_text(
+        json.dumps(옛, ensure_ascii=False), encoding="utf-8"
+    )
+    플레이어, 진행도 = save_system.게임_불러오기(1)
+    철수 = 플레이어["파티"]["파티원"][0]
+    assert 철수["보유특성"] == [
+        "무기의 극의",
+        "공용",
+    ]  # 바뀐 이름은 바꾸고 없어진 특성은 뺀다
+    assert (철수["성별"], 철수["전직"], 철수["치명타주사위"]) == ("m", None, 1)
+    assert 철수["횟수제한스킬"] == {"휴식제한스킬": {}}
+    assert 플레이어["소지품"]["골드"] == 40 and 플레이어["숙소"] == []
+    assert 진행도["플레이어레벨"] == 플레이어["레벨"] == 1
+    assert 진행도["클리어한던전"] == {"dungeon_01A_D01_Lorien"}
+    assert 진행도["클리어한오브젝트"] == {("dungeon_01A_D01_Lorien", (3, 4))}
+
+
+def test_현재_버전_세이브는_변환을_다시_거치지_않는다(임시_세이브폴더):
+    _저장(1)
+    경로 = 임시_세이브폴더 / "slot_1.json"
+    저장 = json.loads(경로.read_text(encoding="utf-8"))
+    저장["플레이어"]["파티"]["파티원"][0].pop("성별", None)
+    경로.write_text(json.dumps(저장, ensure_ascii=False), encoding="utf-8")
+    # 버전 1이면 "성별이 없다"는 형식 오류가 아니라 그냥 값이다 - 변환이 덮어쓰지 않는다
+    assert "성별" not in save_system.게임_불러오기(1)[0]["파티"]["파티원"][0]
+
+
+def test_마이그레이션은_저장된_버전보다_높은_것만_순서대로_적용한다(
+    임시_세이브폴더, monkeypatch
+):
+    순서 = []
+
+    def 변환2(데이터):
+        순서.append(2)
+        데이터["플레이어"]["표시"] = 데이터["플레이어"].get("표시", "") + "2"
+
+    def 변환3(데이터):
+        순서.append(3)
+        데이터["플레이어"]["표시"] += "3"
+
+    _저장(1)  # 버전 1로 저장
+    monkeypatch.setattr(save_system, "세이브_버전", 3)
+    monkeypatch.setattr(
+        save_system,
+        "_마이그레이션",
+        save_system._마이그레이션 + [(2, 변환2), (3, 변환3)],
+    )
+    플레이어, _ = save_system.게임_불러오기(1)
+    assert 순서 == [2, 3] and 플레이어["표시"] == "23"
+    # 이미 3으로 저장된 세이브는 건너뛴다
+    _저장(2)
+    순서.clear()
+    save_system.게임_불러오기(2)
+    assert 순서 == []
+
+
+def test_더_새로운_버전_세이브는_막고_백업으로_돌아가지_않는다(임시_세이브폴더):
+    _저장(1)
+    _저장(1)  # .bak은 현재 버전
+    경로 = 임시_세이브폴더 / "slot_1.json"
+    저장 = json.loads(경로.read_text(encoding="utf-8"))
+    저장["버전"] = save_system.세이브_버전 + 1
+    경로.write_text(json.dumps(저장, ensure_ascii=False), encoding="utf-8")
+
+    with pytest.raises(save_system.세이브_버전오류) as 오류:
+        save_system.게임_불러오기(1)
+    assert 오류.value.버전 == save_system.세이브_버전 + 1 and "새로운 버전" in str(
+        오류.value
+    )
+    assert isinstance(
+        오류.value, save_system.세이브_손상오류
+    )  # 화면은 하나만 잡아도 된다
+    assert save_system.세이브_요약(1) == {"슬롯번호": 1, "손상": True, "새버전": True}
+
+
+def test_세이브_버전이나_구조가_이상하면_손상으로_본다(임시_세이브폴더):
+    경로 = 임시_세이브폴더 / "slot_1.json"
+    for 내용 in (
+        {"버전": "1", "진행도": {}},  # 버전이 정수가 아님
+        {"버전": -1, "진행도": {}},
+        {"버전": True, "진행도": {}},
+        {"플레이어": [], "진행도": {}},  # 변환하다 실패하는 구조
+        {"플레이어": {"파티": {"파티원": [1]}}, "진행도": {}},
+    ):
+        경로.write_text(json.dumps(내용), encoding="utf-8")
+        assert save_system.세이브_요약(1) == {"슬롯번호": 1, "손상": True}, 내용
+        with pytest.raises(save_system.세이브_손상오류):
+            save_system.게임_불러오기(1)
+
+    # 본 파일의 구조만 이상하면 백업으로 돌아간다
+    _저장(1, 이름="온전")
+    _저장(1, 이름="새것")
+    경로.write_text(json.dumps({"플레이어": [], "진행도": {}}), encoding="utf-8")
+    assert save_system.게임_불러오기(1)[0]["파티"]["파티원"][0]["캐릭터명"] == "온전"
+
+
 # ---------------------------------------------------------------- levelup
 
 

@@ -928,6 +928,12 @@ class 스모크앱(main.DnfMobileApp):
         try:
             self.게임상태 = 상태
             gf.게임_저장(상태, 1)
+            경로1 = os.path.join(세이브폴더, "slot_1.json")
+            with open(경로1, encoding="utf-8") as f:
+                저장1 = json.load(f)
+            저장1["버전"] = save_system.세이브_버전 + 1  # 더 새로운 앱이 저장한 세이브
+            with open(경로1, "w", encoding="utf-8") as f:
+                json.dump(저장1, f, ensure_ascii=False)
             gf.게임_저장(상태, 3)
             gf.게임_저장(상태, 3)  # 두 번째 저장이 .bak을 만든다
             with open(
@@ -957,7 +963,8 @@ class 스모크앱(main.DnfMobileApp):
 
             assert "(손상됨" in 줄_글(줄들[1]), 줄_글(줄들[1])
             assert "[백업]" in 줄_글(줄들[2]), 줄_글(줄들[2])
-            assert not 줄_버튼(줄들[0]).disabled and not 줄_버튼(줄들[2]).disabled
+            assert "더 새로운 버전" in 줄_글(줄들[0]), 줄_글(줄들[0])
+            assert 줄_버튼(줄들[0]).disabled and not 줄_버튼(줄들[2]).disabled
             assert 줄_버튼(줄들[1]).disabled, "손상 슬롯은 불러올 수 없다"
 
             불러오기._선택(2)  # 막혀 있어도 호출되면 앱이 죽지 않고 안내만 한다
@@ -973,7 +980,7 @@ class 스모크앱(main.DnfMobileApp):
             assert save_system.세이브_요약(2).get("손상") is None
             assert "저장했습니다" in 매니저.get_screen("저장목록").안내라벨.text
             결과["단계"].append(
-                "세이브 슬롯(손상/복구본 표시, 메인 메뉴 정상, 손상 슬롯 덮어쓰기)"
+                "세이브 슬롯(새버전/손상/복구본 표시, 메인 메뉴 정상, 손상 슬롯 덮어쓰기)"
             )
         finally:
             save_system._세이브_폴더 = 원래폴더
