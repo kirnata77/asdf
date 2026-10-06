@@ -7,7 +7,10 @@
 # 설치 없이 바로 되게 한다.
 pythonpath = ["."]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q --strict-markers"
+markers = [
+    "scenario(id): 풀 시나리오 - docs/scenarios.md 표의 ID (CLAUDE.md \"풀 시나리오 테스트\")",
+]
 
 [tool.ruff]
 target-version = "py311"

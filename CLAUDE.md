@@ -77,7 +77,7 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 | `test_combat_effects.py` | 상태이상/버프/디버프 전수, 반응특성 전투 | 골든 |
 | `test_screen_api.py` | 화면용 gameflow 창구, 화면 -> system 직접 호출 금지 | 값 + 규칙 |
 | `test_scenario_*.py` | 풀 시나리오(실제 전투로 처음부터 끝까지, 아래) | 요약 골든 + 값 |
-| `test_imports.py`, `test_repo_hygiene.py` | 모듈 import, file_path.py, LF 줄끝 | 규칙 |
+| `test_imports.py`, `test_repo_hygiene.py` | 모듈 import, file_path.py, LF 줄끝, 시나리오 장부 대조 | 규칙 |
 
 - 공용 도우미는 `tests/support.py`(자동 전투, 강제 승리/패배, 경로 걷기, 결정적 성장).
 - 무작위는 전부 전역 `random`이라 `random.seed()`로 재현된다. 골든은 시드를 고정해 만든다.
@@ -96,7 +96,7 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 - **시나리오는 `docs/scenarios.md`가 관리한다.** 시나리오마다 한 행: ID, 무엇을 검사하나(기능),
   어떤 방법으로(캐릭터/직업, 무기, 몬스터, 시드, 거치는 단계), 테스트 이름. 시나리오 테스트에는
   `@pytest.mark.scenario("S1")`처럼 ID를 달고, 문서의 ID와 테스트의 ID가 어긋나면 게이트가 실패한다
-  (`test_repo_hygiene.py` - 아직 없다, `.memory/roadmap/scenario-tests.md` 단계 P0에서 추가. 그 전에는 사람이 맞춘다).
+  (`test_repo_hygiene.py`, 대조 로직은 `tools/scenario_registry.py`). 표의 상태는 `계획`/`구현`.
 - 큰 기능을 넣는 커밋/PR은 어느 시나리오가 그 기능을 지나가는지 적는다. 지나가는 시나리오가 없으면
   새로 만든다. 못 돌렸으면 `NOT VERIFIED`.
 - 전투 결과 전체 로그를 골든으로 박지 않는다(작은 변경에도 깨진다). 요약(종료, 라운드 범위, 생존, 보상,
