@@ -23,6 +23,7 @@ from game.data.dungeon.dungeon_01A_D10_shadow_thunderland import (
 )
 from game.data.job_level.job_level_000x_style import 전투스타일
 from game.data.monster.monster_ability import 특성목록 as _몬스터특성
+from game.data.monster.monster_defaults import 몬스터_기본값
 from game.data.monster.monster_race_goblin import 몬스터목록 as _고블린몬스터
 from game.data.monster.monster_race_human import 몬스터목록 as _인간몬스터
 from game.data.monster.monster_race_lugaru import 몬스터목록 as _루가루몬스터
@@ -63,13 +64,17 @@ _몬스터파일목록 = [
 def _몬스터목록_합치기(파일목록):
     """종족별 몬스터목록을 하나로 합친다. 같은 이름이 두 파일에 있으면
     어느 파일끼리 겹치는지 적어 오류를 낸다(게임 시작 시 멈춤 - 한쪽이
-    조용히 덮어써지는 것을 막는다)."""
+    조용히 덮어써지는 것을 막는다). 항목에 없는 칸은 몬스터_기본값으로 채운
+    사본을 쓴다(적힌 칸의 순서와 값은 그대로)."""
     합친목록, 출처, 겹침 = {}, {}, []
     for 파일명, 목록 in 파일목록:
         for 이름, 데이터 in 목록.items():
             if 이름 in 합친목록:
                 겹침.append(f"'{이름}' ({출처[이름]} / {파일명})")
-            합친목록[이름] = 데이터
+            합친목록[이름] = {
+                **데이터,
+                **{k: v for k, v in 몬스터_기본값.items() if k not in 데이터},
+            }
             출처[이름] = 파일명
     if 겹침:
         raise ValueError("몬스터 이름이 겹친다: " + ", ".join(겹침))

@@ -68,6 +68,7 @@
     "job_ability_format": "game.data.ability.job_ability_format",
     "job_ability_0000": "game.data.ability.job_ability_0000",
     # game/data/monster/
+    "monster_defaults": "game.data.monster.monster_defaults",
     "monster_race_goblin": "game.data.monster.monster_race_goblin",
     "monster_race_tau": "game.data.monster.monster_race_tau",
     "monster_race_lugaru": "game.data.monster.monster_race_lugaru",
