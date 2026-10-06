@@ -70,6 +70,16 @@ def test_수식_평가_문법(monkeypatch):
     assert formula.수식_평가("무기공격력+추가공격+레벨", ctx) == 3 + 1 + 5
     assert formula.수식_평가("(차수+1)d6÷2", ctx) == 3 * 3 / 2
     assert formula.수식_평가("1d6", ctx, 치명타=True) == 6  # 치명타: 주사위 1개 추가
+    assert (
+        formula.수식_평가("(차수)d8", ctx, 치명타=2) == (2 + 2) * 3
+    )  # 무기 없으면 NdM에
+    # 무기 주사위가 있으면 치명타 주사위는 무기 주사위에만(귀참): 1d6 -> 3d6, 2d8 그대로
+    귀참식 = "보정공격력+(귀신보유수)d8"
+    assert (
+        formula.수식_평가(귀참식, dict(ctx, 귀신보유수=2), 치명타=2)
+        == 3 * 3 + 4 + 2 * 3
+    )
+    assert formula.수식_평가("(귀신보유수)d8+1", ctx, 치명타=True) == 1  # 0개 항은 0
     assert formula.수식_평가("(0)d6+1", ctx) == 1  # 개수 0이면 0
     assert formula.수식_평가("(귀신보유수)d8", dict(ctx, 귀신보유수=2)) == 3 * 2
     assert formula.수식_평가("(귀신보유수)d8+1", ctx) == 1  # 없으면 0개
