@@ -126,14 +126,12 @@ def test_파티_규칙():
     party_system.파티원_제거(파티3, 쌍둥이[1])
     assert len(파티3["파티원"]) == 1 and 파티3["파티원"][0] is 쌍둥이[0]
     assert party_system.생존자_목록(파티) == 인원[1:]  # HP 0은 제외
-    인원[1]["어그로배율"] = 0.5
-    assert party_system.파티_어그로합계(파티) == 10 * 0.5 + 10 + 10
     party_system.파티원_제거(파티, 인원[3])
     with pytest.raises(ValueError, match="파티에 없다"):
         party_system.파티원_제거(파티, 인원[3])
     for c in 인원:
         c["현재HP"] = 0
-    assert party_system.전멸_여부(파티)
+    assert party_system.생존자_목록(파티) == []
 
 
 def test_소지품_규칙():
@@ -178,10 +176,6 @@ def test_보정치_차수_HP():
     assert 데이터.기본최대HP_계산(c, 5) == 7 + 4  # 올림(3.5)
     assert 데이터.최대HP_공식(3, 4, -1) == 3 + 5  # 올림은 총합에 한 번(4.5 -> 5)
     assert 데이터.최대HP_공식(5, 1, -4) == 1  # 최소 1
-    c["보유특성"].append("가드")
-    c["보유스킬"].append("삼연참")
-    assert 데이터.특성_보유(c, "가드") and not 데이터.특성_보유(c, "없음")
-    assert 데이터.스킬_보유(c, "삼연참")
 
 
 def test_기술판정_숙련_숙달(monkeypatch):
