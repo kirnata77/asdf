@@ -910,36 +910,60 @@ class 스모크앱(main.DnfMobileApp):
         결과["단계"].append("주점(영입 -> 숙소, 대기, 합류, 추방 확인 팝업)")
 
     def _단계_맵_타일(self, 상태, 매니저):
-        """하늘성 탑(아몬 상층)이 맵정보 "타일"의 그림(발판/벽/하늘)으로 그려지는지"""
+        """하늘성 탑(아몬 상층)이 맵정보 "타일"의 그림(발판/벽/하늘, 포탈은 벽 위 하늘성
+        게이트)으로, 로리엔 보스의 세리아 감옥이 2x2칸 크기로 그려지는지"""
         from kivy.graphics import Rectangle
+
+        def 그린_사각형(지도):
+            return [c for c in 지도.canvas.children if isinstance(c, Rectangle)]
 
         _팝업_닫기()
         gf.던전_진입(상태, "dungeon_02A_D12_amon_upper")
         상태["던전상태"]["위치"] = (
-            6,
-            12,
-        )  # 왼쪽 발판 - 발판/하늘/벽이 한 화면에 보인다
+            4,
+            16,
+        )  # 왼쪽 아래 - 발판/벽/하늘/마을 포탈이 보인다
         매니저.current = "던전"
         던전 = 매니저.get_screen("던전")
         던전.갱신()
         yield 0.5
         지도 = 던전.지도위젯
-        그린것 = {
-            id(c.texture)
-            for c in 지도.canvas.children
-            if isinstance(c, Rectangle) and c.texture is not None
-        }
-        for 기호 in ("O", "X", "Y"):
-            텍스처 = 지도._맵_타일(기호)
-            assert 텍스처 is not None, (기호, "타일 그림을 못 읽음")
-            assert id(텍스처) in 그린것, (기호, "맵 타일이 그려지지 않음")
+        그린것 = {id(c.texture) for c in 그린_사각형(지도) if c.texture is not None}
+        for 기호 in ("O", "X", "Y", "#"):
+            텍스처들 = 지도._맵_타일(기호)
+            assert 텍스처들, (기호, "타일 그림을 못 읽음")
+            for 텍스처 in 텍스처들:
+                assert id(텍스처) in 그린것, (기호, "맵 타일이 그려지지 않음")
+        assert len(지도._맵_타일("#")) == 2  # 벽 위에 게이트
         assert 지도._타일("풀밭") is None or id(지도._타일("풀밭")) not in 그린것
         _찍기("dungeon_map_tiles")
+
+        # 로리엔 보스(15,3) - 세리아 감옥은 한 칸이지만 2x2칸 크기로, 바닥 위/플레이어 아래
+        gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
+        상태["던전상태"]["위치"] = (14, 3)
+        던전.갱신()
+        yield 0.5
+        칸폭, 칸높이 = 지도._칸_크기()
+        사각형들 = 그린_사각형(지도)
+        감옥 = [
+            i
+            for i, c in enumerate(사각형들)
+            if abs(c.size[0] - 칸폭 * 2) < 1 and abs(c.size[1] - 칸높이 * 2) < 1
+        ]
+        assert 감옥, "감옥이 2x2칸 크기로 그려지지 않음"
+        칸들 = [
+            i
+            for i, c in enumerate(사각형들)
+            if abs(c.size[0] - 칸폭) < 1 and abs(c.size[1] - 칸높이) < 1
+        ]
+        assert max(칸들) < 감옥[0], "감옥이 바닥보다 먼저 그려짐"
+        assert 지도.canvas.children[-1] is not 사각형들[감옥[0]]  # 플레이어가 맨 위
+        _찍기("dungeon_prison_2x2")
         상태["던전상태"] = None
         매니저.current = "마을"
         yield 0.3
         결과["단계"].append(
-            "하늘성 탑 맵 타일(발판/하늘성 벽/노을 하늘) - 공용 풀밭 대신 그림"
+            "맵 타일(하늘성 발판/벽/노을 하늘/게이트 겹침) + 감옥 2x2칸(바닥 위, 플레이어 아래)"
         )
 
     def _단계_목록_스크롤(self, 상태, 매니저):

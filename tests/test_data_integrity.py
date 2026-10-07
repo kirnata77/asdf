@@ -378,11 +378,18 @@ def test_던전_데이터의_좌표와_참조가_맞는다():
 
         if set("".join(격자)) - set("XYO@#"):  # dungeon_format.py <지도 기호>
             문제.append(f"{이름}: 모르는 지도 기호 {set(''.join(격자)) - set('XYO@#')}")
-        for 기호, 파일 in (던전.get("타일") or {}).items():
+        for 기호, 파일들 in (던전.get("타일") or {}).items():
             if 기호 not in "XYO@#":
                 문제.append(f"{이름}: 타일의 모르는 지도 기호 {기호!r}")
-            if not (루트 / "game" / "assets" / "dungeon" / 파일).is_file():
-                문제.append(f"{이름}: 타일 그림 {파일} 없음")
+            for 파일 in [파일들] if isinstance(파일들, str) else 파일들:
+                if not (루트 / "game" / "assets" / "dungeon" / 파일).is_file():
+                    문제.append(f"{이름}: 타일 그림 {파일} 없음")
+        for 좌표, 오브젝트 in 던전["오브젝트"].items():
+            파일 = 오브젝트.get("타일")
+            if 파일 and not (루트 / "game" / "assets" / "dungeon" / 파일).is_file():
+                문제.append(f"{이름}: 오브젝트 {좌표} 타일 그림 {파일} 없음")
+            if not isinstance(오브젝트.get("타일크기", 1), int):
+                문제.append(f"{이름}: 오브젝트 {좌표} 타일크기는 정수")
         if any(len(행) != 너비 for 행 in 격자):
             문제.append(f"{이름}: 지도 행 길이가 다르다")
         if 던전.get("입장좌표") and not 안(던전["입장좌표"]):
