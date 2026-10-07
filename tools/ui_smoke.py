@@ -1,7 +1,7 @@
 """화면 스모크 테스트 - 실제 Kivy 앱을 띄워 주요 화면 동작을 호출하고 스크린샷을 남긴다.
 
     pip install kivy                       # 한 번
-    xvfb-run -a -s "-screen 0 720x1280x24" python tools/ui_smoke.py [스크린샷폴더]   # 리눅스(화면 없음)
+    xvfb-run -a -s "-screen 0 1080x2340x24" python tools/ui_smoke.py [스크린샷폴더]  # 리눅스(화면 없음)
     python tools/ui_smoke.py [스크린샷폴더]                                        # Windows/맥(창이 뜬다)
 
 tests/는 kivy 없이 gameflow 이하만 검사한다. 화면(game/screens) 코드를 바꿨다면 이것을
@@ -26,6 +26,16 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 os.chdir(ROOT)
 os.environ.setdefault("KIVY_NO_ARGS", "1")
+
+# 창 크기는 사용자 휴대폰(갤럭시 S24, 세로 1080x2340)에 맞춘다 - 창을 만들기 전에 정해야 한다.
+# 화면 밀도도 S24 기본값(450dpi = 2.8125, 가로 384dp)으로 - dp/sp 크기가 폰과 같게 보인다
+# (데스크톱 기본 밀도 1이면 글자가 폰보다 훨씬 작게 찍힌다).
+os.environ.setdefault("KIVY_METRICS_DENSITY", "2.8125")
+from kivy.config import Config  # noqa: E402
+
+Config.set("graphics", "width", "1080")
+Config.set("graphics", "height", "2340")
+Config.set("graphics", "resizable", "0")
 
 import main  # noqa: E402 - 크래시 로그 훅/폰트 등록 등 앱 초기화를 그대로 쓴다
 from kivy.clock import Clock  # noqa: E402
@@ -71,9 +81,16 @@ def _스크롤_확인(스크롤, 이름):
     손.touch_up()
     yield 0.6
     assert 스크롤.scroll_y < 0.99, (이름, "끌어도 안 내려감", 스크롤.scroll_y)
+    # 맨 아래로 옮긴다. scroll_y만 바꾸면 스크롤 효과(effect_y)가 들고 있는 위치값은 그대로
+    # 남아, 효과가 다음에 갱신될 때 scroll_y를 그 값으로 되돌린다(관성이 남아 있을 때 실패가
+    # 실행마다 달랐던 원인). 효과의 위치값을 맨 아래로 옮기면 scroll_y도 따라간다 - kivy는
+    # scroll_y = -위치값 / (내용 높이 - 창 높이)라 맨 아래는 위치값 0이다.
     yield 1.5  # 끌고 난 뒤 관성 스크롤이 멈출 때까지
-    스크롤.scroll_y = 0
+    스크롤.effect_y.velocity = 0  # 남은 관성 버리기(cancel은 남은 속도로 계속 움직인다)
+    스크롤.effect_y.cancel()
+    스크롤.effect_y.value = 0
     yield 0.8
+    assert 스크롤.scroll_y == 0, (이름, "맨 아래로 못 옮김", 스크롤.scroll_y)
     마지막 = 내용.children[0]  # BoxLayout은 마지막에 넣은 위젯이 children[0]
     _, 아래 = 마지막.to_window(*마지막.pos)
     _, 바닥 = 스크롤.to_window(*스크롤.pos)
@@ -1015,15 +1032,28 @@ class 스모크앱(main.DnfMobileApp):
                 if isinstance(w, ScrollView) and w.do_scroll_y
             )
 
-        for 모드, 이름 in (
-            ("구매", "shop_scroll_buy"),
-            ("판매", "shop_scroll_sell"),
-            ("해체", "shop_scroll_dismantle"),
-        ):
-            상점._탭목록_그리기(모드, "장비")
-            yield 0.4
-            yield from _스크롤_확인(목록스크롤(), f"상점 {모드}")
-            _찍기(이름)
+        # S24 세로 화면(1080x2340)에서는 마을 판매 목록이 한 화면에 다 들어간다 -
+        # 스크롤을 보려고 이 단계에서만 카탈로그 장비(치트 제외)를 판매 목록에 잠시 더한다.
+        판매목록 = gf.현재_마을정보(상태)["상점판매목록"]
+        원래_판매목록 = list(판매목록)
+        판매목록.extend(
+            이름
+            for 탭 in 카탈로그.values()
+            for 이름, 데이터 in 탭.items()
+            if 데이터.get("레어도") != "치트" and 이름 not in 원래_판매목록
+        )
+        try:
+            for 모드, 이름 in (
+                ("구매", "shop_scroll_buy"),
+                ("판매", "shop_scroll_sell"),
+                ("해체", "shop_scroll_dismantle"),
+            ):
+                상점._탭목록_그리기(모드, "장비")
+                yield 0.4
+                yield from _스크롤_확인(목록스크롤(), f"상점 {모드}")
+                _찍기(이름)
+        finally:
+            판매목록[:] = 원래_판매목록
         매니저.current = "파티원"
         screens_party._장비교체_팝업(상태["파티"]["파티원"][0], "무기", lambda: None)
         yield 0.5

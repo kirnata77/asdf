@@ -25,7 +25,7 @@ python tools/check.py                        # 완료 기준 게이트: compilea
 ```
 
 - 로직(전투, 스킬, 장비, 세이브 ...)은 kivy 없이 돈다. 테스트(`tests/`)도 화면 없이 돌고, 골든 파일(`tests/golden/`)과 풀 시나리오(`docs/scenarios.md`)로 검증한다.
-- 화면을 바꿨다면 `xvfb-run -a -s "-screen 0 720x1280x24" python tools/ui_smoke.py`로 실제 화면을 돌려 본다(리눅스 기준).
+- 화면을 바꿨다면 `xvfb-run -a -s "-screen 0 1080x2340x24" python tools/ui_smoke.py`로 실제 화면을 돌려 본다(리눅스 기준).
 
 ## 구조
 

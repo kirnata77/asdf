@@ -71,7 +71,7 @@ class 마을화면(Screen):
         # 배경 그림은 화면 폭에 맞추고 높이는 그림 비율대로 정한다(그림이
         # 없으면 높이 0으로 접힌다).
         self.배경그림 = Image(
-            allow_stretch=True, keep_ratio=True, size_hint=(1, None), height=0
+            allow_stretch=True, keep_ratio=True, size_hint=(1, None), height=dp(0)
         )
         self.배경그림.bind(width=self._배경높이_맞추기, texture=self._배경높이_맞추기)
         _도트_필터(self.배경그림)
@@ -207,7 +207,7 @@ class 모험단화면(Screen):
             Label(
                 text="모험단",
                 size_hint=(1, 0.06),
-                font_size=32,
+                font_size="20sp",
                 bold=True,
             )
         )
@@ -289,7 +289,7 @@ class 모험단화면(Screen):
             size_hint=(1, 0.3),
             halign="center",
             valign="middle",
-            font_size=16,
+            font_size="13sp",
         )
         이름라벨.bind(size=lambda inst, *_: setattr(inst, "text_size", inst.size))
         칸.add_widget(이름라벨)
@@ -332,7 +332,7 @@ class 마을이동목록화면(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         루트 = BoxLayout(orientation="vertical", padding=16, spacing=10)
-        루트.add_widget(Label(text="마을 이동", font_size=40, size_hint=(1, 0.12)))
+        루트.add_widget(Label(text="마을 이동", font_size="24sp", size_hint=(1, 0.12)))
 
         self.목록틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.68), spacing=8)
         루트.add_widget(self.목록틀)
@@ -364,7 +364,7 @@ class 마을이동목록화면(Screen):
         self.안내라벨.text = ""
 
         for 마을 in 표시할목록:
-            버튼 = Button(text=마을["마을명"], size_hint=(1, None), height=56)
+            버튼 = Button(text=마을["마을명"], size_hint=(1, None), height=dp(56))
             버튼.bind(on_release=lambda inst, m=마을["마을명"]: self._선택(m))
             self.목록틀.add_widget(버튼)
 
@@ -396,7 +396,7 @@ class 상점화면(Screen):
         루트 = BoxLayout(orientation="vertical", padding=12, spacing=8)
 
         머리 = BoxLayout(orientation="horizontal", size_hint=(1, 0.1))
-        머리.add_widget(Label(text="상점", font_size=32, halign="left"))
+        머리.add_widget(Label(text="상점", font_size="20sp", halign="left"))
         self.골드라벨 = Label(text="")
         머리.add_widget(self.골드라벨)
         루트.add_widget(머리)
@@ -572,7 +572,7 @@ class 상점화면(Screen):
 
         self._현재탭 = 탭
         if not 항목목록:
-            목록틀.add_widget(Label(text=빈문구, size_hint=(1, None), height=40))
+            목록틀.add_widget(Label(text=빈문구, size_hint=(1, None), height=dp(40)))
             return
 
         for 항목 in 항목목록:
@@ -787,7 +787,7 @@ class 상점화면(Screen):
             라벨 = Label(
                 text=f"{키}: {self._값_문자열(값)}",
                 size_hint=(1, None),
-                height=32,
+                height=dp(32),
                 halign="left",
             )
             라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
@@ -833,7 +833,7 @@ class 주점화면(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         루트 = BoxLayout(orientation="vertical", padding=16, spacing=10)
-        루트.add_widget(Label(text="주점", font_size=40, size_hint=(1, 0.12)))
+        루트.add_widget(Label(text="주점", font_size="24sp", size_hint=(1, 0.12)))
 
         self.현황라벨 = Label(text="", size_hint=(1, 0.1))
         루트.add_widget(self.현황라벨)
@@ -967,9 +967,9 @@ class 주점화면(Screen):
             title=제목, content=본문, size_hint=(0.9, 0.85), auto_dismiss=False
         )
         if not 캐릭터목록:
-            목록틀.add_widget(Label(text="(없음)", size_hint=(1, None), height=40))
+            목록틀.add_widget(Label(text="(없음)", size_hint=(1, None), height=dp(40)))
         for 캐릭터 in 캐릭터목록:
-            버튼 = Button(text=_동료_글(캐릭터), size_hint=(1, None), height=48)
+            버튼 = Button(text=_동료_글(캐릭터), size_hint=(1, None), height=dp(48))
             버튼.bind(on_release=lambda *_, c=캐릭터: 누르면(c, 팝업))
             목록틀.add_widget(버튼)
         닫기 = 닫기_버튼(팝업, size_hint=(1, 0.12))

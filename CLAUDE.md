@@ -61,7 +61,7 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
    동작을 바꾸지 않는 것이 정의이므로 골든이 바뀌면 안 된다. 동작을 일부러
    바꾼 경우만 `UPDATE_GOLDEN=1 python -m pytest`로 다시 쓰고 diff를 설명한다.
 3. **화면(kivy) 변경은 tests/가 못 잡는다.** `python tools/ui_smoke.py`(리눅스는
-   `xvfb-run -a -s "-screen 0 720x1280x24"`를 앞에)로 실제 화면을 돌려 확인하고,
+   `xvfb-run -a -s "-screen 0 1080x2340x24"`를 앞에)로 실제 화면을 돌려 확인하고,
    바꾼 동작이 스모크에 없으면 스모크에 단계를 추가한다(주제별 `_단계_*` 제너레이터에 넣는다).
    CI에도 같은 스모크를 도는 `ui-smoke` 잡이 있고, 실패하면 PR을 막는다.
 4. **기억 갱신** - `MEMORY.md`의 *Now*와 `.memory/`를 코드와 같은 커밋에서 고친다(아래).
