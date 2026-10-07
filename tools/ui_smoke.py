@@ -81,22 +81,16 @@ def _스크롤_확인(스크롤, 이름):
     손.touch_up()
     yield 0.6
     assert 스크롤.scroll_y < 0.99, (이름, "끌어도 안 내려감", 스크롤.scroll_y)
-    # 끌고 난 뒤 관성 스크롤이 멈출 때까지(화면 밀도가 크면 dp 단위 속도가 커서 더 오래 간다 -
-    # 멈추기 전에 scroll_y를 바꾸면 관성이 다시 덮어쓴다)
-    for _ in range(40):
-        yield 0.25
-        if abs(스크롤.effect_y.velocity) < 1:
-            break
+    # 맨 아래로 옮긴다. scroll_y만 바꾸면 스크롤 효과(effect_y)가 들고 있는 위치값은 그대로
+    # 남아, 효과가 다음에 갱신될 때 scroll_y를 그 값으로 되돌린다(관성이 남아 있을 때 실패가
+    # 실행마다 달랐던 원인). 효과의 위치값을 맨 아래로 옮기면 scroll_y도 따라간다 - kivy는
+    # scroll_y = -위치값 / (내용 높이 - 창 높이)라 맨 아래는 위치값 0이다.
+    yield 1.5  # 끌고 난 뒤 관성 스크롤이 멈출 때까지
+    스크롤.effect_y.velocity = 0  # 남은 관성 버리기(cancel은 남은 속도로 계속 움직인다)
     스크롤.effect_y.cancel()
-    스크롤.scroll_y = 0
-    # 맨 아래로 옮긴 뒤 자리가 멈출 때까지(넘침 되돌아오기 포함)
-    이전 = None
-    for _ in range(20):
-        yield 0.25
-        지금 = 내용.children[0].to_window(*내용.children[0].pos)
-        if 지금 == 이전 and abs(스크롤.effect_y.velocity) < 1:
-            break
-        이전 = 지금
+    스크롤.effect_y.value = 0
+    yield 0.8
+    assert 스크롤.scroll_y == 0, (이름, "맨 아래로 못 옮김", 스크롤.scroll_y)
     마지막 = 내용.children[0]  # BoxLayout은 마지막에 넣은 위젯이 children[0]
     _, 아래 = 마지막.to_window(*마지막.pos)
     _, 바닥 = 스크롤.to_window(*스크롤.pos)
