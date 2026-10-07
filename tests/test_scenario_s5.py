@@ -16,7 +16,7 @@ import scenario
 import support
 
 로리엔 = "dungeon_01A_D01_Lorien"
-시드_패배 = 1
+시드_패배 = 0  # 1 -> 0: 집중공격 정책(2026-10-07) 뒤 시드 1은 지지 않는다
 시드_도망 = 0
 최대시도 = 30
 
