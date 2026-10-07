@@ -762,6 +762,12 @@ class 스모크앱(main.DnfMobileApp):
                     팝업_버튼("선택").dispatch("on_release")
                     yield 0.3
                     assert 상태["소지품"]["장비"][칸[1]] == 보유 + 1
+                    # 받은 아이템이 전투 종료 팝업의 전리품 줄에 더해진다
+                    새글 = next(t for t in 팝업글() if t.startswith("전투 승리!"))
+                    assert 새글 == "\n".join(
+                        gf.전투_종료_문구(상태, "아군승리")
+                    ) and any(줄.startswith(칸[1]) for 줄 in 새글.split("\n")[2:]), 새글
+                    _찍기("battle_end_win_reward")
                 else:  # 힐가브 - 후보 없음, 세 칸 모두 빈칸
                     assert 칸 == [None, None, None], 칸
                     _찍기("battle_reward_empty")

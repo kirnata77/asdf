@@ -1037,6 +1037,10 @@ class 전투화면(Screen):
             def 보상끝():
                 보상버튼.disabled = True
                 확인버튼.disabled = False
+                # 받은 보상 아이템을 전리품 줄에 더해 다시 쓴다(포기면 그대로)
+                새줄들 = gameflow.전투_종료_문구(앱.게임상태, 결과)
+                안내.text = "\n".join(새줄들)
+                팝업.size_hint_y = 팝업높이(새줄들)
 
             보상버튼.bind(
                 on_release=lambda *_: _전투보상팝업(
@@ -1045,13 +1049,14 @@ class 전투화면(Screen):
             )
             본문.add_widget(보상버튼)
         본문.add_widget(확인버튼)
+
+        def 팝업높이(줄목록):
+            return min(0.85, 0.25 + 0.05 * len(줄목록) + (0.08 if 보상대기 else 0))
+
         팝업 = Popup(
             title="전투 종료",
             content=본문,
-            size_hint=(
-                0.7,
-                min(0.85, 0.25 + 0.05 * len(줄들) + (0.08 if 보상대기 else 0)),
-            ),
+            size_hint=(0.7, 팝업높이(줄들)),
             auto_dismiss=False,
         )
 
