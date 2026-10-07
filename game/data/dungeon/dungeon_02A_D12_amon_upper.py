@@ -14,7 +14,7 @@
 # - 마을 포탈 바로 앞(3,18)에 보스전투 이벤트가 있다. 이겨야 마을 포탈로 갈 수
 #   있다("통행가능화" - 던전을 나갔다 들어오면 다시 막힌다).
 #
-# 타일: 발판 에메랄드, 이동불가 하늘성 벽, 하늘 노을("타일" - dungeon_format.py).
+# 타일: 발판 에메랄드, 이동불가 하늘성 벽, 하늘 노을, 포탈은 벽 위에 하늘성 게이트("타일" - dungeon_format.py).
 #
 # 몬스터: 아직 정하지 않았다(다음 단계). 그때까지 인카운트가 없고, 보스의
 # "전투몬스터"가 비어 있어 보스는 막힌 채로 있다.
@@ -48,6 +48,10 @@
         "O": "asset_tile_emerald.webp",
         "X": "asset_tile_skycastlewall.webp",
         "Y": "asset_tile_skyyellow.webp",
+        "#": [
+            "asset_tile_skycastlewall.webp",
+            "asset_tile_gate_skycastle.webp",
+        ],
     },
     "입장좌표": (19, 18),
     "오브젝트": {

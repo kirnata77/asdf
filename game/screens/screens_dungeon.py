@@ -14,7 +14,7 @@ from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
 from kivy.core.image import Image as CoreImage
-from kivy.graphics import Color, Rectangle, Ellipse
+from kivy.graphics import Color, Rectangle, Ellipse, ScissorPush, ScissorPop
 
 import gameflow
 from game.screens.screens_common import (
@@ -38,8 +38,9 @@ _칸_색 = {
 }
 _기본_칸_색 = (0.4, 0.4, 0.4, 1)
 
-# 던전 화면에 한 번에 보여줄 칸 수(가로/세로 동일) - 플레이어가 항상 이
-# 뷰포트 정중앙에 오도록 그린다(아래 던전맵위젯._다시그리기 참고).
+# 던전 지도 위젯의 짧은 쪽에 보여줄 칸 수. 칸은 항상 정사각형이라 긴 쪽에는
+# 그만큼 칸이 더 보인다(끝 칸은 잘려 보일 수 있다). 플레이어가 항상 위젯
+# 정중앙 칸에 오도록 그린다(아래 던전맵위젯._다시그리기 참고).
 _뷰포트_크기 = 9
 # 뷰포트가 실제 맵 범위를 벗어난 칸(지도 밖)을 칠하는 색 - "X"(벽)와
 # 구분되게 더 어둡게 뒀다.
@@ -53,7 +54,7 @@ _타일_파일 = {
     "풀밭": "asset_tile_grass.webp",
     "흙길": "asset_tile_dirt.webp",
     "나무": "asset_tile_tree.webp",
-    "게이트": "asset_tile_gate.webp",
+    "게이트": "asset_tile_gate_grandflores.webp",
 }
 # 세로 2칸짜리 타일을 쓰는 지도 기호 ("X"=나무, "#"=게이트)
 _높은타일_기호 = {"X": "나무", "#": "게이트"}
@@ -98,6 +99,7 @@ class 던전맵위젯(Widget):
         self._흙길시드 = 0
         self.오브젝트 = {}
         self.맵타일 = {}
+        self._열수 = self._행수 = _뷰포트_크기
         self.bind(size=self._다시그리기, pos=self._다시그리기)
 
     def 갱신(
@@ -136,10 +138,16 @@ class 던전맵위젯(Widget):
         return self._타일_캐시[파일명]
 
     def _맵_타일(self, 문자):
-        """이 맵의 "타일"에 문자(지도 기호)가 지정돼 있으면 그 텍스처를,
-        없거나 파일이 없으면 None을 돌려준다."""
-        파일명 = self.맵타일.get(문자)
-        return self._파일_타일(파일명) if 파일명 else None
+        """이 맵의 "타일"에 문자(지도 기호)가 지정돼 있으면 그 텍스처들을 아래층부터
+        리스트로(파일명 하나면 한 겹, 리스트면 여러 겹), 없거나 파일이 하나도 없으면
+        None을 돌려준다."""
+        파일들 = self.맵타일.get(문자)
+        if not 파일들:
+            return None
+        if isinstance(파일들, str):
+            파일들 = [파일들]
+        텍스처들 = [t for t in (self._파일_타일(f) for f in 파일들) if t is not None]
+        return 텍스처들 or None
 
     def _오브젝트_타일(self, 맵x, 맵y):
         """(맵x, 맵y) 오브젝트에 "타일"이 지정돼 있으면 그 텍스처를,
@@ -148,6 +156,12 @@ class 던전맵위젯(Widget):
         if not 정보 or not 정보.get("타일"):
             return None
         return self._파일_타일(정보["타일"])
+
+    def _오브젝트_타일크기(self, 맵x, 맵y):
+        """오브젝트 "타일크기"(칸 수, 기본 1). 2 이상이면 그 칸 중심에 맞춰
+        크게 그린다(_큰오브젝트_그리기)."""
+        정보 = self.오브젝트.get((맵x, 맵y)) or {}
+        return 정보.get("타일크기", 1)
 
     def _높은타일_반쪽(self, 이름):
         """세로 2칸 타일을 (아래 절반, 위 절반) 텍스처로 나눠 돌려준다.
@@ -193,30 +207,55 @@ class 던전맵위젯(Widget):
             return
 
         # 맵 전체를 위젯 크기에 맞춰 축소하는 대신, 플레이어를 중심으로
-        # _뷰포트_크기 x _뷰포트_크기 칸만 고정 크기로 그린다 - 맵이
+        # 정사각형 칸을 짧은 쪽 _뷰포트_크기 칸만큼의 크기로 그린다 - 맵이
         # 커져도 칸 크기는 그대로고, 플레이어가 움직이면 그 칸 창이
-        # 함께 움직이는 방식(카메라가 플레이어를 따라간다).
+        # 함께 움직이는 방식(카메라가 플레이어를 따라간다). 긴 쪽 끝의
+        # 잘린 칸이 위젯 밖으로 나가지 않게 위젯 범위로 자른다.
+        self._열수, self._행수 = self._칸_수()
+        창x, 창y = self.to_window(self.x, self.y)
         with self.canvas:
+            ScissorPush(
+                x=int(창x), y=int(창y), width=int(self.width), height=int(self.height)
+            )
             self._바닥_그리기()
             self._높은타일_그리기()
+            self._큰오브젝트_그리기()
             self._플레이어_그리기()
+            ScissorPop()
 
     def _칸_크기(self):
-        return (self.width / _뷰포트_크기, self.height / _뷰포트_크기)
+        """칸은 정사각형 - 위젯의 짧은 쪽에 _뷰포트_크기 칸이 들어가는 크기."""
+        칸 = min(self.width, self.height) / _뷰포트_크기
+        return (칸, 칸)
+
+    def _칸_수(self):
+        """(열 수, 행 수) - 가운데 칸(플레이어)을 빼고 양쪽에 같은 수만큼, 위젯을
+        다 덮도록(끝 칸은 일부만 보일 수 있다). 항상 홀수."""
+        칸, _ = self._칸_크기()
+        return tuple(
+            2 * math.ceil((길이 / 2 - 칸 / 2) / 칸 - 1e-9) + 1
+            for 길이 in (self.width, self.height)
+        )
 
     def _칸위치(self, 화면x, 화면y):
         # 지도 데이터는 y=0이 맨 윗줄이지만, Kivy 좌표는
         # 왼쪽 아래가 원점이라 아래에서부터 그려 올라간다.
-        칸폭, 칸높이 = self._칸_크기()
-        return (self.x + 화면x * 칸폭, self.y + self.height - (화면y + 1) * 칸높이)
+        # 가운데 칸(열수//2, 행수//2)이 위젯 정중앙에 온다.
+        칸, _ = self._칸_크기()
+        return (
+            self.center_x + (화면x - self._열수 // 2 - 0.5) * 칸,
+            self.center_y + (self._행수 // 2 - 화면y - 0.5) * 칸,
+        )
 
     def _맵_좌표(self, 화면x, 화면y):
-        반칸 = _뷰포트_크기 // 2
-        return (self.위치[0] - 반칸 + 화면x, self.위치[1] - 반칸 + 화면y)
+        return (
+            self.위치[0] - self._열수 // 2 + 화면x,
+            self.위치[1] - self._행수 // 2 + 화면y,
+        )
 
     def _바닥_텍스처(self, 문자, 맵x, 맵y):
-        """칸의 바닥 텍스처. "O"는 풀밭(좌표에 따라 흙길), "X"/"#"은 그 위에 나무/게이트를
-        올릴 풀밭, 그림이 있는 오브젝트("@") 칸도 풀밭. 그 밖이나 그림이 없으면 None(색으로 칠한다).
+        """칸의 바닥 텍스처 리스트(아래층부터). "O"는 풀밭(좌표에 따라 흙길), "X"/"#"은 그 위에
+        나무/게이트를 올릴 풀밭. 그 밖이나 그림이 없으면 None(색으로 칠한다).
         맵에 그 기호의 타일이 정해져 있으면 그 타일이 먼저다(나무/게이트도 안 올린다)."""
         맵타일 = self._맵_타일(문자)
         if 맵타일 is not None:
@@ -232,20 +271,26 @@ class 던전맵위젯(Widget):
             )
         elif 문자 in _높은타일_기호 and self._타일(_높은타일_기호[문자]) is not None:
             바닥 = 풀밭
-        return 바닥
+        return [바닥] if 바닥 is not None else None
 
     def _바닥_그리기(self):
-        """1단계 - 바닥. 오브젝트에 "타일"이 있으면 풀밭 위에 그 타일, 없으면 기존 색 그대로, 지도 밖은 검정."""
+        """1단계 - 바닥. 오브젝트에 "타일"이 있으면 발판(맵의 "O" 타일, 없으면 풀밭) 위에
+        그 타일, 없으면 기존 색 그대로, 지도 밖은 검정. "타일크기" 2 이상인 오브젝트는
+        여기서 발판만 깔고 그림은 _큰오브젝트_그리기가 그린다."""
         칸크기 = self._칸_크기()
-        풀밭 = self._타일("풀밭")
-        for 화면y in range(_뷰포트_크기):
-            for 화면x in range(_뷰포트_크기):
+        발판 = self._맵_타일("O") or (
+            [self._타일("풀밭")] if self._타일("풀밭") is not None else None
+        )
+        for 화면y in range(self._행수):
+            for 화면x in range(self._열수):
                 맵x, 맵y = self._맵_좌표(화면x, 화면y)
                 문자 = self._칸_문자(맵x, 맵y)
                 바닥 = self._바닥_텍스처(문자, 맵x, 맵y)
                 오브젝트타일 = self._오브젝트_타일(맵x, 맵y) if 문자 == "@" else None
-                if 오브젝트타일 is not None and 풀밭 is not None:
-                    바닥 = 풀밭
+                if 오브젝트타일 is not None and 발판 is not None:
+                    바닥 = 발판
+                if 오브젝트타일 is not None and self._오브젝트_타일크기(맵x, 맵y) > 1:
+                    오브젝트타일 = None  # 큰 그림은 3단계에서
                 위치 = self._칸위치(화면x, 화면y)
                 if 바닥 is None:
                     Color(
@@ -254,7 +299,8 @@ class 던전맵위젯(Widget):
                     Rectangle(pos=위치, size=칸크기)
                     continue
                 Color(1, 1, 1, 1)
-                Rectangle(texture=바닥, pos=위치, size=칸크기)
+                for 겹 in 바닥:
+                    Rectangle(texture=겹, pos=위치, size=칸크기)
                 if 오브젝트타일 is not None:
                     Rectangle(texture=오브젝트타일, pos=위치, size=칸크기)
 
@@ -264,15 +310,15 @@ class 던전맵위젯(Widget):
         서 있는 것도 위 절반만은 맨 아랫줄에 보이므로 한 줄 더 돈다."""
         칸크기 = self._칸_크기()
         Color(1, 1, 1, 1)
-        for 화면y in range(_뷰포트_크기 + 1):
-            for 화면x in range(_뷰포트_크기):
+        for 화면y in range(self._행수 + 1):
+            for 화면x in range(self._열수):
                 문자 = self._칸_문자(*self._맵_좌표(화면x, 화면y))
                 if 문자 not in _높은타일_기호 or self._맵_타일(문자) is not None:
                     continue
                 아래절반, 위절반 = self._높은타일_반쪽(_높은타일_기호[문자])
                 if 아래절반 is None:
                     continue
-                if 화면y < _뷰포트_크기:
+                if 화면y < self._행수:
                     Rectangle(
                         texture=아래절반, pos=self._칸위치(화면x, 화면y), size=칸크기
                     )
@@ -281,17 +327,54 @@ class 던전맵위젯(Widget):
                         texture=위절반, pos=self._칸위치(화면x, 화면y - 1), size=칸크기
                     )
 
+    def _큰오브젝트_그리기(self):
+        """3단계 - "타일크기" 2 이상인 오브젝트(감옥 등). 그 칸 중심에 맞춰 크기 x 크기 칸으로
+        그린다 - 바닥/나무보다 위, 플레이어보다 아래. 뷰포트 바로 밖의 오브젝트도 삐져나온
+        부분이 보이도록 한 칸 더 돌고, 위젯 밖으로 나간 부분은 잘라 낸다."""
+        칸폭, 칸높이 = self._칸_크기()
+        Color(1, 1, 1, 1)
+        for 화면y in range(-1, self._행수 + 1):
+            for 화면x in range(-1, self._열수 + 1):
+                맵x, 맵y = self._맵_좌표(화면x, 화면y)
+                if self._칸_문자(맵x, 맵y) != "@":
+                    continue
+                크기 = self._오브젝트_타일크기(맵x, 맵y)
+                텍스처 = self._오브젝트_타일(맵x, 맵y)
+                if 크기 <= 1 or 텍스처 is None:
+                    continue
+                x, y = self._칸위치(화면x, 화면y)
+                중심x, 중심y = x + 칸폭 / 2, y + 칸높이 / 2
+                self._잘라_그리기(
+                    텍스처,
+                    중심x - 칸폭 * 크기 / 2,
+                    중심y - 칸높이 * 크기 / 2,
+                    칸폭 * 크기,
+                    칸높이 * 크기,
+                )
+
+    def _잘라_그리기(self, 텍스처, x, y, 폭, 높이):
+        """(x, y, 폭, 높이)에 텍스처를 그리되 위젯 범위 밖은 잘라 낸다(텍스처도 같은 비율로)."""
+        x0, y0 = max(x, self.x), max(y, self.y)
+        x1, y1 = min(x + 폭, self.right), min(y + 높이, self.top)
+        if x1 <= x0 or y1 <= y0:
+            return
+        tw, th = 텍스처.size
+        조각 = 텍스처.get_region(
+            int((x0 - x) / 폭 * tw),
+            int((y0 - y) / 높이 * th),
+            max(1, int((x1 - x0) / 폭 * tw)),
+            max(1, int((y1 - y0) / 높이 * th)),
+        )
+        Rectangle(texture=조각, pos=(x0, y0), size=(x1 - x0, y1 - y0))
+
     def _플레이어_그리기(self):
-        """플레이어는 항상 뷰포트 정중앙 칸(반칸, 반칸)에 그린다. 모험단 프로필 이미지가
+        """플레이어는 항상 위젯 정중앙 칸(열수//2, 행수//2)에 그린다. 모험단 프로필 이미지가
         있으면 그 이미지를, 없으면(파일이 아직 없거나 코드 미설정) 빨간 원을 그린다."""
         칸폭, 칸높이 = self._칸_크기()
-        반칸 = _뷰포트_크기 // 2
         여백폭 = 칸폭 * 0.2
         여백높이 = 칸높이 * 0.2
-        플레이어위치 = (
-            self.x + 반칸 * 칸폭 + 여백폭,
-            self.y + self.height - (반칸 + 1) * 칸높이 + 여백높이,
-        )
+        x, y = self._칸위치(self._열수 // 2, self._행수 // 2)
+        플레이어위치 = (x + 여백폭, y + 여백높이)
         플레이어크기 = (칸폭 - 여백폭 * 2, 칸높이 - 여백높이 * 2)
         텍스처 = self._플레이어_텍스처()
         if 텍스처 is not None:
