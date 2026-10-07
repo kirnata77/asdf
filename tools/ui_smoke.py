@@ -503,7 +503,17 @@ class 스모크앱(main.DnfMobileApp):
         yield 0.3
         글들 = [b.text for b in 대상버튼들()]
         assert len(글들) == len(적) + 1 and 글들[-1] == "취소", 글들
-        assert 글들[:-1] == [p["이름"] for p in 적], 글들
+        # 버튼마다 "이름\nHP 현재/최대", 상단 적 칸에도 같은 HP 줄
+        assert 글들[:-1] == [f"{p['이름']}\n{gf.적_HP표시(상태, p)}" for p in 적], 글들
+        assert all("/" in g.split("\n")[1] for g in 글들[:-1]), 글들
+        적칸글 = [
+            w.text
+            for w in 전투.적상태틀.walk(restrict=True)
+            if isinstance(w, main.Label)
+        ]
+        assert all(any(gf.적_HP표시(상태, p) in t for t in 적칸글) for p in 적), 적칸글
+        # 팝업 폭은 기준 화면의 0.7(전에는 0.35) - 긴 이름이 버튼 안에 들어간다
+        assert abs(Window.children[0].width - 0.7 * Window.width) < 2
         _찍기("battle_target_popup")
         뒤로()
         yield 0.3

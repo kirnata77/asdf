@@ -14,6 +14,7 @@ from game.system.combat import (
     flow,
     monster_actions,
     reactions,
+    stats,
     status,
 )
 from game.controller.ctl_party import 장비데이터모음_생성
@@ -35,6 +36,7 @@ __all__ = [
     "현재_턴_참가자",
     "아군_차례인가",
     "적_목록",
+    "적_HP표시",
     "아군_목록",
     "새_로그_가져오기",
     "아군_일반공격",
@@ -162,6 +164,12 @@ def 아군_차례인가(게임상태):
 
 def 적_목록(게임상태):
     return [p for p in 게임상태["전투상태"]["참가자"] if p["진영"] == "적"]
+
+
+def 적_HP표시(게임상태, 적참가자):
+    """ "HP 현재/최대" - 최대는 칭호·특성·버프까지 반영한 지금의 최대HP."""
+    최대 = stats.유효_최대HP(게임상태["전투상태"], 적참가자)
+    return f"HP {적참가자['현재HP']}/{최대}"
 
 
 def 아군_목록(게임상태):

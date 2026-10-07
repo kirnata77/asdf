@@ -12,7 +12,7 @@ import re
 import pytest
 
 import gameflow as gf
-from game.system.combat import flow
+from game.system.combat import flow, stats
 from game.system import skill_system as ss
 from tests import support
 
@@ -184,3 +184,12 @@ def test_이어진_맵_목록은_건너_이어진_던전까지_포탈을_겹쳐_
     dx, dy = 상층["오프셋"]
     assert (19 - dx, 0 - dy) == (19, 19)
     assert 상층["타일"]["O"] == "asset_tile_emerald.webp"
+
+
+def test_적_HP표시는_현재와_유효_최대HP():
+    상태 = support.새게임([("", "귀검사")])
+    gf.전투_시작(상태, ["고블린"], 레벨=1, 차수=1)
+    적 = gf.적_목록(상태)[0]
+    최대 = stats.유효_최대HP(상태["전투상태"], 적)
+    적["현재HP"] = 최대 - 1
+    assert gf.적_HP표시(상태, 적) == f"HP {최대 - 1}/{최대}"

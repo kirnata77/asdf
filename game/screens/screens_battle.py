@@ -204,9 +204,13 @@ class _대상선택팝업(Popup):
         self._선택콜백 = 선택콜백
         self._취소콜백 = 취소콜백
 
+        게임상태 = App.get_running_app().게임상태
         목록 = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(6))
         for 적 in 적목록:
-            버튼 = Button(text=적["이름"])
+            버튼 = Button(
+                text=f"{적['이름']}\n{gameflow.적_HP표시(게임상태, 적)}",
+                halign="center",
+            )
             버튼.bind(on_release=lambda inst, p=적: self._선택(p))
             목록.add_widget(버튼)
         취소버튼 = Button(
@@ -217,8 +221,8 @@ class _대상선택팝업(Popup):
         목록.add_widget(취소버튼)
 
         kwargs.setdefault("title", 제목)
-        kwargs.setdefault("size_hint", (0.35, None))
-        kwargs.setdefault("height", dp(110 + 54 * (len(적목록) + 1)))
+        kwargs.setdefault("size_hint", (0.7, None))  # 이름이 넘치지 않게(전에는 0.35)
+        kwargs.setdefault("height", dp(110 + 64 * (len(적목록) + 1)))
         kwargs.setdefault("auto_dismiss", False)
         super().__init__(content=목록, **kwargs)
 
@@ -525,7 +529,7 @@ class 전투화면(Screen):
             상태박스 = _테두리박스(_박스_테두리색, size_hint_x=_박스_비율)
             상태박스.add_widget(
                 self._중앙정렬_라벨(
-                    f"{적['이름']}\nHP {적['현재HP']}"
+                    f"{적['이름']}\n{gameflow.적_HP표시(게임상태, 적)}"
                     + (
                         ""
                         if 적["생존"]
