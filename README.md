@@ -3,7 +3,7 @@
 Kivy로 만든 턴제 RPG 프로토타입. 5개 직업(귀검사/격투가/거너/마법사/프리스트)으로 파티를 꾸려 마을, 던전, 전투, 성장,
 장비/상점을 진행한다. 안드로이드 APK는 buildozer로 빌드한다.
 
-- 원격 저장소: https://github.com/kirnata77/asdf (기본 브랜치 `main`)
+- 원격 저장소: https://github.com/kirnata77/asdf (기본 브랜치 `main-branch`)
 - 규칙(계층, 완료 기준, 테스트, git): [`CLAUDE.md`](CLAUDE.md) - 기여 전에 읽는다
 - 지금 진행 중인 일: [`MEMORY.md`](MEMORY.md)
 
