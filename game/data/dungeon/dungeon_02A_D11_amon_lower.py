@@ -6,8 +6,9 @@
 # 하늘성(2차수) 탑 던전의 지도 틀이다. 웨스트코스트(마을)에서 [던전이동]으로
 # 바로 들어온다. 가운데의 둥근 탑을 반시계 방향으로 도는 구조 - 하층은 탑의
 # 남쪽을 서쪽에서 동쪽으로 돈다(상층 아몬 상층이 북쪽을 이어서 돈다).
-# 27x10, 이동불가 구역은 왼쪽 아래/오른쪽 아래/가운데 위(탑)이다.
-# - 서쪽 벽(0,3)은 웨스트코스트(마을)로 나가는 길이다. 마을에서 들어오면 (1,3).
+# 27x10, 이동불가 구역은 왼쪽 아래/오른쪽 아래/가운데 위(탑)이다. 양옆 한 줄은
+# 하늘이 보이는 "Y"(이동불가, 배경만 다름 - dungeon_format.py <지도 기호>).
+# - 왼쪽 위 천장(4,0)은 웨스트코스트(마을)로 나가는 길이다. 마을에서 들어오면 (4,1).
 # - 오른쪽 위 천장(22,0)은 아몬 상층(dungeon_02A_D12_amon_upper)으로 올라가는 포탈이고,
 #   올라가면 상층의 오른쪽 아래(22,8)에 나타난다.
 # - 포탈 바로 앞(22,1)에 보스전투 이벤트가 있다. 이겨야 포탈로 갈 수 있다
@@ -21,18 +22,18 @@
     "지도명": "아몬 하층",
     "상세지역": ["아라드", "벨마이어 공국 남부"],
     "지도": [
-        "XXXXXXXXXXXXXXXXXXXXXX#XXXX",
-        "XXOOOOOXXXXXXXXXXXXXOO@OOXX",
-        "XOOOOOOOXXXXXXXXXXXOOOOOOOX",
-        "#OOOOOOOOXXXXXXXXXOOOOOOOOX",
-        "XXOOOOOOOOXXXXXXXOOOOOOOOXX",
-        "XXXOOOOOOOOXXXXXOOOOOOOOXXX",
-        "XXXXXOOOOOOOOOOOOOOOOOXXXXX",
-        "XXXXXXXOOOOOOOOOOOOOXXXXXXX",
-        "XXXXXXXXXOOOOOOOOOXXXXXXXXX",
-        "XXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        "YXXX#XXXXXXXXXXXXXXXXX#XXXY",
+        "YXOOOOOXXXXXXXXXXXXXOO@OOXY",
+        "YOOOOOOOXXXXXXXXXXXOOOOOOOY",
+        "YOOOOOOOOXXXXXXXXXOOOOOOOOY",
+        "YXOOOOOOOOXXXXXXXOOOOOOOOXY",
+        "YXXOOOOOOOOXXXXXOOOOOOOOXXY",
+        "YXXXXOOOOOOOOOOOOOOOOOXXXXY",
+        "YXXXXXXOOOOOOOOOOOOOXXXXXXY",
+        "YXXXXXXXXOOOOOOOOOXXXXXXXXY",
+        "YXXXXXXXXXXXXXXXXXXXXXXXXXY",
     ],
-    "입장좌표": (1, 3),
+    "입장좌표": (4, 1),
     "오브젝트": {
         (22, 1): {
             "분류": "이벤트",
@@ -45,7 +46,7 @@
         },
     },
     "연결지역": {
-        (0, 3): {
+        (4, 0): {
             "연결맵": "town_02A_T03_westcoast",
             "진입좌표": None,  # 마을은 화면(선택지) 형태라 좌표 개념이 없음
         },

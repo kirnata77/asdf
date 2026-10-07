@@ -376,6 +376,10 @@ def test_던전_데이터의_좌표와_참조가_맞는다():
         def 안(좌표):
             return 0 <= 좌표[0] < 너비 and 0 <= 좌표[1] < 높이
 
+        if set("".join(격자)) - set("XYO@#"):  # dungeon_format.py <지도 기호>
+            문제.append(f"{이름}: 모르는 지도 기호 {set(''.join(격자)) - set('XYO@#')}")
+        if any(len(행) != 너비 for 행 in 격자):
+            문제.append(f"{이름}: 지도 행 길이가 다르다")
         if 던전.get("입장좌표") and not 안(던전["입장좌표"]):
             문제.append(f"{이름}: 입장좌표 {던전['입장좌표']}가 지도 밖")
         for 좌표, 오브젝트 in 던전["오브젝트"].items():

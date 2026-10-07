@@ -121,6 +121,7 @@ class 스모크앱(main.DnfMobileApp):
         yield from self._단계_파티관리_팝업(상태, 매니저)
         전투 = yield from self._단계_장비_포션_뒤로키_전투팝업(상태, 매니저)
         yield from self._단계_전투종료_자동전투_주점(상태, 매니저, 전투)
+        yield from self._단계_하늘_칸(상태, 매니저)
         yield from self._단계_목록_스크롤(상태, 매니저)
         yield from self._단계_세이브(상태, 매니저)
         yield from self._단계_설정(매니저)
@@ -907,6 +908,29 @@ class 스모크앱(main.DnfMobileApp):
         assert "추방했습니다" in 주점.안내라벨.text, 주점.안내라벨.text
         _찍기("tavern_after")
         결과["단계"].append("주점(영입 -> 숙소, 대기, 합류, 추방 확인 팝업)")
+
+    def _단계_하늘_칸(self, 상태, 매니저):
+        """하늘성 탑(아몬 상층)의 하늘 칸("Y")이 하늘색으로 칠해지는지"""
+        from game.screens import screens_dungeon
+        from kivy.graphics import Color
+
+        _팝업_닫기()
+        gf.던전_진입(상태, "dungeon_02A_D12_amon_upper")
+        상태["던전상태"]["위치"] = (6, 3)  # 왼쪽 위 - 뷰포트에 하늘 칸이 많이 보인다
+        매니저.current = "던전"
+        던전 = 매니저.get_screen("던전")
+        던전.갱신()
+        yield 0.5
+        하늘색 = list(screens_dungeon._칸_색["Y"])
+        색들 = [
+            list(c.rgba) for c in 던전.지도위젯.canvas.children if isinstance(c, Color)
+        ]
+        assert 하늘색 in 색들, "하늘 칸 색이 그려지지 않음"
+        _찍기("dungeon_sky")
+        상태["던전상태"] = None
+        매니저.current = "마을"
+        yield 0.3
+        결과["단계"].append("하늘성 탑 하늘 칸(Y) - 하늘색으로 그림")
 
     def _단계_목록_스크롤(self, 상태, 매니저):
         """상점/장비 교체 목록 스크롤(끌어서 내림)"""
