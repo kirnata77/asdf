@@ -1,7 +1,7 @@
 name: Delete merged branch
 
 # PR이 병합되면 head 브랜치(원격)를 지운다 - 병합된 브랜치는 끝난 것이다(CLAUDE.md "Git").
-# 기본 브랜치(main)가 head인 PR, 병합 없이 닫힌 PR, 포크에서 온 PR은 건드리지 않는다.
+# 기본 브랜치(main-branch)가 head인 PR, 병합 없이 닫힌 PR, 포크에서 온 PR은 건드리지 않는다.
 # 저장소 설정의 "Automatically delete head branches"와 같은 일이지만, 설정은 저장소 밖에
 # 있어 보이지 않으므로 워크플로로 둔다.
 on:

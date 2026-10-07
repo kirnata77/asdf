@@ -1,7 +1,7 @@
 # 던전앤파이터 모바일 프로토타입
 
 Kivy로 만든 턴제 RPG 프로토타입이다. buildozer로 안드로이드 APK를 빌드한다.
-원격 저장소: https://github.com/kirnata77/asdf (기본 브랜치 `main`)
+원격 저장소: https://github.com/kirnata77/asdf (기본 브랜치 `main-branch`)
 
 **세션을 시작하면 [`MEMORY.md`](MEMORY.md)부터 읽는다** - 지금 진행 중인 일과 아직
 믿으면 안 되는 것이 거기 있다.
@@ -164,20 +164,20 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 
 ## Git
 
-### 흐름 - 기능 하나 = 브랜치 하나 = PR 하나 -> `main`
+### 흐름 - 기능 하나 = 브랜치 하나 = PR 하나 -> `main-branch`
 
-- **`main`에 직접 push하지 않는다.** 기능(버그 수정, 리팩터링 한 단계 포함)마다 `main`에서
+- **`main-branch`에 직접 push하지 않는다.** 기능(버그 수정, 리팩터링 한 단계 포함)마다 `main-branch`에서
   브랜치를 따서 작업한다.
-- **PR을 만들기 전에 `git fetch origin main`으로 `main`이 최신인지 확인한다.** `main`이 앞서 있으면
-  먼저 합쳐서(merge) 충돌을 풀고 게이트를 다시 돌린다. 브랜치도 최신 `main`에서 딴다.
-  PR을 열 때 기준 커밋(`origin/main` 해시)을 본문에 적는다.
-- **기능이 끝나고 게이트가 통과하면 `main`으로 PR을 연다.** 다른 개발자가 `main`의 PR
+- **PR을 만들기 전에 `git fetch origin main-branch`로 `main-branch`가 최신인지 확인한다.** `main-branch`가 앞서 있으면
+  먼저 합쳐서(merge) 충돌을 풀고 게이트를 다시 돌린다. 브랜치도 최신 `main-branch`에서 딴다.
+  PR을 열 때 기준 커밋(`origin/main-branch` 해시)을 본문에 적는다.
+- **기능이 끝나고 게이트가 통과하면 `main-branch`로 PR을 연다.** 다른 개발자가 `main-branch`의 PR
   목록만 보고 무엇이 왜 들어왔는지 알 수 있어야 한다 - PR 본문에 요점, 이유, 검증한 것,
   남은 것(`NOT VERIFIED` 포함)을 쓴다.
 - **CI가 초록이 되면 병합한다.** 병합 실행은 위 가드레일대로 그 순간 사용자 확인을 받는다.
-- **병합된 브랜치는 끝난 것이다.** 후속 작업은 최신 `main`에서 새로 시작한다(병합된 브랜치에
+- **병합된 브랜치는 끝난 것이다.** 후속 작업은 최신 `main-branch`에서 새로 시작한다(병합된 브랜치에
   커밋을 더 쌓지 않는다).
-- **`main`으로 병합된 PR의 브랜치는 이름과 상관없이 자동으로 지워진다**(`.github/workflows/delete-merged-branch.yml`).
+- **`main-branch`로 병합된 PR의 브랜치는 이름과 상관없이 자동으로 지워진다**(`.github/workflows/delete-merged-branch.yml`).
   병합 없이 닫힌 PR의 브랜치는 그대로 둔다 - 지우려면 가드레일대로 그 순간 확인을 받는다.
 
 ### 커밋 - 한 작업 = 한 커밋, 게이트 통과 후
