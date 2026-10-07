@@ -834,7 +834,7 @@ class 스모크앱(main.DnfMobileApp):
             _팝업_닫기()
         결과["단계"].append("자동전투로 전투 끝까지 진행 -> 결과 팝업")
 
-        # 몬스터 크기: 소형 0.75 / 중형 1 / 대형 1.25배, 칸 바닥(발바닥) 맞춤, 대형이 뒤(먼저 그림)
+        # 몬스터 크기: 소형 1/2 / 중형 3/4 / 대형 1배(칸 전체), 칸 바닥(발바닥) 맞춤, 대형이 뒤(먼저 그림)
         from kivy.graphics import Rectangle
 
         gf.전투_시작(상태, ["고블린", "타우 비스트", "타우 아미"], 레벨=6, 차수=2)
@@ -860,8 +860,23 @@ class 스모크앱(main.DnfMobileApp):
             0
         ] == "타우 비스트"
         assert len(set(칸들)) == 3
+        # 아군 그림: 칸에 꽉 맞춘 크기의 2/3, 칸 바닥 가운데
+        from kivy.uix.image import Image as 그림
+
+        아군그림 = [
+            w for w in 전투.아군그래픽행.walk(restrict=True) if isinstance(w, 그림)
+        ]
+        assert 아군그림, "아군 그림 없음"
+        for 이미지 in 아군그림:
+            틀 = 이미지.parent
+            tw, th = 이미지.texture_size
+            맞춤 = min(틀.width / tw, 틀.height / th) * 2 / 3
+            assert abs(이미지.height - th * 맞춤) < 1, (이미지.size, 틀.size)
+            assert abs(이미지.y - 틀.y) < 1 and abs(이미지.center_x - 틀.center_x) < 1
         _찍기("battle_monster_size")
-        결과["단계"].append("몬스터 크기 배율(소/중/대) + 발바닥 맞춤 + 대형이 뒤")
+        결과["단계"].append(
+            "몬스터 크기 배율(소 1/2, 중 3/4, 대 1) + 발바닥 맞춤 + 대형이 뒤, 아군 그림 2/3 바닥 맞춤"
+        )
 
         # 황금 고블린(도망턴 5): 자기 턴이 5번 끝나면 도망 -> 이름표 "(도망)", 그림 없음,
         # 적이 모두 도망쳤으면 "적이 도망쳤다!" 팝업 -> [확인] -> 던전

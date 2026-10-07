@@ -8,6 +8,7 @@ import threading
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
@@ -263,6 +264,19 @@ class _행동선택팝업(Popup):
     def _취소(self):
         self.dismiss(animation=False)
         self._취소콜백()
+
+
+# 아군 그림 크기 - 칸에 꽉 맞춘 크기 대비(2026-10-07 사용자 지정 2/3, 칸 바닥에 붙인다)
+_아군그림_배율 = 2 / 3
+
+
+def _아군그림_맞추기(틀, 이미지):
+    tw, th = 이미지.texture_size
+    if not tw or not th:
+        return
+    맞춤 = min(틀.width / tw, 틀.height / th) * _아군그림_배율
+    이미지.size = (tw * 맞춤, th * 맞춤)
+    이미지.pos = (틀.center_x - 이미지.width / 2, 틀.y)
 
 
 class 전투화면(Screen):
@@ -551,7 +565,7 @@ class 전투화면(Screen):
         Clock.schedule_once(self._적그림_그리기, 0)
 
     def _적그림_그리기(self, *_):
-        """몬스터 그림을 칸에 맞춘 크기(중형 1배)에 크기 배율을 곱해, 칸 바닥
+        """몬스터 그림을 칸에 꽉 맞춘 크기(대형 1배)에 크기 배율을 곱해, 칸 바닥
         가운데(발바닥)에 맞춰 그린다. 지정이 없거나 파일이 없으면 빈 칸."""
         캔버스 = self.적그래픽행.canvas.after
         캔버스.clear()
@@ -594,12 +608,22 @@ class 전투화면(Screen):
 
             그래픽박스 = _테두리박스(_박스_테두리색)
             # 캐릭터별 직업 기반 초상화(gameflow.초상화_코드) - 던전
-            # 지도용 "플레이어 초상화"와는 별개다.
+            # 지도용 "플레이어 초상화"와는 별개다. 칸에 꽉 맞춘 크기의
+            # _아군그림_배율로 줄여 칸 바닥 가운데에 붙인다.
+            틀 = FloatLayout()
             이미지 = Image(
                 allow_stretch=True,
+                size_hint=(None, None),
                 source=_캐릭터이미지_경로(gameflow.초상화_코드(아군["원본"])),
             )
-            그래픽박스.add_widget(이미지)
+            틀.add_widget(이미지)
+
+            def 맞추기(*_, 틀=틀, 이미지=이미지):
+                _아군그림_맞추기(틀, 이미지)
+
+            틀.bind(pos=맞추기, size=맞추기)
+            이미지.bind(texture_size=맞추기)
+            그래픽박스.add_widget(틀)
             self.아군그래픽행.add_widget(그래픽박스)
 
     def _자동진행(self, *args):
