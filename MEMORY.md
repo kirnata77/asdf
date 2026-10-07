@@ -6,7 +6,7 @@
 **작업 흐름**(CLAUDE.md "Git"): 기능마다 `main-branch`에서 브랜치 -> 게이트 통과 -> PR -> CI 초록이면 병합(병합은 사용자 확인). PR 전에 fetch로 `main-branch` 최신 확인. 큰 기능은 풀 시나리오(`docs/scenarios.md`) - 풀 시나리오 S1~S6 구현(계획 [`scenario-tests.md`](.memory/roadmap/scenario-tests.md) 전부 완료). 확인 대기(known-bugs): 레벨 2 파티의 D04 밸런스(이슈 #41), 마법사 `빗자루` 착용 불가.
 push는 검증된 작업만, 자동 push 훅 없음. 줄끝은 pre-commit 훅. `main-branch` 기준 테스트 598개 · 커버리지 94.44%. **구조 점검 로드맵 N0~N7 전부 완료** - 결과는 [`docs/architecture_review.md`](docs/architecture_review.md) 10절, 계획/판단은 [`refactor.md`](.memory/roadmap/refactor.md). **리팩터링 보고서 후속(브랜치 `ccr-881b7ea2-9vlrfc`)**: 종족:루가루(속도+1)/인간(효과 없음) 정의함 - S6 시드 0->1,2. 테스트 전용 함수 6개 삭제. 설정 파일 except 좁힘(+스모크). 매개변수 9개 이상 함수 정리. 복잡도 상위 6개 분해. skill_system -> `game/system/skill/` 6모듈(창구 유지). 팝업 공통 도우미(스크롤_목록/닫기_버튼). 몬스터 기본값 표(`monster_defaults.py`). 결과는 [`refactoring_report.md`](docs/refactoring_report.md) 9절(combat 순환은 안 함 - 이유 거기). **미확인:** 실기기 세이브 유지(N1c, 사용자가 직접 확인) - known-bugs 상단. CI `ui-smoke`는 이제 PR을 막는다(연속 초록 4회 확인 뒤 continue-on-error 삭제).
 
-던전 지도 칸은 항상 정사각형(짧은 쪽 9칸, 긴 쪽은 더 많이 - `screens_dungeon._칸_수`). **실기기 미확인** - 세로 화면에서 지도 칸 수/감옥 2x2 모양, [뒤로] 키 전달, 한글 조합 입력 중 6자 자르기, 새 팝업들.
+던전 지도 칸은 항상 정사각형(짧은 쪽 9칸, 긴 쪽은 더 많이 - `screens_dungeon._칸_수`). 포탈로 이어진 던전은 몇 단계를 건너도 포탈 칸을 겹쳐 함께 그린다(지금 맵 우선, 이웃의 `@`는 발판으로 - `dungeon_system.이어진_맵_배치`). **실기기 미확인** - 세로 화면에서 지도 칸 수/감옥 2x2 모양, [뒤로] 키 전달, 한글 조합 입력 중 6자 자르기, 새 팝업들.
 
 **다음(사용자 결정):** 속성강화 규칙, 몬스터 24종 개인 드랍표 "미정", 던전 D03~D10 공용 드랍 없음, 임시 그림 교체.
 미구현: 버프포션(샤프아이) 사용, 자동전투 포션 사용. 점검 경위: [`.memory/sessions/2026-10-03-remaining-work-audit.md`](.memory/sessions/2026-10-03-remaining-work-audit.md).
