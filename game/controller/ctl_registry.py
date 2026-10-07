@@ -21,6 +21,14 @@ from game.data.dungeon.dungeon_01A_D09_blazing_grakquarak import (
 from game.data.dungeon.dungeon_01A_D10_shadow_thunderland import (
     맵정보 as _어둠의선더랜드,
 )
+from game.data.dungeon.dungeon_02A_D11_amon_lower import 맵정보 as _아몬하층
+from game.data.dungeon.dungeon_02A_D12_amon_upper import 맵정보 as _아몬상층
+from game.data.dungeon.dungeon_02A_D13_sephiroth_lower import 맵정보 as _세피로타하층
+from game.data.dungeon.dungeon_02A_D14_sephiroth_upper import 맵정보 as _세피로타상층
+from game.data.dungeon.dungeon_02A_D15_middleocean_shallow import (
+    맵정보 as _미들오션천해,
+)
+from game.data.dungeon.dungeon_02A_D16_middleocean_deep import 맵정보 as _미들오션심해
 from game.data.job_level.job_level_000x_style import 전투스타일
 from game.data.monster.monster_ability import 특성목록 as _몬스터특성
 from game.data.monster.monster_defaults import 몬스터_기본값
@@ -31,6 +39,7 @@ from game.data.monster.monster_race_tau import 몬스터목록 as _타우몬스�
 from game.data.monster.monster_race_zombie import 몬스터목록 as _좀비몬스터
 from game.data.town.town_01A_T01_Elvengard import 마을정보 as _엘븐가드
 from game.data.town.town_01A_T02_hendonmyre import 마을정보 as _헨돈마이어
+from game.data.town.town_02A_T03_westcoast import 마을정보 as _웨스트코스트
 
 __all__ = [
     "_몬스터파일목록",
@@ -192,7 +201,7 @@ for _직업정보 in 직업_레지스트리.values():
     전투용_캐릭터특성정의.update(_직업정보["특성목록"])
 
 
-# 던전(소형지도) 레지스트리 - 01A 지역 던전 10개.
+# 던전(소형지도) 레지스트리 - 01A 지역 던전 10개 + 02A(하늘성) 던전 6개.
 # town_system.py의 "기본_마을목록()"과 같은 이유로, 새 던전 파일이
 # 추가되면 여기에도 손으로 import + 등록을 해줘야 한다.
 던전_레지스트리 = {
@@ -206,6 +215,12 @@ for _직업정보 in 직업_레지스트리.values():
     "dungeon_01A_D08_grakquarak": _그락카락,
     "dungeon_01A_D09_blazing_grakquarak": _불타는그락카락,
     "dungeon_01A_D10_shadow_thunderland": _어둠의선더랜드,
+    "dungeon_02A_D11_amon_lower": _아몬하층,
+    "dungeon_02A_D12_amon_upper": _아몬상층,
+    "dungeon_02A_D13_sephiroth_lower": _세피로타하층,
+    "dungeon_02A_D14_sephiroth_upper": _세피로타상층,
+    "dungeon_02A_D15_middleocean_shallow": _미들오션천해,
+    "dungeon_02A_D16_middleocean_deep": _미들오션심해,
 }
 
 
@@ -214,6 +229,7 @@ for _직업정보 in 직업_레지스트리.values():
 마을파일_레지스트리 = {
     "town_01A_T01_Elvengard": _엘븐가드,
     "town_01A_T02_hendonmyre": _헨돈마이어,
+    "town_02A_T03_westcoast": _웨스트코스트,
 }
 
 

@@ -4,6 +4,7 @@
 random.seed()로 고정하거나 random 함수를 바꿔치기해서 경계값을 직접 검사한다.
 """
 
+import importlib
 import random
 
 import pytest
@@ -267,6 +268,51 @@ def test_오브젝트_클리어_기록과_휴식():
     town_system.휴식_처리(파티)
     c = 파티["파티원"][0]
     assert (c["현재HP"], c["현재MP"]) == (20, 50)
+
+
+def test_웨스트코스트는_어둠의_선더랜드_보스를_깨면_열린다():
+    진행도 = town_system.새_진행도()
+    전체 = town_system.기본_마을목록()
+    웨코 = next(m for m in 전체 if m["마을명"] == "웨스트코스트")
+    town_system.던전_클리어_처리(진행도, "dungeon_01A_D02_Hollow_Lorien")
+    assert not town_system.개방조건만족(웨코, 진행도)
+    # 보스전투 승리 -> 던전_클리어_처리(ctl_rewards.전투_결과_정리)
+    town_system.던전_클리어_처리(진행도, "dungeon_01A_D10_shadow_thunderland")
+    town_system.마을_이동(진행도, "웨스트코스트")
+    assert 진행도["현재마을"] == "웨스트코스트"
+    # 마을에서 바로 가는 곳은 하층 두 곳과 천해뿐(상층/심해는 포탈로)
+    assert town_system.이동가능던전목록(웨코) == [
+        "dungeon_02A_D11_amon_lower",
+        "dungeon_02A_D13_sephiroth_lower",
+        "dungeon_02A_D15_middleocean_shallow",
+    ]
+
+
+@pytest.mark.parametrize(
+    "아래, 위",
+    [
+        ("D11_amon_lower", "D12_amon_upper"),
+        ("D13_sephiroth_lower", "D14_sephiroth_upper"),
+        ("D15_middleocean_shallow", "D16_middleocean_deep"),
+    ],
+)
+def test_하늘성_포탈은_클리어해야_윗층으로_이어진다(아래, 위):
+    아래맵 = importlib.import_module(f"game.data.dungeon.dungeon_02A_{아래}").맵정보
+    위맵 = importlib.import_module(f"game.data.dungeon.dungeon_02A_{위}").맵정보
+    상태 = dungeon_system.던전_시작(아래맵, 아래)
+    assert 상태["위치"] == (1, 3)
+    for _ in range(14):
+        assert dungeon_system.이동_시도(상태, "오른쪽")["결과"] == "이동"
+    결과 = dungeon_system.이동_시도(상태, "오른쪽")
+    assert 결과["결과"] == "오브젝트" and 결과["위치"] == (16, 3)  # 닫힌 포탈
+    dungeon_system.오브젝트_클리어_처리(상태, (16, 3))
+    결과 = dungeon_system.이동_시도(상태, "오른쪽")
+    assert 결과["연결지역"] == {"연결맵": f"dungeon_02A_{위}", "진입좌표": (1, 3)}
+    # 윗층 서쪽 끝은 포탈 바로 앞으로 돌아간다
+    assert 위맵["연결지역"][(0, 3)] == {
+        "연결맵": f"dungeon_02A_{아래}",
+        "진입좌표": (15, 3),
+    }
 
 
 # -------------------------------------------------------------------- map
