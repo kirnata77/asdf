@@ -4,7 +4,7 @@
 
 ## Now - 2026-10-06 (`main`에 #39 레벨 12 스킬강화 + 레벨 16~20 테이블, #35~#38 풀 시나리오 규칙·P0·S1·S2 병합. 원격 브랜치는 `main`만. **미정(사용자가 정할 것)**: 16 각성 특성, 17 스킬 개화 선택지(조건부 추가효과), 18 각성 스킬, 13 스킬)
 **작업 흐름**(CLAUDE.md "Git"): 기능마다 `main`에서 브랜치 -> 게이트 통과 -> PR -> CI 초록이면 병합(병합은 사용자 확인). PR 전에 fetch로 main 최신 확인. 큰 기능은 풀 시나리오(`docs/scenarios.md`) - 풀 시나리오 S1~S6 구현(계획 [`scenario-tests.md`](.memory/roadmap/scenario-tests.md) 전부 완료). 확인 대기(known-bugs): 레벨 2 파티의 D04 밸런스(이슈 #41), 마법사 `빗자루` 착용 불가.
-push는 검증된 작업만, 자동 push 훅 없음. 줄끝은 pre-commit 훅. `main` 기준 테스트 598개 · 커버리지 94.44%. **구조 점검 로드맵 N0~N7 전부 완료** - 결과는 [`docs/architecture_review.md`](docs/architecture_review.md) 10절, 계획/판단은 [`refactor.md`](.memory/roadmap/refactor.md). **미결정/미확인 - 유지보수자가 정할 것:** `종족:루가루/인간` 특성 정의 누락, 테스트 전용 함수 6개 처분, 실기기 세이브 유지(N1c), CI ui-smoke 잡 첫 실행(N6) - known-bugs 상단.
+push는 검증된 작업만, 자동 push 훅 없음. 줄끝은 pre-commit 훅. `main` 기준 테스트 598개 · 커버리지 94.44%. **구조 점검 로드맵 N0~N7 전부 완료** - 결과는 [`docs/architecture_review.md`](docs/architecture_review.md) 10절, 계획/판단은 [`refactor.md`](.memory/roadmap/refactor.md). **리팩터링 보고서 후속(브랜치 `ccr-881b7ea2-9vlrfc`)**: 종족:루가루(속도+1)/인간(효과 없음) 정의함 - S6 시드 0->1,2. 테스트 전용 함수 6개 삭제. 설정 파일 except 좁힘(+스모크). 매개변수 9개 이상 함수 정리. 복잡도 상위 6개 분해. skill_system -> `game/system/skill/` 6모듈(창구 유지). 팝업 공통 도우미(스크롤_목록/닫기_버튼). 몬스터 기본값 표(`monster_defaults.py`). 결과는 [`refactoring_report.md`](docs/refactoring_report.md) 9절(combat 순환은 안 함 - 이유 거기). **미확인:** 실기기 세이브 유지(N1c, 사용자가 직접 확인) - known-bugs 상단. CI `ui-smoke`는 이제 PR을 막는다(연속 초록 4회 확인 뒤 continue-on-error 삭제).
 
 **실기기 미확인** - [뒤로] 키 전달, 한글 조합 입력 중 6자 자르기, 새 팝업들.
 

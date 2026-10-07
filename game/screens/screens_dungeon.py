@@ -124,7 +124,7 @@ class 던전맵위젯(Widget):
                     텍스처 = CoreImage(경로).texture
                     텍스처.mag_filter = "nearest"
                     텍스처.min_filter = "nearest"
-                except Exception:
+                except Exception:  # kivy는 못 읽는 그림에 Exception 자체를 던진다
                     텍스처 = None
             self._타일_캐시[파일명] = 텍스처
         return self._타일_캐시[파일명]
@@ -157,7 +157,7 @@ class 던전맵위젯(Widget):
         if 코드 not in self._텍스처_캐시:
             try:
                 self._텍스처_캐시[코드] = CoreImage(_캐릭터이미지_경로(코드)).texture
-            except Exception:
+            except Exception:  # kivy는 못 읽는 그림에 Exception 자체를 던진다
                 self._텍스처_캐시[코드] = None
         return self._텍스처_캐시[코드]
 
@@ -184,106 +184,106 @@ class 던전맵위젯(Widget):
         # _뷰포트_크기 x _뷰포트_크기 칸만 고정 크기로 그린다 - 맵이
         # 커져도 칸 크기는 그대로고, 플레이어가 움직이면 그 칸 창이
         # 함께 움직이는 방식(카메라가 플레이어를 따라간다).
-        칸폭 = self.width / _뷰포트_크기
-        칸높이 = self.height / _뷰포트_크기
-        중심x, 중심y = self.위치
+        with self.canvas:
+            self._바닥_그리기()
+            self._높은타일_그리기()
+            self._플레이어_그리기()
+
+    def _칸_크기(self):
+        return (self.width / _뷰포트_크기, self.height / _뷰포트_크기)
+
+    def _칸위치(self, 화면x, 화면y):
+        # 지도 데이터는 y=0이 맨 윗줄이지만, Kivy 좌표는
+        # 왼쪽 아래가 원점이라 아래에서부터 그려 올라간다.
+        칸폭, 칸높이 = self._칸_크기()
+        return (self.x + 화면x * 칸폭, self.y + self.height - (화면y + 1) * 칸높이)
+
+    def _맵_좌표(self, 화면x, 화면y):
         반칸 = _뷰포트_크기 // 2
+        return (self.위치[0] - 반칸 + 화면x, self.위치[1] - 반칸 + 화면y)
 
-        def 칸위치(화면x, 화면y):
-            # 지도 데이터는 y=0이 맨 윗줄이지만, Kivy 좌표는
-            # 왼쪽 아래가 원점이라 아래에서부터 그려 올라간다.
-            return (self.x + 화면x * 칸폭, self.y + self.height - (화면y + 1) * 칸높이)
-
-        칸크기 = (칸폭, 칸높이)
+    def _바닥_텍스처(self, 문자, 맵x, 맵y):
+        """칸의 바닥 텍스처. "O"는 풀밭(좌표에 따라 흙길), "X"/"#"은 그 위에 나무/게이트를
+        올릴 풀밭, 그림이 있는 오브젝트("@") 칸도 풀밭. 그 밖이나 그림이 없으면 None(색으로 칠한다)."""
         풀밭 = self._타일("풀밭")
         흙길 = self._타일("흙길")
-
-        with self.canvas:
-            # 1단계 - 바닥. "O"는 풀밭(좌표에 따라 흙길), "X"/"#"은 그 위에
-            # 나무/게이트를 올릴 풀밭, "@"는 오브젝트에 "타일"이 있으면
-            # 풀밭 위에 그 타일, 없으면 기존 색 그대로, 지도 밖은 검정.
-            for 화면y in range(_뷰포트_크기):
-                for 화면x in range(_뷰포트_크기):
-                    맵x = 중심x - 반칸 + 화면x
-                    맵y = 중심y - 반칸 + 화면y
-                    문자 = self._칸_문자(맵x, 맵y)
-                    바닥 = None
-                    if 문자 == "O":
-                        바닥 = (
-                            흙길
-                            if (
-                                흙길 is not None
-                                and _흙길_여부(맵x, 맵y, self._흙길시드)
-                            )
-                            else 풀밭
-                        )
-                    elif (
-                        문자 in _높은타일_기호
-                        and self._타일(_높은타일_기호[문자]) is not None
-                    ):
-                        바닥 = 풀밭
-                    오브젝트타일 = (
-                        self._오브젝트_타일(맵x, 맵y) if 문자 == "@" else None
-                    )
-                    if 오브젝트타일 is not None and 풀밭 is not None:
-                        바닥 = 풀밭
-                    if 바닥 is not None:
-                        Color(1, 1, 1, 1)
-                        Rectangle(texture=바닥, pos=칸위치(화면x, 화면y), size=칸크기)
-                        if 오브젝트타일 is not None:
-                            Rectangle(
-                                texture=오브젝트타일,
-                                pos=칸위치(화면x, 화면y),
-                                size=칸크기,
-                            )
-                    else:
-                        Color(
-                            *(
-                                _맵밖_색
-                                if 문자 is None
-                                else _칸_색.get(문자, _기본_칸_색)
-                            )
-                        )
-                        Rectangle(pos=칸위치(화면x, 화면y), size=칸크기)
-
-            # 2단계 - 나무/게이트(세로 2칸). 윗줄부터 차례로 그려서 아래쪽
-            # 나무의 위 절반이 윗칸 위에 겹치게 한다. 뷰포트 바로 아래 줄에
-            # 서 있는 것도 위 절반만은 맨 아랫줄에 보이므로 한 줄 더 돈다.
-            Color(1, 1, 1, 1)
-            for 화면y in range(_뷰포트_크기 + 1):
-                for 화면x in range(_뷰포트_크기):
-                    문자 = self._칸_문자(중심x - 반칸 + 화면x, 중심y - 반칸 + 화면y)
-                    if 문자 not in _높은타일_기호:
-                        continue
-                    아래절반, 위절반 = self._높은타일_반쪽(_높은타일_기호[문자])
-                    if 아래절반 is None:
-                        continue
-                    if 화면y < _뷰포트_크기:
-                        Rectangle(
-                            texture=아래절반, pos=칸위치(화면x, 화면y), size=칸크기
-                        )
-                    if 화면y >= 1:
-                        Rectangle(
-                            texture=위절반, pos=칸위치(화면x, 화면y - 1), size=칸크기
-                        )
-
-            # 플레이어는 항상 뷰포트 정중앙 칸(반칸, 반칸)에 그린다.
-            # 모험단 프로필 이미지가 있으면 그 이미지를, 없으면(파일이
-            # 아직 없거나 코드 미설정) 빨간 원을 그린다.
-            여백폭 = 칸폭 * 0.2
-            여백높이 = 칸높이 * 0.2
-            플레이어위치 = (
-                self.x + 반칸 * 칸폭 + 여백폭,
-                self.y + self.height - (반칸 + 1) * 칸높이 + 여백높이,
+        바닥 = None
+        if 문자 == "O":
+            바닥 = (
+                흙길
+                if (흙길 is not None and _흙길_여부(맵x, 맵y, self._흙길시드))
+                else 풀밭
             )
-            플레이어크기 = (칸폭 - 여백폭 * 2, 칸높이 - 여백높이 * 2)
-            텍스처 = self._플레이어_텍스처()
-            if 텍스처 is not None:
+        elif 문자 in _높은타일_기호 and self._타일(_높은타일_기호[문자]) is not None:
+            바닥 = 풀밭
+        return 바닥
+
+    def _바닥_그리기(self):
+        """1단계 - 바닥. 오브젝트에 "타일"이 있으면 풀밭 위에 그 타일, 없으면 기존 색 그대로, 지도 밖은 검정."""
+        칸크기 = self._칸_크기()
+        풀밭 = self._타일("풀밭")
+        for 화면y in range(_뷰포트_크기):
+            for 화면x in range(_뷰포트_크기):
+                맵x, 맵y = self._맵_좌표(화면x, 화면y)
+                문자 = self._칸_문자(맵x, 맵y)
+                바닥 = self._바닥_텍스처(문자, 맵x, 맵y)
+                오브젝트타일 = self._오브젝트_타일(맵x, 맵y) if 문자 == "@" else None
+                if 오브젝트타일 is not None and 풀밭 is not None:
+                    바닥 = 풀밭
+                위치 = self._칸위치(화면x, 화면y)
+                if 바닥 is None:
+                    Color(
+                        *(_맵밖_색 if 문자 is None else _칸_색.get(문자, _기본_칸_색))
+                    )
+                    Rectangle(pos=위치, size=칸크기)
+                    continue
                 Color(1, 1, 1, 1)
-                Rectangle(texture=텍스처, pos=플레이어위치, size=플레이어크기)
-            else:
-                Color(1, 0.15, 0.15, 1)
-                Ellipse(pos=플레이어위치, size=플레이어크기)
+                Rectangle(texture=바닥, pos=위치, size=칸크기)
+                if 오브젝트타일 is not None:
+                    Rectangle(texture=오브젝트타일, pos=위치, size=칸크기)
+
+    def _높은타일_그리기(self):
+        """2단계 - 나무/게이트(세로 2칸). 윗줄부터 차례로 그려서 아래쪽
+        나무의 위 절반이 윗칸 위에 겹치게 한다. 뷰포트 바로 아래 줄에
+        서 있는 것도 위 절반만은 맨 아랫줄에 보이므로 한 줄 더 돈다."""
+        칸크기 = self._칸_크기()
+        Color(1, 1, 1, 1)
+        for 화면y in range(_뷰포트_크기 + 1):
+            for 화면x in range(_뷰포트_크기):
+                문자 = self._칸_문자(*self._맵_좌표(화면x, 화면y))
+                if 문자 not in _높은타일_기호:
+                    continue
+                아래절반, 위절반 = self._높은타일_반쪽(_높은타일_기호[문자])
+                if 아래절반 is None:
+                    continue
+                if 화면y < _뷰포트_크기:
+                    Rectangle(
+                        texture=아래절반, pos=self._칸위치(화면x, 화면y), size=칸크기
+                    )
+                if 화면y >= 1:
+                    Rectangle(
+                        texture=위절반, pos=self._칸위치(화면x, 화면y - 1), size=칸크기
+                    )
+
+    def _플레이어_그리기(self):
+        """플레이어는 항상 뷰포트 정중앙 칸(반칸, 반칸)에 그린다. 모험단 프로필 이미지가
+        있으면 그 이미지를, 없으면(파일이 아직 없거나 코드 미설정) 빨간 원을 그린다."""
+        칸폭, 칸높이 = self._칸_크기()
+        반칸 = _뷰포트_크기 // 2
+        여백폭 = 칸폭 * 0.2
+        여백높이 = 칸높이 * 0.2
+        플레이어위치 = (
+            self.x + 반칸 * 칸폭 + 여백폭,
+            self.y + self.height - (반칸 + 1) * 칸높이 + 여백높이,
+        )
+        플레이어크기 = (칸폭 - 여백폭 * 2, 칸높이 - 여백높이 * 2)
+        텍스처 = self._플레이어_텍스처()
+        if 텍스처 is not None:
+            Color(1, 1, 1, 1)
+            Rectangle(texture=텍스처, pos=플레이어위치, size=플레이어크기)
+        else:
+            Color(1, 0.15, 0.15, 1)
+            Ellipse(pos=플레이어위치, size=플레이어크기)
 
 
 # =====================================================

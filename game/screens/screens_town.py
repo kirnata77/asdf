@@ -28,6 +28,8 @@ from game.screens.screens_common import (
     _에셋_경로,
     _도트_필터,
     뒤로키_버튼,
+    스크롤_목록,
+    닫기_버튼,
 )
 
 
@@ -959,10 +961,7 @@ class 주점화면(Screen):
     def _목록_팝업(self, 제목, 안내, 캐릭터목록, 누르면):
         본문 = BoxLayout(orientation="vertical", spacing=8, padding=12)
         본문.add_widget(Label(text=안내, size_hint=(1, 0.1)))
-        목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=6)
-        목록틀.bind(minimum_height=목록틀.setter("height"))
-        스크롤 = ScrollView(size_hint=(1, 0.78))
-        스크롤.add_widget(목록틀)
+        스크롤, 목록틀 = 스크롤_목록(0.78)
         본문.add_widget(스크롤)
         팝업 = Popup(
             title=제목, content=본문, size_hint=(0.9, 0.85), auto_dismiss=False
@@ -973,9 +972,7 @@ class 주점화면(Screen):
             버튼 = Button(text=_동료_글(캐릭터), size_hint=(1, None), height=48)
             버튼.bind(on_release=lambda *_, c=캐릭터: 누르면(c, 팝업))
             목록틀.add_widget(버튼)
-        닫기 = Button(text="닫기", size_hint=(1, 0.12))
-        뒤로키_버튼(닫기)
-        닫기.bind(on_release=lambda *_: 팝업.dismiss())
+        닫기 = 닫기_버튼(팝업, size_hint=(1, 0.12))
         본문.add_widget(닫기)
         팝업.open()
 

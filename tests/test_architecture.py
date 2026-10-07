@@ -84,14 +84,52 @@ def test_combat_모듈은_skill_system을_부르지_않는다():
         for 노드 in ast.walk(트리):
             if isinstance(노드, ast.ImportFrom) and (
                 (노드.module or "").endswith("skill_system")
-                or any(a.name == "skill_system" for a in 노드.names)
+                or (노드.module or "").startswith("game.system.skill")
+                or any(a.name in ("skill_system", "skill") for a in 노드.names)
             ):
                 위반.append(모듈)
             if isinstance(노드, ast.Import) and any(
-                a.name.endswith("skill_system") for a in 노드.names
+                a.name.endswith("skill_system")
+                or a.name.startswith("game.system.skill")
+                for a in 노드.names
             ):
                 위반.append(모듈)
     assert not 위반, f"combat이 skill_system을 import한다: {위반}"
+
+
+skill_폴더 = 루트 / "game" / "system" / "skill"
+# 스킬 엔진 패키지의 계층(위가 아래를 부른다). 같은 줄끼리는 서로 부르지 않는다.
+skill_계층 = [
+    ["skill_grant"],
+    ["skill_usage", "skill_target"],
+    ["skill_apply"],
+    ["skill_attack"],
+    ["skill_run"],
+]
+
+
+def test_skill_패키지는_아래로만_부르고_밑줄_이름을_가져오지_않는다():
+    """skill_system.py를 나눈 game/system/skill/ - 모듈은 skill_계층의 앞 줄 모듈만 부르고,
+    `from game.system.skill.X import _이름`처럼 다른 모듈의 밑줄 이름을 가져오지 않는다."""
+    층 = {m: i for i, 줄 in enumerate(skill_계층) for m in 줄}
+    실제 = sorted(p.stem for p in skill_폴더.glob("skill_*.py"))
+    assert 실제 == sorted(층), f"skill_계층과 실제 모듈이 다르다: {실제}"
+    위반 = []
+    for 모듈 in 실제:
+        트리 = ast.parse((skill_폴더 / f"{모듈}.py").read_text(encoding="utf-8"))
+        for 노드 in ast.walk(트리):
+            if not (
+                isinstance(노드, ast.ImportFrom)
+                and (노드.module or "").startswith("game.system.skill.")
+            ):
+                continue
+            대상 = 노드.module.rsplit(".", 1)[1]
+            if 층[대상] >= 층[모듈]:
+                위반.append(f"{모듈} -> {대상} (위 계층이나 같은 줄)")
+            위반 += [
+                f"{모듈}: {대상}.{a.name}" for a in 노드.names if a.name.startswith("_")
+            ]
+    assert not 위반, "skill 패키지 규칙 위반:\n" + "\n".join(위반)
 
 
 def _별칭표(트리):

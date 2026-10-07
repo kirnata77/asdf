@@ -79,21 +79,7 @@ def 몬스터_버프_부여(전투상태, 대상, 이름, 지속턴):
     정의, 출처 = 효과정의_조회(이름)
     상태정의 = 전투상태.get("상태이상정의", {}).get(이름)
     if 정의 is None and 상태정의 is not None:
-        if status.상태이상_면역(전투상태, 대상, 이름):
-            status.면역_로그(전투상태, 대상, 이름)
-            return
-        목록 = 대상.setdefault("상태이상", [])
-        기존 = next((i for i in 목록 if i.get("이름") == 이름), None)
-        if 기존 is not None and not 상태정의.get("중첩"):
-            if 지속턴 is not None:
-                기존["지속턴"] = 지속턴
-            return
-        새항목 = {"이름": 이름}
-        if 지속턴 is not None:
-            새항목["지속턴"] = 지속턴
-        if 상태정의.get("중첩"):
-            새항목["중첩"] = 1
-        목록.append(새항목)
+        _몬스터_상태이상_부여(전투상태, 대상, 이름, 지속턴, 상태정의)
         return
     목록이름 = "디버프" if 출처 == "디버프" else "버프"
     if 지속턴 is None and 정의 is not None and isinstance(정의.get("지속턴"), int):
@@ -111,3 +97,22 @@ def 몬스터_버프_부여(전투상태, 대상, 이름, 지속턴):
     if 지속턴 is not None:
         새항목["지속턴"] = 지속턴
     대상[목록이름].append(새항목)
+
+
+def _몬스터_상태이상_부여(전투상태, 대상, 이름, 지속턴, 상태정의):
+    """몬스터_버프_부여의 상태이상 쪽(슈퍼아머 등) - 면역 확인, 이미 있으면(비중첩) 지속턴만 갱신."""
+    if status.상태이상_면역(전투상태, 대상, 이름):
+        status.면역_로그(전투상태, 대상, 이름)
+        return
+    목록 = 대상.setdefault("상태이상", [])
+    기존 = next((i for i in 목록 if i.get("이름") == 이름), None)
+    if 기존 is not None and not 상태정의.get("중첩"):
+        if 지속턴 is not None:
+            기존["지속턴"] = 지속턴
+        return
+    새항목 = {"이름": 이름}
+    if 지속턴 is not None:
+        새항목["지속턴"] = 지속턴
+    if 상태정의.get("중첩"):
+        새항목["중첩"] = 1
+    목록.append(새항목)

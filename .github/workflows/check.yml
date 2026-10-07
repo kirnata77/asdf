@@ -30,12 +30,10 @@ jobs:
         run: python tools/check.py
 
   # 화면(kivy) 스모크 - 실제 앱을 Xvfb에서 띄워 주요 화면을 돌려 본다(tools/ui_smoke.py).
-  # 새로 넣은 잡이라 안정될 때까지 실패해도 PR을 막지 않는다(continue-on-error) - 몇 번 초록으로
-  # 도는 걸 확인하면 이 줄을 지운다. 스크린샷은 아티팩트로 남는다.
+  # 실패하면 PR을 막는다(2026-10-06 연속 초록 확인 뒤 continue-on-error를 지웠다). 스크린샷은 아티팩트로 남는다.
   ui-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
