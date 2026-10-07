@@ -315,7 +315,7 @@ class 전투화면(Screen):
             size_hint_y=None,
             halign="left",
             valign="top",
-            font_size=20,
+            font_size="14sp",
         )
         self.로그라벨.bind(
             texture_size=lambda inst, size: setattr(inst, "height", size[1]),
@@ -324,7 +324,7 @@ class 전투화면(Screen):
         로그스크롤.add_widget(self.로그라벨)
         루트.add_widget(로그스크롤)
 
-        self.안내라벨 = Label(text="", size_hint=(1, 0.05), font_size=20)
+        self.안내라벨 = Label(text="", size_hint=(1, 0.05), font_size="14sp")
         루트.add_widget(self.안내라벨)
 
         # 액션 버튼 - 왼쪽위 일반공격/오른쪽위
@@ -339,7 +339,7 @@ class 전투화면(Screen):
     # -------------------------------------------------
 
     def _중앙정렬_라벨(self, 문자열):
-        라벨 = Label(text=문자열, font_size=16, halign="center", valign="middle")
+        라벨 = Label(text=문자열, font_size="13sp", halign="center", valign="middle")
         라벨.bind(size=lambda inst, sz: setattr(inst, "text_size", sz))
         return 라벨
 

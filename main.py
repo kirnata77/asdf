@@ -77,7 +77,7 @@ def _오류_팝업_띄우기(내용):
         size_hint_y=None,
         halign="left",
         valign="top",
-        font_size=12,
+        font_size="11sp",
     )
     라벨.bind(
         texture_size=lambda inst, size: setattr(inst, "height", size[1]),

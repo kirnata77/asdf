@@ -7,6 +7,7 @@ import math
 import zlib
 
 from kivy.app import App
+from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
@@ -422,7 +423,7 @@ class 던전목록화면(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         루트 = BoxLayout(orientation="vertical", padding=16, spacing=10)
-        루트.add_widget(Label(text="던전 이동", font_size=40, size_hint=(1, 0.12)))
+        루트.add_widget(Label(text="던전 이동", font_size="24sp", size_hint=(1, 0.12)))
 
         self.목록틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.68), spacing=8)
         루트.add_widget(self.목록틀)
@@ -453,7 +454,7 @@ class 던전목록화면(Screen):
         for 파일명 in 던전목록:
             맵정보 = gameflow.던전_레지스트리.get(파일명, {})
             표시이름 = 맵정보.get("지도명", 파일명)
-            버튼 = Button(text=표시이름, size_hint=(1, None), height=56)
+            버튼 = Button(text=표시이름, size_hint=(1, None), height=dp(56))
             버튼.bind(on_release=lambda inst, f=파일명: self._선택(f))
             self.목록틀.add_widget(버튼)
 
@@ -481,7 +482,7 @@ class 던전화면(Screen):
             size_hint=(1, 0.14),
             halign="left",
             valign="top",
-            font_size=26,
+            font_size="16sp",
         )
         self.상태라벨.bind(
             size=lambda *_: setattr(

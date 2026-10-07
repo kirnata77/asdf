@@ -44,7 +44,7 @@ class 메인메뉴화면(Screen):
         레이아웃.add_widget(
             Label(
                 text="던전앤파이터 모바일 프로토타입",
-                font_size=48,
+                font_size="28sp",
                 size_hint=(1, 0.3),
             )
         )
@@ -369,7 +369,7 @@ class _슬롯목록화면(Screen):
         self.슬롯행목록 = []
 
         루트 = BoxLayout(orientation="vertical", padding=16, spacing=10)
-        루트.add_widget(Label(text=self.제목, font_size=40, size_hint=(1, 0.12)))
+        루트.add_widget(Label(text=self.제목, font_size="24sp", size_hint=(1, 0.12)))
 
         self.목록틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.68), spacing=8)
         루트.add_widget(self.목록틀)
@@ -393,7 +393,7 @@ class _슬롯목록화면(Screen):
         self.목록틀.clear_widgets()
         for 요약 in gameflow.전체_세이브_요약():
             줄 = BoxLayout(
-                orientation="horizontal", size_hint=(1, None), height=56, spacing=8
+                orientation="horizontal", size_hint=(1, None), height=dp(56), spacing=8
             )
 
             if 요약.get("비어있음"):
@@ -410,7 +410,7 @@ class _슬롯목록화면(Screen):
                     f"{요약['슬롯번호']}번 슬롯{표시} - {요약['대표캐릭터명']} 외 "
                     f"{요약['파티인원수']}명 / {요약['현재마을']} / {요약['저장시각']}"
                 )
-            줄.add_widget(Label(text=설명, font_size=26, halign="left"))
+            줄.add_widget(Label(text=설명, font_size="16sp", halign="left"))
 
             버튼 = Button(text=self.버튼글자, size_hint=(0.28, 1))
             버튼.disabled = self._비활성(요약)
@@ -472,7 +472,7 @@ class 옵션화면(Screen):
         루트.add_widget(
             Label(
                 text="옵션",
-                font_size=44,
+                font_size="26sp",
                 size_hint=(1, 0.2),
             )
         )

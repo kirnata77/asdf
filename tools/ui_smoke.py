@@ -28,6 +28,9 @@ os.chdir(ROOT)
 os.environ.setdefault("KIVY_NO_ARGS", "1")
 
 # 창 크기는 사용자 휴대폰(갤럭시 S24, 세로 1080x2340)에 맞춘다 - 창을 만들기 전에 정해야 한다.
+# 화면 밀도도 S24 기본값(450dpi = 2.8125, 가로 384dp)으로 - dp/sp 크기가 폰과 같게 보인다
+# (데스크톱 기본 밀도 1이면 글자가 폰보다 훨씬 작게 찍힌다).
+os.environ.setdefault("KIVY_METRICS_DENSITY", "2.8125")
 from kivy.config import Config  # noqa: E402
 
 Config.set("graphics", "width", "1080")
@@ -78,9 +81,22 @@ def _스크롤_확인(스크롤, 이름):
     손.touch_up()
     yield 0.6
     assert 스크롤.scroll_y < 0.99, (이름, "끌어도 안 내려감", 스크롤.scroll_y)
-    yield 1.5  # 끌고 난 뒤 관성 스크롤이 멈출 때까지
+    # 끌고 난 뒤 관성 스크롤이 멈출 때까지(화면 밀도가 크면 dp 단위 속도가 커서 더 오래 간다 -
+    # 멈추기 전에 scroll_y를 바꾸면 관성이 다시 덮어쓴다)
+    for _ in range(40):
+        yield 0.25
+        if abs(스크롤.effect_y.velocity) < 1:
+            break
+    스크롤.effect_y.cancel()
     스크롤.scroll_y = 0
-    yield 0.8
+    # 맨 아래로 옮긴 뒤 자리가 멈출 때까지(넘침 되돌아오기 포함)
+    이전 = None
+    for _ in range(20):
+        yield 0.25
+        지금 = 내용.children[0].to_window(*내용.children[0].pos)
+        if 지금 == 이전 and abs(스크롤.effect_y.velocity) < 1:
+            break
+        이전 = 지금
     마지막 = 내용.children[0]  # BoxLayout은 마지막에 넣은 위젯이 children[0]
     _, 아래 = 마지막.to_window(*마지막.pos)
     _, 바닥 = 스크롤.to_window(*스크롤.pos)

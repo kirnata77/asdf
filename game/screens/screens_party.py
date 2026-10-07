@@ -361,19 +361,23 @@ class 파티관리화면(Screen):
 
         for 전직명, 설명, 구현 in 목록:
             행 = BoxLayout(
-                orientation="vertical", size_hint=(1, None), height=64, spacing=2
+                orientation="vertical", size_hint=(1, None), height=dp(64), spacing=2
             )
             # 미구현 전직은 목록에는 보이되 누를 수 없다.
             버튼 = Button(
                 text=전직명 if 구현 else f"{전직명} (미구현)",
                 size_hint=(1, None),
-                height=40,
+                height=dp(40),
                 disabled=not 구현,
             )
             버튼.bind(on_release=lambda inst, n=전직명: 선택(n))
             행.add_widget(버튼)
             설명라벨 = Label(
-                text=설명, font_size=24, size_hint=(1, None), height=24, halign="left"
+                text=설명,
+                font_size="15sp",
+                size_hint=(1, None),
+                height=dp(24),
+                halign="left",
             )
             설명라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
             행.add_widget(설명라벨)
@@ -408,7 +412,7 @@ class 파티관리화면(Screen):
 
         행위젯 = {}
         for 이름 in self._능력치_목록:
-            행 = BoxLayout(orientation="horizontal", size_hint=(1, None), height=40)
+            행 = BoxLayout(orientation="horizontal", size_hint=(1, None), height=dp(40))
             표시 = 이름 + ("" if 투자가능[이름] else " (약점)")
             행.add_widget(Label(text=표시, size_hint=(0.4, 1)))
             감소버튼 = Button(text="-", size_hint=(0.2, 1))
@@ -583,7 +587,7 @@ class 파티관리화면(Screen):
                 Label(
                     text="(강화할 수 있는 스킬이 없습니다)",
                     size_hint=(1, None),
-                    height=40,
+                    height=dp(40),
                 )
             )
         for 스킬, 설명 in 목록:
@@ -626,15 +630,15 @@ class 파티관리화면(Screen):
                 Label(
                     text="(지금 고를 수 있는 퍽이 없습니다)",
                     size_hint=(1, None),
-                    height=40,
+                    height=dp(40),
                 )
             )
 
         for 퍽이름, 퍽정의 in 목록:
             행 = BoxLayout(
-                orientation="vertical", size_hint=(1, None), height=64, spacing=2
+                orientation="vertical", size_hint=(1, None), height=dp(64), spacing=2
             )
-            버튼 = Button(text=퍽이름, size_hint=(1, None), height=40)
+            버튼 = Button(text=퍽이름, size_hint=(1, None), height=dp(40))
             버튼.bind(
                 on_release=(
                     lambda inst, n=퍽이름, d=퍽정의: self._퍽_클릭(
@@ -645,9 +649,9 @@ class 파티관리화면(Screen):
             행.add_widget(버튼)
             설명라벨 = Label(
                 text=퍽정의.get("설명", ""),
-                font_size=24,
+                font_size="15sp",
                 size_hint=(1, None),
-                height=24,
+                height=dp(24),
                 halign="left",
             )
             설명라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
@@ -707,7 +711,7 @@ class 파티관리화면(Screen):
                     Label(
                         text="(지금 배울 수 있는 스킬이 없습니다)",
                         size_hint=(1, None),
-                        height=40,
+                        height=dp(40),
                     )
                 )
             for 이름, 비용, 상세글 in 목록:
@@ -973,7 +977,9 @@ def _장비교체_팝업(캐릭터, 슬롯, 완료콜백):
     if not 후보:
         목록틀.add_widget(
             Label(
-                text="(소지품에 바꿀 장비가 없습니다)", size_hint=(1, None), height=40
+                text="(소지품에 바꿀 장비가 없습니다)",
+                size_hint=(1, None),
+                height=dp(40),
             )
         )
     for 아이템, 수량, 착용가능, 사유 in 후보:
