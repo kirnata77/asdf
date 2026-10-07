@@ -97,9 +97,12 @@ class 던전맵위젯(Widget):
         self._타일_캐시 = {}
         self._흙길시드 = 0
         self.오브젝트 = {}
+        self.맵타일 = {}
         self.bind(size=self._다시그리기, pos=self._다시그리기)
 
-    def 갱신(self, 그리드, 위치, 초상화코드=None, 던전파일명=None, 오브젝트=None):
+    def 갱신(
+        self, 그리드, 위치, 초상화코드=None, 던전파일명=None, 오브젝트=None, 맵타일=None
+    ):
         self.그리드 = 그리드
         self.위치 = 위치
         self.초상화코드 = 초상화코드
@@ -107,6 +110,8 @@ class 던전맵위젯(Widget):
         self._흙길시드 = zlib.crc32((던전파일명 or "").encode("utf-8")) & 0xFFFF
         # 맵정보["오브젝트"] - "@" 칸에 전용 "타일"이 있는지 찾는 데 쓴다.
         self.오브젝트 = 오브젝트 or {}
+        # 맵정보["타일"] - 이 맵에서 기호마다 쓸 한 칸짜리 타일(dungeon_format.py).
+        self.맵타일 = 맵타일 or {}
         self._다시그리기()
 
     def _타일(self, 이름):
@@ -129,6 +134,12 @@ class 던전맵위젯(Widget):
                     텍스처 = None
             self._타일_캐시[파일명] = 텍스처
         return self._타일_캐시[파일명]
+
+    def _맵_타일(self, 문자):
+        """이 맵의 "타일"에 문자(지도 기호)가 지정돼 있으면 그 텍스처를,
+        없거나 파일이 없으면 None을 돌려준다."""
+        파일명 = self.맵타일.get(문자)
+        return self._파일_타일(파일명) if 파일명 else None
 
     def _오브젝트_타일(self, 맵x, 맵y):
         """(맵x, 맵y) 오브젝트에 "타일"이 지정돼 있으면 그 텍스처를,
@@ -205,7 +216,11 @@ class 던전맵위젯(Widget):
 
     def _바닥_텍스처(self, 문자, 맵x, 맵y):
         """칸의 바닥 텍스처. "O"는 풀밭(좌표에 따라 흙길), "X"/"#"은 그 위에 나무/게이트를
-        올릴 풀밭, 그림이 있는 오브젝트("@") 칸도 풀밭. 그 밖이나 그림이 없으면 None(색으로 칠한다)."""
+        올릴 풀밭, 그림이 있는 오브젝트("@") 칸도 풀밭. 그 밖이나 그림이 없으면 None(색으로 칠한다).
+        맵에 그 기호의 타일이 정해져 있으면 그 타일이 먼저다(나무/게이트도 안 올린다)."""
+        맵타일 = self._맵_타일(문자)
+        if 맵타일 is not None:
+            return 맵타일
         풀밭 = self._타일("풀밭")
         흙길 = self._타일("흙길")
         바닥 = None
@@ -252,7 +267,7 @@ class 던전맵위젯(Widget):
         for 화면y in range(_뷰포트_크기 + 1):
             for 화면x in range(_뷰포트_크기):
                 문자 = self._칸_문자(*self._맵_좌표(화면x, 화면y))
-                if 문자 not in _높은타일_기호:
+                if 문자 not in _높은타일_기호 or self._맵_타일(문자) is not None:
                     continue
                 아래절반, 위절반 = self._높은타일_반쪽(_높은타일_기호[문자])
                 if 아래절반 is None:
@@ -427,6 +442,7 @@ class 던전화면(Screen):
             게임상태.get("선택된초상화"),
             던전상태.get("던전파일명"),
             던전상태["맵정보"].get("오브젝트"),
+            던전상태["맵정보"].get("타일"),
         )
         self.메시지라벨.text = ""
         self.상호작용버튼.disabled = True

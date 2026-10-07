@@ -14,6 +14,8 @@
 # - 포탈 바로 앞(22,1)에 보스전투 이벤트가 있다. 이겨야 포탈로 갈 수 있다
 #   ("통행가능화" - 던전을 나갔다 들어오면 다시 막힌다).
 #
+# 타일: 발판 에메랄드, 이동불가 하늘성 벽, 하늘 노을("타일" - dungeon_format.py).
+#
 # 몬스터: 아직 정하지 않았다(다음 단계). 그때까지 인카운트가 없어 걸어도
 # 전투가 일어나지 않고, 보스의 "전투몬스터"가 비어 있어 보스는 막힌 채로
 # 있다(오브젝트_상호작용이 "몬스터데이터없음"을 돌려준다).
@@ -33,6 +35,11 @@
         "YXXXXXXXXOOOOOOOOOXXXXXXXXY",
         "YXXXXXXXXXXXXXXXXXXXXXXXXXY",
     ],
+    "타일": {
+        "O": "asset_tile_emerald.webp",
+        "X": "asset_tile_skycastlewall.webp",
+        "Y": "asset_tile_skyyellow.webp",
+    },
     "입장좌표": (4, 1),
     "오브젝트": {
         (22, 1): {
