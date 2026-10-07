@@ -126,7 +126,7 @@ class 파티관리화면(Screen):
 
         # 왼쪽: 초상화
         초상틀 = _둥근상자(
-            (0.2, 0.21, 0.25, 1), 반지름=10, size_hint=(0.24, 1), padding=dp(4)
+            (0.2, 0.21, 0.25, 1), 반지름=10, size_hint=(0.2, 1), padding=dp(4)
         )
         초상틀.add_widget(
             Image(
@@ -139,7 +139,7 @@ class 파티관리화면(Screen):
         카드.add_widget(초상틀)
 
         # 가운데: 이름/직업/레벨, HP·MP 게이지, 능력치
-        가운데 = BoxLayout(orientation="vertical", size_hint=(0.4, 1), spacing=dp(4))
+        가운데 = BoxLayout(orientation="vertical", size_hint=(0.6, 1), spacing=dp(4))
         이름글 = f"[b]{escape_markup(캐릭터['캐릭터명'])}[/b]"
         if not 생존:
             이름글 += "  [color=e05555][size=12sp]쓰러짐[/size][/color]"
@@ -184,8 +184,10 @@ class 파티관리화면(Screen):
             )
         )
         # 장비(+세트) 스탯 반영 능력치 - 장비로 오른 값은 괄호로 표시.
+        # 두 칸 x 세 줄 - 세 칸이면 "지혜 18 (+12)"처럼 괄호가 붙을 때 한 칸에 안 들어가
+        # 글자가 줄바꿈되며 이름이 잘려 보였다.
         유효능력치 = gameflow.캐릭터_유효능력치(게임상태, 캐릭터)
-        능력치판 = GridLayout(cols=3, size_hint=(1, 0.34))
+        능력치판 = GridLayout(cols=2, size_hint=(1, 0.34))
         for 이름 in self._능력치_목록:
             값 = 유효능력치[이름]
             차이 = 값 - 캐릭터[이름]
@@ -202,13 +204,9 @@ class 파티관리화면(Screen):
         가운데.add_widget(능력치판)
         카드.add_widget(가운데)
 
-        # 오른쪽: 버튼 세 개를 좌우로(레벨업 가능하면 강조색)
-        오른쪽 = BoxLayout(orientation="horizontal", size_hint=(0.36, 1), spacing=dp(6))
-        버튼크기 = {
-            "size_hint": (1, None),
-            "height": dp(44),
-            "pos_hint": {"center_y": 0.5},
-        }
+        # 오른쪽: 버튼 세 개를 위에서 아래로(레벨업 가능하면 강조색)
+        오른쪽 = BoxLayout(orientation="vertical", size_hint=(0.2, 1), spacing=dp(6))
+        버튼크기 = {"size_hint": (1, 1)}
         가능 = gameflow.캐릭터_레벨업_가능(게임상태, 캐릭터)
         레벨업버튼 = _평면버튼(
             "레벨업",

@@ -293,7 +293,7 @@ class 스모크앱(main.DnfMobileApp):
         ]
         assert len(버튼들) == 1, [getattr(w, "text", "") for w in 팝업.walk()]
         버튼들[0].dispatch("on_release")
-        yield 0.3
+        yield 0.6  # 팝업 닫힘 애니메이션이 끝날 때까지(0.3이면 가끔 아직 창에 남아 있었다)
         assert 고른 == ["귀참"] and len(Window.children) == 1, 고른
         결과["단계"].append("스킬강화 팝업(보유 스킬 버튼 -> 그 스킬로 확정)")
 
@@ -304,6 +304,25 @@ class 스모크앱(main.DnfMobileApp):
             getattr(w, "text", "") == "스킬습득" for w in 파티관리.walk(restrict=True)
         ), "스킬습득 버튼 없음"
         yield 0.3
+        # 카드 오른쪽 버튼 셋은 위에서 아래로 쌓이고, 능력치 칸은 "이름 값"이 한 줄에 다 들어간다
+        from kivy.core.text.markup import MarkupLabel
+
+        버튼y = {
+            w.text: w.y
+            for w in 파티관리.walk(restrict=True)
+            if getattr(w, "text", "") in ("레벨업", "스킬습득", "상세보기")
+        }
+        assert 버튼y["레벨업"] > 버튼y["스킬습득"] > 버튼y["상세보기"], 버튼y
+        능력치칸 = [
+            w
+            for w in 파티관리.walk(restrict=True)
+            if isinstance(w, main.Label) and "[color=9ea6b3]" in w.text
+        ]
+        assert len(능력치칸) == 6 * len(상태["파티"]["파티원"]), len(능력치칸)
+        for 칸 in 능력치칸:
+            글 = MarkupLabel(text=칸.text, font_size=칸.font_size, markup=True)
+            글.refresh()
+            assert 글.texture.width <= 칸.width, (칸.text, 글.texture.width, 칸.width)
         _찍기("party_manage")
         귀검사 = 상태["파티"]["파티원"][0]
         상태["소지품"]["골드"] = 50
