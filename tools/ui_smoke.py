@@ -1,7 +1,7 @@
 """화면 스모크 테스트 - 실제 Kivy 앱을 띄워 주요 화면 동작을 호출하고 스크린샷을 남긴다.
 
     pip install kivy                       # 한 번
-    xvfb-run -a -s "-screen 0 720x1280x24" python tools/ui_smoke.py [스크린샷폴더]   # 리눅스(화면 없음)
+    xvfb-run -a -s "-screen 0 1080x2340x24" python tools/ui_smoke.py [스크린샷폴더]  # 리눅스(화면 없음)
     python tools/ui_smoke.py [스크린샷폴더]                                        # Windows/맥(창이 뜬다)
 
 tests/는 kivy 없이 gameflow 이하만 검사한다. 화면(game/screens) 코드를 바꿨다면 이것을
@@ -26,6 +26,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 os.chdir(ROOT)
 os.environ.setdefault("KIVY_NO_ARGS", "1")
+
+# 창 크기는 사용자 휴대폰(갤럭시 S24, 세로 1080x2340)에 맞춘다 - 창을 만들기 전에 정해야 한다.
+from kivy.config import Config  # noqa: E402
+
+Config.set("graphics", "width", "1080")
+Config.set("graphics", "height", "2340")
+Config.set("graphics", "resizable", "0")
 
 import main  # noqa: E402 - 크래시 로그 훅/폰트 등록 등 앱 초기화를 그대로 쓴다
 from kivy.clock import Clock  # noqa: E402
@@ -1015,15 +1022,28 @@ class 스모크앱(main.DnfMobileApp):
                 if isinstance(w, ScrollView) and w.do_scroll_y
             )
 
-        for 모드, 이름 in (
-            ("구매", "shop_scroll_buy"),
-            ("판매", "shop_scroll_sell"),
-            ("해체", "shop_scroll_dismantle"),
-        ):
-            상점._탭목록_그리기(모드, "장비")
-            yield 0.4
-            yield from _스크롤_확인(목록스크롤(), f"상점 {모드}")
-            _찍기(이름)
+        # S24 세로 화면(1080x2340)에서는 마을 판매 목록이 한 화면에 다 들어간다 -
+        # 스크롤을 보려고 이 단계에서만 카탈로그 장비(치트 제외)를 판매 목록에 잠시 더한다.
+        판매목록 = gf.현재_마을정보(상태)["상점판매목록"]
+        원래_판매목록 = list(판매목록)
+        판매목록.extend(
+            이름
+            for 탭 in 카탈로그.values()
+            for 이름, 데이터 in 탭.items()
+            if 데이터.get("레어도") != "치트" and 이름 not in 원래_판매목록
+        )
+        try:
+            for 모드, 이름 in (
+                ("구매", "shop_scroll_buy"),
+                ("판매", "shop_scroll_sell"),
+                ("해체", "shop_scroll_dismantle"),
+            ):
+                상점._탭목록_그리기(모드, "장비")
+                yield 0.4
+                yield from _스크롤_확인(목록스크롤(), f"상점 {모드}")
+                _찍기(이름)
+        finally:
+            판매목록[:] = 원래_판매목록
         매니저.current = "파티원"
         screens_party._장비교체_팝업(상태["파티"]["파티원"][0], "무기", lambda: None)
         yield 0.5

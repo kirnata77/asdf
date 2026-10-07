@@ -48,7 +48,7 @@ jobs:
           pip install kivy pytest  # kivy.tests.common(스크롤 확인 단계)이 pytest를 import한다
 
       - name: UI smoke
-        run: xvfb-run -a -s "-screen 0 720x1280x24" python tools/ui_smoke.py ui_smoke_shots
+        run: xvfb-run -a -s "-screen 0 1080x2340x24" python tools/ui_smoke.py ui_smoke_shots
 
       - name: Upload screenshots
         if: always()
