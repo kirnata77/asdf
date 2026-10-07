@@ -148,7 +148,17 @@ class 스모크앱(main.DnfMobileApp):
     def _단계_파티생성(self, 상태, 매니저):
         """파티 구성 화면 - 이름칸(안내/글자 수 제한)과 이름 중복"""
         매니저.current = "파티생성"
-        이름칸 = 매니저.get_screen("파티생성").슬롯목록[0]["이름입력"]
+        # 처음엔 네 칸 모두 참여, 직업은 귀검사/격투가/거너/마법사
+        슬롯들 = 매니저.get_screen("파티생성").슬롯목록
+        assert [s["직업스피너"].text for s in 슬롯들] == [
+            "귀검사",
+            "격투가",
+            "거너",
+            "마법사",
+        ]
+        assert all(s["참여토글"].state == "down" for s in 슬롯들[1:])
+        assert all(not s["이름입력"].disabled for s in 슬롯들)
+        이름칸 = 슬롯들[0]["이름입력"]
         assert 이름칸.hint_text == gf.캐릭터명_안내, 이름칸.hint_text
         yield 0.5
         _찍기("party_create_hint")
@@ -159,7 +169,9 @@ class 스모크앱(main.DnfMobileApp):
         이름칸.text = "가나다라마바"
         yield 0.3
         _찍기("party_create_name6")
-        결과["단계"].append("파티 구성 이름칸(안내 문구, 한글 6자/영문 12자 제한)")
+        결과["단계"].append(
+            "파티 구성 기본값(4명 참여, 귀검사/격투가/거너/마법사) + 이름칸(안내 문구, 한글 6자/영문 12자 제한)"
+        )
 
         # 이름이 겹치면 시작하지 않고 안내 줄에 알린다(B4)
         파티생성 = 매니저.get_screen("파티생성")
