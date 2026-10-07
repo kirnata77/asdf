@@ -3,7 +3,7 @@
 
 from game.system import character_data_system as 캐릭터데이터
 from game.system import equipment_system
-from game.system.combat import core, formula, participants, status, traits
+from game.system.combat import core, formula, participants, resources, status, traits
 
 # =====================================================
 # 버프/디버프/상태이상 수치 집계
@@ -86,7 +86,11 @@ def _버프디버프_합(전투상태, 참가자, 변동대상, 행동종류, �
     )
     for 인스턴스목록, 정의모음 in 목록들:
         for 항목 in 인스턴스목록:
-            효과 = (정의모음.get(항목["이름"]) or {}).get("효과")
+            # 기술효과(skill_effects - 카잔버프 등)는 버프정의에 없으므로 효과정의_조회로 찾는다
+            정의 = (
+                정의모음.get(항목["이름"]) or resources.효과정의_조회(항목["이름"])[0]
+            )
+            효과 = (정의 or {}).get("효과")
             if 효과 is None:
                 continue
             # 인스턴스 무기조건(스킬 "버프무기조건" - 데스 바이 리볼버)
