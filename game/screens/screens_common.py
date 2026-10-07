@@ -19,8 +19,9 @@ from kivy.uix.modalview import ModalView
 from kivy.uix.dropdown import DropDown
 from kivy.uix.image import Image
 from kivy.uix.behaviors import ButtonBehavior
+from kivy.uix.scatterlayout import ScatterLayout
 from kivy.metrics import dp
-from kivy.graphics import Color, RoundedRectangle
+from kivy.graphics import Color, Rectangle, RoundedRectangle
 
 import gameflow
 
@@ -316,6 +317,71 @@ def _뒤로키_버튼_찾기(위젯):
     return None
 
 
+# =====================================================
+# 기준 화면 틀 - 화면은 사용자 폰(갤럭시 S24 세로, 1080x2340 픽셀) 하나를 기준으로
+# 만든다. 비율이 다른 기기에서는 기준 화면 전체를 같은 배율로 줄이거나 키워 가운데에
+# 두고, 남는 곳(더 길면 위아래, 더 넓으면 좌우)은 검정 여백으로 둔다. 터치 위치도
+# 같은 배율로 바뀐다(ScatterLayout). 팝업은 창에 직접 뜨므로 창 가운데(= 기준 화면
+# 가운데)에 뜨고, 크기 비율(size_hint)도 창이 아니라 기준 화면에 대한 비율이 되게 맞춘다.
+# =====================================================
+기준화면_폭 = 1080
+기준화면_높이 = 2340
+
+
+def 기준화면_배율(창폭, 창높이):
+    """기준 화면을 창 안에 비율 그대로 다 들어가게 놓을 때의 배율."""
+    return min(창폭 / 기준화면_폭, 창높이 / 기준화면_높이)
+
+
+class 기준화면틀(Widget):
+    """내용(화면 관리자)을 기준 화면 크기로 고정하고, 창에 맞춰 배율과 위치만 바꾼다."""
+
+    def __init__(self, 내용, **kwargs):
+        super().__init__(**kwargs)
+        with self.canvas.before:
+            Color(0, 0, 0, 1)
+            self._여백 = Rectangle()
+        self.틀 = ScatterLayout(
+            do_rotation=False,
+            do_scale=False,
+            do_translation=False,
+            auto_bring_to_front=False,
+            size_hint=(None, None),
+            size=(기준화면_폭, 기준화면_높이),
+        )
+        self.틀.add_widget(내용)
+        self.add_widget(self.틀)
+        self.bind(pos=self._맞추기, size=self._맞추기)
+
+    @property
+    def 배율(self):
+        return self.틀.scale
+
+    def _맞추기(self, *args):
+        self._여백.pos = self.pos
+        self._여백.size = self.size
+        배율 = 기준화면_배율(self.width, self.height)
+        self.틀.scale = 배율
+        self.틀.pos = (
+            self.x + (self.width - 기준화면_폭 * 배율) / 2,
+            self.y + (self.height - 기준화면_높이 * 배율) / 2,
+        )
+
+    def 팝업_맞추기(self, 창, 자식들):
+        """창에 새로 뜬 팝업의 크기 비율을 기준 화면에 대한 비율로 바꾼다 - 넓은 기기에서
+        팝업이 검정 여백까지 덮지 않게. 창.children에 묶어 부른다."""
+        보이는폭 = 기준화면_폭 * self.배율
+        보이는높이 = 기준화면_높이 * self.배율
+        for 자식 in 자식들:
+            if not isinstance(자식, ModalView):
+                continue
+            가로, 세로 = 자식.size_hint
+            자식.size_hint_max = (
+                None if 가로 is None else 가로 * 보이는폭,
+                None if 세로 is None else 세로 * 보이는높이,
+            )
+
+
 def 뒤로키_처리(창, 키, *args):
     if 키 != 27:
         return False
@@ -331,7 +397,7 @@ def 뒤로키_처리(창, 키, *args):
         elif 맨위.auto_dismiss:
             맨위.dismiss()
     else:
-        버튼 = _뒤로키_버튼_찾기(App.get_running_app().root.current_screen)
+        버튼 = _뒤로키_버튼_찾기(App.get_running_app().매니저.current_screen)
         if 버튼 is not None:
             버튼.trigger_action(duration=0)
     return True

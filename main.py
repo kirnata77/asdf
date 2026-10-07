@@ -136,7 +136,7 @@ from game.screens.screens_town import (
 from game.screens.screens_dungeon import 던전목록화면, 던전화면
 from game.screens.screens_battle import 전투화면
 from game.screens.screens_party import 파티관리화면, 파티원화면
-from game.screens.screens_common import 뒤로키_처리
+from game.screens.screens_common import 뒤로키_처리, 기준화면틀
 import gameflow
 
 
@@ -176,11 +176,15 @@ class DnfMobileApp(App):
         매니저.add_widget(모험단화면(name="모험단"))
         매니저.add_widget(주점화면(name="주점"))
         매니저.current = "메인메뉴"
+        self.매니저 = 매니저
         # 핸드폰 [뒤로] 키 - 앱을 최소화하지 않고 취소/닫기/뒤로로 쓴다.
         from kivy.core.window import Window
 
         Window.bind(on_keyboard=뒤로키_처리)
-        return 매니저
+        # 화면은 1080x2340 기준 화면 안에 그리고, 비율이 다른 기기에서는 검정 여백을 둔다.
+        틀 = 기준화면틀(매니저)
+        Window.bind(children=틀.팝업_맞추기)
+        return 틀
 
 
 if __name__ == "__main__":

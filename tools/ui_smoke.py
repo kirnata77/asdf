@@ -8,7 +8,8 @@ tests/는 kivy 없이 gameflow 이하만 검사한다. 화면(game/screens) 코�
 돌려 확인한다(CLAUDE.md 완료 기준 3). 레벨 10 파티를 만들어 다음을 실제로 호출한다:
 파티 구성 이름칸(6자 제한), 상점 구매/판매 목록, 능력치 배분 팝업, 장비 교체 팝업/상세보기, 파티원 포션 사용, 뒤로 키, 전투 화면 스킬 팝업과 스킬별 실제 타겟(4직업 전 스킬),
 적 대상 선택 팝업(일반공격, 취소), 전투 [아이템] 포션(보조행동), 적반복지정(썬더콜링) 선택 - 은신 대상 거부 포함, 행동 선택 팝업(메모라이즈), 도망(구속이면 막힘 팝업, 실패하면 턴 종료),
-전투 종료 팝업(승리 전리품/없음, 도망, 패배)과 전투 보상(3칸 선택/빈칸 포기), 자동전투(켜기/중지/끝까지), 몬스터 크기 배율, 적 도망(황금 고블린).
+전투 종료 팝업(승리 전리품/없음, 도망, 패배)과 전투 보상(3칸 선택/빈칸 포기), 자동전투(켜기/중지/끝까지), 몬스터 크기 배율, 적 도망(황금 고블린),
+기준 화면 틀(비율이 다른 창에서 검정 여백/터치/팝업 크기).
 예외가 나면 종료코드 1.
 스크린샷 기본 폴더: ui_smoke_shots/ (.gitignore에 들어 있다).
 """
@@ -131,7 +132,7 @@ class 스모크앱(main.DnfMobileApp):
             support.성장(상태, c, 10, 전직=전직[c["직업"]])
         gf.파티_최대치로_회복(상태)
         self.게임상태 = 상태
-        매니저 = self.root
+        매니저 = self.매니저
 
         yield from self._단계_파티생성(상태, 매니저)
         yield from self._단계_상점(상태, 매니저)
@@ -142,6 +143,7 @@ class 스모크앱(main.DnfMobileApp):
         yield from self._단계_목록_스크롤(상태, 매니저)
         yield from self._단계_세이브(상태, 매니저)
         yield from self._단계_설정(매니저)
+        yield from self._단계_화면_틀(매니저)
 
     def _단계_파티생성(self, 상태, 매니저):
         """파티 구성 화면 - 이름칸(안내/글자 수 제한)과 이름 중복"""
@@ -1207,6 +1209,63 @@ class 스모크앱(main.DnfMobileApp):
             gf.반응_자동_설정(원래반응)
             shutil.rmtree(폴더, ignore_errors=True)
             매니저.current = "마을"
+
+    def _단계_화면_틀(self, 매니저):
+        """기준 화면 틀 - 비율이 다른 창에서 검정 여백, 터치 위치, 팝업 크기"""
+        from kivy.tests.common import UnitTestTouch
+        from kivy.uix.popup import Popup
+
+        틀 = self.root
+        원래크기 = tuple(Window.size)
+        assert 틀.배율 == 1 and tuple(틀.틀.pos) == (0, 0), (틀.배율, 틀.틀.pos)
+        try:
+            # 기준보다 길쭉한 창(위아래 여백)과 넓적한 창(좌우 여백)
+            for 이름, 크기 in (("tall", (900, 2340)), ("wide", (1080, 1440))):
+                Window.size = 크기
+                yield 0.5
+                assert tuple(Window.size) == 크기, (이름, Window.size)
+                배율 = screens_common.기준화면_배율(*크기)
+                assert abs(틀.배율 - 배율) < 1e-6, (이름, 틀.배율, 배율)
+                보이는폭 = screens_common.기준화면_폭 * 배율
+                보이는높이 = screens_common.기준화면_높이 * 배율
+                x, y = 틀.틀.pos
+                assert abs(x - (크기[0] - 보이는폭) / 2) < 1, (이름, 틀.틀.pos)
+                assert abs(y - (크기[1] - 보이는높이) / 2) < 1, (이름, 틀.틀.pos)
+
+                # 줄어든 화면에서 손가락으로 누른 곳이 그 버튼에 닿는다
+                매니저.current = "옵션"
+                yield 0.3
+                _찍기("frame_" + 이름)
+                뒤로 = next(
+                    w
+                    for w in 매니저.current_screen.walk(restrict=True)
+                    if isinstance(w, Button) and w.text == "뒤로"
+                )
+                손 = UnitTestTouch(*뒤로.to_window(*뒤로.center))
+                손.touch_down()
+                손.touch_up()
+                yield 0.3
+                assert 매니저.current == "메인메뉴", (이름, 매니저.current)
+
+                # 팝업은 가운데에, 크기 비율은 기준 화면에 대해
+                팝업 = Popup(title="틀 점검", size_hint=(0.9, 0.5))
+                팝업.open(animation=False)
+                yield 0.3
+                assert abs(팝업.width - 0.9 * 보이는폭) < 1, (이름, 팝업.size)
+                assert abs(팝업.height - 0.5 * 보이는높이) < 1, (이름, 팝업.size)
+                assert abs(팝업.center_x - Window.width / 2) < 1, (이름, 팝업.center)
+                assert abs(팝업.center_y - Window.height / 2) < 1, (이름, 팝업.center)
+                _찍기("frame_" + 이름 + "_popup")
+                팝업.dismiss(animation=False)
+                yield 0.3
+            결과["단계"].append(
+                "기준 화면 틀(1080x2340) - 길쭉/넓적한 창에서 검정 여백, 가운데 배치, 터치, 팝업 크기"
+            )
+        finally:
+            Window.size = 원래크기
+        yield 0.5
+        assert abs(틀.배율 - 1) < 1e-6, 틀.배율
+        매니저.current = "마을"
 
 
 if __name__ == "__main__":
