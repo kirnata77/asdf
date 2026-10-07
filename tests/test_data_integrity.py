@@ -376,6 +376,15 @@ def test_던전_데이터의_좌표와_참조가_맞는다():
         def 안(좌표):
             return 0 <= 좌표[0] < 너비 and 0 <= 좌표[1] < 높이
 
+        if set("".join(격자)) - set("XYO@#"):  # dungeon_format.py <지도 기호>
+            문제.append(f"{이름}: 모르는 지도 기호 {set(''.join(격자)) - set('XYO@#')}")
+        for 기호, 파일 in (던전.get("타일") or {}).items():
+            if 기호 not in "XYO@#":
+                문제.append(f"{이름}: 타일의 모르는 지도 기호 {기호!r}")
+            if not (루트 / "game" / "assets" / "dungeon" / 파일).is_file():
+                문제.append(f"{이름}: 타일 그림 {파일} 없음")
+        if any(len(행) != 너비 for 행 in 격자):
+            문제.append(f"{이름}: 지도 행 길이가 다르다")
         if 던전.get("입장좌표") and not 안(던전["입장좌표"]):
             문제.append(f"{이름}: 입장좌표 {던전['입장좌표']}가 지도 밖")
         for 좌표, 오브젝트 in 던전["오브젝트"].items():
@@ -397,7 +406,9 @@ def test_던전_데이터의_좌표와_참조가_맞는다():
                     문제.append(
                         f"{이름}: {대상}의 진입좌표 {연결['진입좌표']}가 지도 밖"
                     )
-        for 그룹 in 던전["인카운트"]["출현그룹"]:
+        for 그룹 in (던전.get("인카운트") or {}).get(
+            "출현그룹", []
+        ):  # "인카운트"는 선택 항목(dungeon_format.py) - 없는 던전도 있다
             for 몹, 가중치 in 그룹[
                 "출현몬스터"
             ].items():  # 가중치는 상대값(random.choices)이라 합이 1일 필요는 없다

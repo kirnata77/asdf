@@ -122,9 +122,16 @@
     "dungeon_01A_D08_grakquarak": "game.data.dungeon.dungeon_01A_D08_grakquarak",
     "dungeon_01A_D09_blazing_grakquarak": "game.data.dungeon.dungeon_01A_D09_blazing_grakquarak",
     "dungeon_01A_D10_shadow_thunderland": "game.data.dungeon.dungeon_01A_D10_shadow_thunderland",
+    "dungeon_02A_D11_amon_lower": "game.data.dungeon.dungeon_02A_D11_amon_lower",
+    "dungeon_02A_D12_amon_upper": "game.data.dungeon.dungeon_02A_D12_amon_upper",
+    "dungeon_02A_D13_sephiroth_lower": "game.data.dungeon.dungeon_02A_D13_sephiroth_lower",
+    "dungeon_02A_D14_sephiroth_upper": "game.data.dungeon.dungeon_02A_D14_sephiroth_upper",
+    "dungeon_02A_D15_middleocean_shallow": "game.data.dungeon.dungeon_02A_D15_middleocean_shallow",
+    "dungeon_02A_D16_middleocean_deep": "game.data.dungeon.dungeon_02A_D16_middleocean_deep",
     # game/data/town/
     "town_01A_T01_Elvengard": "game.data.town.town_01A_T01_Elvengard",
     "town_01A_T02_hendonmyre": "game.data.town.town_01A_T02_hendonmyre",
+    "town_02A_T03_westcoast": "game.data.town.town_02A_T03_westcoast",
     "town_format": "game.data.town.town_format",
     # game/system/
     "equipment_system": "game.system.equipment_system",
@@ -224,10 +231,15 @@
 #     │   │                  asset_tile_tree.webp    나무 (8x16, 세로 2칸)
 #     │   │                  asset_tile_gate.webp    게이트 (8x16, 세로 2칸)
 #     │   │                  asset_tile_cage.webp    감옥에 갇힌 소녀 (16x16)
+#     │   │                  asset_tile_emerald.webp 하늘성 탑 발판 - 에메랄드빛 돌 (8x8, 하늘성 탑 4곳의 "타일")
+#     │   │                  asset_tile_skyyellow.webp 하늘 - 노을빛 (8x8, 하늘성 탑 4곳의 "타일")
+#     │   │                  asset_tile_sky.webp     하늘 - 푸른빛, 노을과 같은 무늬 (8x8, 아직 미사용)
+#     │   │                  asset_tile_skycastlewall.webp 하늘성 벽 - 노란 벽돌 (8x8, 하늘성 탑 4곳의 "타일")
 #     │   ├── monster/     몬스터 이미지 (asset_monster_*.webp)
 #     │   └── town/       마을 배경 그림 (asset_town_*.webp)
 #     │                      asset_town_elvengard.webp   엘븐가드 (720x350)
 #     │                      asset_town_hendonmyre.webp  헨돈마이어 (720x342)
+#     │                      asset_town_westcoast.webp   웨스트코스트 (임시 - 헨돈마이어 복사본)
 #     └── __init__.py
 #
 # 주의: assets/font/ 안에는 폰트 파일(.ttf/.otf)만 둔다. 문서·노트

@@ -121,6 +121,7 @@ class 스모크앱(main.DnfMobileApp):
         yield from self._단계_파티관리_팝업(상태, 매니저)
         전투 = yield from self._단계_장비_포션_뒤로키_전투팝업(상태, 매니저)
         yield from self._단계_전투종료_자동전투_주점(상태, 매니저, 전투)
+        yield from self._단계_맵_타일(상태, 매니저)
         yield from self._단계_목록_스크롤(상태, 매니저)
         yield from self._단계_세이브(상태, 매니저)
         yield from self._단계_설정(매니저)
@@ -907,6 +908,36 @@ class 스모크앱(main.DnfMobileApp):
         assert "추방했습니다" in 주점.안내라벨.text, 주점.안내라벨.text
         _찍기("tavern_after")
         결과["단계"].append("주점(영입 -> 숙소, 대기, 합류, 추방 확인 팝업)")
+
+    def _단계_맵_타일(self, 상태, 매니저):
+        """하늘성 탑(아몬 상층)이 맵정보 "타일"의 그림(발판/벽/하늘)으로 그려지는지"""
+        from kivy.graphics import Rectangle
+
+        _팝업_닫기()
+        gf.던전_진입(상태, "dungeon_02A_D12_amon_upper")
+        상태["던전상태"]["위치"] = (6, 4)  # 왼쪽 - 발판/하늘/벽이 한 화면에 보인다
+        매니저.current = "던전"
+        던전 = 매니저.get_screen("던전")
+        던전.갱신()
+        yield 0.5
+        지도 = 던전.지도위젯
+        그린것 = {
+            id(c.texture)
+            for c in 지도.canvas.children
+            if isinstance(c, Rectangle) and c.texture is not None
+        }
+        for 기호 in ("O", "X", "Y"):
+            텍스처 = 지도._맵_타일(기호)
+            assert 텍스처 is not None, (기호, "타일 그림을 못 읽음")
+            assert id(텍스처) in 그린것, (기호, "맵 타일이 그려지지 않음")
+        assert 지도._타일("풀밭") is None or id(지도._타일("풀밭")) not in 그린것
+        _찍기("dungeon_map_tiles")
+        상태["던전상태"] = None
+        매니저.current = "마을"
+        yield 0.3
+        결과["단계"].append(
+            "하늘성 탑 맵 타일(발판/하늘성 벽/노을 하늘) - 공용 풀밭 대신 그림"
+        )
 
     def _단계_목록_스크롤(self, 상태, 매니저):
         """상점/장비 교체 목록 스크롤(끌어서 내림)"""
