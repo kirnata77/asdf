@@ -89,6 +89,14 @@ def _흙길_여부(x, y, 시드):
     return 값 > _흙길_문턱값
 
 
+def _비율맞춤(텍스처, x, y, 폭, 높이):
+    """텍스처 비율을 지켜 (x, y, 폭, 높이) 안에 꽉 맞춘 바닥 가운데 자리 - Rectangle 인자."""
+    tw, th = 텍스처.size
+    배율 = min(폭 / tw, 높이 / th)
+    w, h = tw * 배율, th * 배율
+    return {"pos": (x + (폭 - w) / 2, y), "size": (w, h)}
+
+
 class 던전맵위젯(Widget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -147,13 +155,14 @@ class 던전맵위젯(Widget):
         """공용 타일(_타일_파일의 이름)의 텍스처를 돌려준다."""
         return self._파일_타일(_타일_파일[이름])
 
-    def _파일_타일(self, 파일명):
-        """game/assets/dungeon/의 타일 텍스처를 한 번만 읽어 캐시한다.
+    def _파일_타일(self, 파일명, 폴더="dungeon"):
+        """game/assets/<폴더>/(기본 dungeon)의 타일 텍스처를 한 번만 읽어 캐시한다.
         도트를 크게 늘려도 번지지 않게 확대/축소 필터를 nearest로 둔다.
         파일이 없으면 None."""
-        if 파일명 not in self._타일_캐시:
+        키 = (폴더, 파일명)
+        if 키 not in self._타일_캐시:
             텍스처 = None
-            경로 = _에셋_경로("dungeon", 파일명)
+            경로 = _에셋_경로(폴더, 파일명)
             if 경로:
                 try:
                     텍스처 = CoreImage(경로).texture
@@ -161,8 +170,8 @@ class 던전맵위젯(Widget):
                     텍스처.min_filter = "nearest"
                 except Exception:  # kivy는 못 읽는 그림에 Exception 자체를 던진다
                     텍스처 = None
-            self._타일_캐시[파일명] = 텍스처
-        return self._타일_캐시[파일명]
+            self._타일_캐시[키] = 텍스처
+        return self._타일_캐시[키]
 
     def _맵_타일(self, 문자, 층=None):
         """그 맵(층 - 기본은 지금 맵)의 "타일"에 문자(지도 기호)가 지정돼 있으면 그
@@ -178,11 +187,22 @@ class 던전맵위젯(Widget):
 
     def _오브젝트_타일(self, 맵x, 맵y):
         """(맵x, 맵y) 오브젝트에 "타일"이 지정돼 있으면 그 텍스처를,
-        없거나 파일이 없으면 None을 돌려준다."""
+        없거나 파일이 없으면 None을 돌려준다. 한 번 클리어한 감옥 보스전처럼
+        "보스그림"(gameflow.던전_오브젝트_표시)이 있으면 그 몬스터 그림이 먼저다."""
         정보 = self.오브젝트.get((맵x, 맵y))
-        if not 정보 or not 정보.get("타일"):
+        if not 정보:
+            return None
+        if 정보.get("보스그림"):
+            그림 = self._파일_타일(정보["보스그림"], 폴더="monster")
+            if 그림 is not None:
+                return 그림
+        if not 정보.get("타일"):
             return None
         return self._파일_타일(정보["타일"])
+
+    def _보스그림인가(self, 맵x, 맵y):
+        정보 = self.오브젝트.get((맵x, 맵y)) or {}
+        return bool(정보.get("보스그림"))
 
     def _오브젝트_타일크기(self, 맵x, 맵y):
         """오브젝트 "타일크기"(칸 수, 기본 1). 2 이상이면 그 칸 중심에 맞춰
@@ -331,7 +351,13 @@ class 던전맵위젯(Widget):
                 for 겹 in 바닥:
                     Rectangle(texture=겹, pos=위치, size=칸크기)
                 if 오브젝트타일 is not None:
-                    Rectangle(texture=오브젝트타일, pos=위치, size=칸크기)
+                    if self._보스그림인가(맵x, 맵y):
+                        Rectangle(
+                            texture=오브젝트타일,
+                            **_비율맞춤(오브젝트타일, *위치, *칸크기),
+                        )
+                    else:
+                        Rectangle(texture=오브젝트타일, pos=위치, size=칸크기)
 
     def _높은타일_그리기(self):
         """2단계 - 나무/게이트(세로 2칸). 윗줄부터 차례로 그려서 아래쪽
@@ -373,13 +399,17 @@ class 던전맵위젯(Widget):
                     continue
                 x, y = self._칸위치(화면x, 화면y)
                 중심x, 중심y = x + 칸폭 / 2, y + 칸높이 / 2
-                self._잘라_그리기(
-                    텍스처,
+                영역 = (
                     중심x - 칸폭 * 크기 / 2,
                     중심y - 칸높이 * 크기 / 2,
                     칸폭 * 크기,
                     칸높이 * 크기,
                 )
+                if self._보스그림인가(맵x, 맵y):
+                    # 몬스터 그림은 정사각형이 아니라 비율을 지켜 영역 바닥 가운데에
+                    맞춤 = _비율맞춤(텍스처, *영역)
+                    영역 = (*맞춤["pos"], *맞춤["size"])
+                self._잘라_그리기(텍스처, *영역)
 
     def _잘라_그리기(self, 텍스처, x, y, 폭, 높이):
         """(x, y, 폭, 높이)에 텍스처를 그리되 위젯 범위 밖은 잘라 낸다(텍스처도 같은 비율로)."""
@@ -553,7 +583,7 @@ class 던전화면(Screen):
             던전상태["위치"],
             게임상태.get("선택된초상화"),
             던전상태.get("던전파일명"),
-            던전상태["맵정보"].get("오브젝트"),
+            gameflow.던전_오브젝트_표시(게임상태),
             던전상태["맵정보"].get("타일"),
             gameflow.이어진_맵_목록(게임상태),
         )

@@ -1,10 +1,14 @@
 # 컨트롤러 - 던전 이동과 상호작용(인카운트/보스전 시작)
 # (gameflow.py에서 분리 - N5. 화면은 gameflow.py 창구만 부른다. 설명은 gameflow.py 머리말)
 
-from game.system import dungeon_system
+from game.system import dungeon_system, town_system
 from game.controller.ctl_battle import 전투_시작
 from game.controller.ctl_party import 캐릭터_장비데이터
-from game.controller.ctl_registry import 던전_레지스트리, 마을파일_레지스트리
+from game.controller.ctl_registry import (
+    던전_레지스트리,
+    마을파일_레지스트리,
+    몬스터목록,
+)
 
 __all__ = [
     "던전_진입",
@@ -13,6 +17,8 @@ __all__ = [
     "던전_이동",
     "오브젝트_상호작용",
     "이어진_맵_목록",
+    "_보스_그림",
+    "던전_오브젝트_표시",
 ]
 
 
@@ -134,3 +140,34 @@ def 이어진_맵_목록(게임상태):
             }
         )
     return 목록
+
+
+def _보스_그림(오브젝트):
+    """보스전투 오브젝트의 보스 몬스터(칭호 "보스", 없으면 첫 몬스터) 그림 파일명."""
+    몬스터들 = 오브젝트.get("전투몬스터") or []
+    보스 = next((m for m in 몬스터들 if m.get("칭호") == "보스"), None)
+    보스 = 보스 or (몬스터들[0] if 몬스터들 else None)
+    if 보스 is None:
+        return None
+    return (몬스터목록.get(보스["이름"]) or {}).get("이미지")
+
+
+def 던전_오브젝트_표시(게임상태):
+    """지금 맵의 오브젝트를 화면에 그릴 정보로. 원본과 같되, 전용 "타일"(감옥 등)이 있는
+    보스전투는 한 번 클리어했으면(진행도에 영구 기록) 그 타일 대신 보스 몬스터 그림을
+    "보스그림"에 담는다 - 처음 만날 때만 감옥이고 다음부터는 보스가 보인다."""
+    던전상태 = 게임상태.get("던전상태") or {}
+    파일명 = 던전상태.get("던전파일명")
+    결과 = {}
+    for 좌표, 오브젝트 in (던전상태.get("맵정보", {}).get("오브젝트") or {}).items():
+        표시 = dict(오브젝트)
+        if (
+            오브젝트.get("타입") == "보스전투"
+            and 오브젝트.get("타일")
+            and town_system.오브젝트_클리어됨(게임상태["진행도"], 파일명, 좌표)
+        ):
+            그림 = _보스_그림(오브젝트)
+            if 그림:
+                표시["보스그림"] = 그림
+        결과[좌표] = 표시
+    return 결과

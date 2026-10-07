@@ -193,3 +193,27 @@ def test_적_HP표시는_현재와_유효_최대HP():
     최대 = stats.유효_최대HP(상태["전투상태"], 적)
     적["현재HP"] = 최대 - 1
     assert gf.적_HP표시(상태, 적) == f"HP {최대 - 1}/{최대}"
+
+
+def test_감옥_보스전은_한번_클리어하면_보스_그림으로_표시():
+    from game.system import town_system
+
+    상태 = support.새게임([("", "귀검사")])
+    gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
+    표시 = gf.던전_오브젝트_표시(상태)
+    assert "보스그림" not in 표시[(15, 3)]  # 처음엔 감옥
+    assert 표시[(15, 3)]["타일"] == "asset_tile_prison_seria.webp"
+    town_system.오브젝트_클리어_기록(상태["진행도"], "dungeon_01A_D01_Lorien", (15, 3))
+    표시 = gf.던전_오브젝트_표시(상태)
+    assert 표시[(15, 3)]["보스그림"] == gf.몬스터목록["겁쟁이 고블린"]["이미지"]
+    # 전용 타일이 없는 보스(D02)는 클리어해도 그대로
+    gf.던전_진입(상태, "dungeon_01A_D02_Hollow_Lorien")
+    for 좌표 in 표시_좌표(상태):
+        town_system.오브젝트_클리어_기록(
+            상태["진행도"], "dungeon_01A_D02_Hollow_Lorien", 좌표
+        )
+    assert all("보스그림" not in o for o in gf.던전_오브젝트_표시(상태).values())
+
+
+def 표시_좌표(상태):
+    return list(상태["던전상태"]["맵정보"]["오브젝트"])

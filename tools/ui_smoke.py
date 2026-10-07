@@ -1063,6 +1063,38 @@ class 스모크앱(main.DnfMobileApp):
         assert 지도._칸_문자(19, -1) == "O", 지도._칸_문자(19, -1)
         assert 지도._칸_문자(3, -1) == "O"  # 상층 마을 포탈 앞 보스 -> 발판으로
         assert 지도._칸_문자(19, 0) == "#"  # 겹친 포탈 칸은 지금 맵
+        # 한 번 클리어한 로리엔 감옥 보스는 다시 들어오면 감옥 대신 보스 몬스터 그림(비율 유지)
+        from game.system import town_system
+
+        town_system.오브젝트_클리어_기록(
+            상태["진행도"], "dungeon_01A_D01_Lorien", (15, 3)
+        )
+        gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
+        상태["던전상태"]["위치"] = (14, 3)
+        던전.갱신()
+        yield 0.5
+        assert 지도._보스그림인가(15, 3)
+        보스 = 지도._오브젝트_타일(15, 3)
+        assert 보스 is not None and 보스 is not 지도._파일_타일(
+            "asset_tile_prison_seria.webp"
+        )
+        _찍기("dungeon_prison_cleared_boss")
+        # 잘라 그리기(get_region)라 같은 GL 텍스처의 조각이다 - id로 찾는다
+        보스칸 = [
+            c
+            for c in 그린_사각형(지도)
+            if c.texture is not None and c.texture.id == 보스.id
+        ]
+        assert len(보스칸) == 1, len(보스칸)
+        tw, th = 보스.size
+        크기 = 보스칸[0].size
+        assert abs(크기[0] / 크기[1] - tw / th) < 0.05, (
+            "보스 그림 비율",
+            크기,
+            보스.size,
+        )
+        상태["진행도"]["클리어한오브젝트"].discard(("dungeon_01A_D01_Lorien", (15, 3)))
+        결과["단계"].append("감옥 보스전은 한 번 클리어하면 보스 몬스터 그림으로")
         gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
         상태["던전상태"]["위치"] = (14, 3)  # 보스(감옥) 왼쪽 - 오른쪽에 로리엔 안쪽
         던전.갱신()
