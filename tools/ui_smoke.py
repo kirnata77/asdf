@@ -964,6 +964,19 @@ class 스모크앱(main.DnfMobileApp):
         assert max(칸들) < 감옥[0], "감옥이 바닥보다 먼저 그려짐"
         assert 지도.canvas.children[-1] is not 사각형들[감옥[0]]  # 플레이어가 맨 위
         _찍기("dungeon_prison_2x2")
+        gf.던전_진입(상태, "dungeon_02A_D11_amon_lower")
+        상태["던전상태"]["위치"] = (19, 3)  # 아몬 하층 보스(19,1) 아래 - 로리안 감옥
+        던전.갱신()
+        yield 0.5
+        로리안 = 지도._오브젝트_타일(19, 1)
+        assert 로리안 is not None, "로리안 감옥 그림을 못 읽음"
+        assert any(
+            c.texture is not None
+            and c.texture.size != (0, 0)
+            and abs(c.size[0] - 칸폭 * 2) < 1
+            for c in 그린_사각형(지도)
+        ), "로리안 감옥이 2x2칸으로 그려지지 않음"
+        _찍기("dungeon_prison_lorien")
         상태["던전상태"] = None
         매니저.current = "마을"
         yield 0.3

@@ -232,7 +232,7 @@
 #     │   │                  asset_tile_gate_grandflores.webp 게이트 - 그란플로리스 (8x16, 세로 2칸, 공용)
 #     │   │                  asset_tile_gate_skycastle.webp 게이트 - 하늘성 (64x64, 한 칸, 투명 배경)
 #     │   │                  asset_tile_prison_seria.webp 감옥 - 세리아 (16x16, 오브젝트 "타일크기" 2)
-#     │   │                  asset_tile_prison_lorien.webp 감옥 - 로리안 (128x128, 투명 배경, 아직 미사용)
+#     │   │                  asset_tile_prison_lorien.webp 감옥 - 로리안 (128x128, 투명 배경, 아몬 하층 보스 "타일크기" 2)
 #     │   │                  asset_tile_emerald.webp 하늘성 탑 발판 - 에메랄드빛 돌 (8x8, 하늘성 탑 4곳의 "타일")
 #     │   │                  asset_tile_skyyellow.webp 하늘 - 노을빛 (8x8, 하늘성 탑 4곳의 "타일")
 #     │   │                  asset_tile_sky.webp     하늘 - 푸른빛, 노을과 같은 무늬 (8x8, 아직 미사용)

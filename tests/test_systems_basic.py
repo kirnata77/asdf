@@ -363,6 +363,12 @@ def test_하늘성_탑은_보스를_넘어_위아래로_이어진다(아래, 위
     }
 
 
+def test_아몬_하층_보스는_로리안_감옥_그림이다():
+    보스 = _하늘성("D11_amon_lower")["오브젝트"][(19, 1)]
+    assert (보스["타일"], 보스["타일크기"]) == ("asset_tile_prison_lorien.webp", 2)
+    assert "타일" not in _하늘성("D13_sephiroth_lower")["오브젝트"][(19, 1)]
+
+
 def test_미들오션_포탈은_클리어해야_심해로_이어진다():
     아래, 위 = "D15_middleocean_shallow", "D16_middleocean_deep"
     아래맵, 위맵 = _하늘성(아래), _하늘성(위)
