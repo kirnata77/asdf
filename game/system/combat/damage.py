@@ -2,7 +2,15 @@
 # (combat 패키지에서 분리 - R4. 전체 설계 설명은 game/system/combat/__init__.py)
 
 from game.system import dice_utils
-from game.system.combat import core, formula, reactions, stats, status, traits
+from game.system.combat import (
+    core,
+    formula,
+    participants,
+    reactions,
+    stats,
+    status,
+    traits,
+)
 
 # =====================================================
 # 명중 / 피해
@@ -93,6 +101,10 @@ def 명중_판정_계산(전투상태, 공격자, 대상, 명중률종류, 명�
     명중률보너스 = 공격자["원본"].get("명중률보너스", 0)
     if not isinstance(명중률보너스, (int, float)):
         명중률보너스 = 0
+    if 공격자["진영"] == "적":  # 몬스터 역할군(탱커 -1, 메이지 +1)
+        명중률보너스 += participants.몬스터_역할군_보너스(
+            공격자["원본"], "명중률보너스"
+        )
     # 장비(전 부위+활성 세트) 명중률보너스 - 아군만, 모든 명중 굴림.
     명중률보너스 += stats.장비_수치(공격자, "명중률보너스")
     명중률보너스 += stats.버프디버프_수치(전투상태, 공격자, "명중보너스")
