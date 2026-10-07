@@ -1,8 +1,9 @@
-name: Delete merged claude branch
+name: Delete merged branch
 
-# PR이 병합되면 head 브랜치가 `claude/*`일 때만 원격 브랜치를 지운다.
-# 저장소 설정의 "Automatically delete head branches"는 이름으로 거를 수 없어 쓰지 않는다.
-# 병합 없이 닫힌 PR, 다른 이름의 브랜치, 포크에서 온 PR은 건드리지 않는다.
+# PR이 병합되면 head 브랜치(원격)를 지운다 - 병합된 브랜치는 끝난 것이다(CLAUDE.md "Git").
+# 기본 브랜치(main)가 head인 PR, 병합 없이 닫힌 PR, 포크에서 온 PR은 건드리지 않는다.
+# 저장소 설정의 "Automatically delete head branches"와 같은 일이지만, 설정은 저장소 밖에
+# 있어 보이지 않으므로 워크플로로 둔다.
 on:
   pull_request:
     types: [closed]
@@ -14,7 +15,7 @@ jobs:
   delete-branch:
     if: >-
       github.event.pull_request.merged == true &&
-      startsWith(github.event.pull_request.head.ref, 'claude/') &&
+      github.event.pull_request.head.ref != github.event.repository.default_branch &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 5
