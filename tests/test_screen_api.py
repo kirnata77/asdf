@@ -162,3 +162,25 @@ def test_적_그리기_순서는_대형이_뒤_같은_크기는_왼쪽이_앞():
     # 먼저 그린 것이 뒤: 대형(오른쪽부터) -> 중형 -> 소형(오른쪽부터) - 왼쪽이 마지막(앞)
     assert 순서 == ["E", "B", "C", "D", "A"]
     assert [i for i, _ in gf.적_그리기_순서(적)] == [4, 1, 2, 3, 0]
+
+
+def test_이어진_맵_목록은_건너_이어진_던전까지_포탈을_겹쳐_놓는다():
+    상태 = support.새게임([("", "귀검사")])
+    assert gf.이어진_맵_목록(상태) == []  # 던전 밖
+    gf.던전_진입(상태, "dungeon_01A_D06_poison_thunderland")
+    목록 = gf.이어진_맵_목록(상태)
+    # 포이즌 선더랜드 -> 선더랜드(바로 위) -> 어둠의 선더랜드(한 단계 더 위)
+    assert [(m["던전파일명"], m["오프셋"]) for m in 목록] == [
+        ("dungeon_01A_D05_thunderland", (0, -6)),
+        ("dungeon_01A_D10_shadow_thunderland", (0, -12)),
+    ]
+    # 이웃 맵의 이벤트("@")는 감춘다(발판으로)
+    assert all("@" not in 행 for m in 목록 for 행 in m["지도"])
+    선더랜드 = gf.던전_레지스트리["dungeon_01A_D05_thunderland"]["지도"]
+    assert 목록[0]["지도"][3] == 선더랜드[3].replace("@", "O")
+    # 아몬 하층의 천장 포탈(19,0)과 상층의 바닥 포탈(19,19)이 같은 칸
+    gf.던전_진입(상태, "dungeon_02A_D11_amon_lower")
+    (상층,) = gf.이어진_맵_목록(상태)
+    dx, dy = 상층["오프셋"]
+    assert (19 - dx, 0 - dy) == (19, 19)
+    assert 상층["타일"]["O"] == "asset_tile_emerald.webp"

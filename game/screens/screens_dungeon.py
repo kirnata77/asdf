@@ -100,10 +100,18 @@ class 던전맵위젯(Widget):
         self.오브젝트 = {}
         self.맵타일 = {}
         self._열수 = self._행수 = _뷰포트_크기
+        self._층들 = []  # 갱신()이 채운다 - [지금 맵, 이어진 맵...]
         self.bind(size=self._다시그리기, pos=self._다시그리기)
 
     def 갱신(
-        self, 그리드, 위치, 초상화코드=None, 던전파일명=None, 오브젝트=None, 맵타일=None
+        self,
+        그리드,
+        위치,
+        초상화코드=None,
+        던전파일명=None,
+        오브젝트=None,
+        맵타일=None,
+        이웃=None,
     ):
         self.그리드 = 그리드
         self.위치 = 위치
@@ -114,6 +122,24 @@ class 던전맵위젯(Widget):
         self.오브젝트 = 오브젝트 or {}
         # 맵정보["타일"] - 이 맵에서 기호마다 쓸 한 칸짜리 타일(dungeon_format.py).
         self.맵타일 = 맵타일 or {}
+        # 포탈로 이어진 다른 던전들(gameflow.이어진_맵_목록) - 지금 맵 밖 칸에 함께
+        # 그린다. 지금 맵이 가장 우선이고, 그다음 목록 앞쪽(가까운 맵)이 우선.
+        self._층들 = [
+            {
+                "지도": 그리드,
+                "타일": self.맵타일,
+                "시드": self._흙길시드,
+                "오프셋": (0, 0),
+            }
+        ] + [
+            {
+                "지도": 이웃맵["지도"],
+                "타일": 이웃맵["타일"],
+                "시드": zlib.crc32(이웃맵["던전파일명"].encode("utf-8")) & 0xFFFF,
+                "오프셋": 이웃맵["오프셋"],
+            }
+            for 이웃맵 in (이웃 or [])
+        ]
         self._다시그리기()
 
     def _타일(self, 이름):
@@ -137,11 +163,11 @@ class 던전맵위젯(Widget):
             self._타일_캐시[파일명] = 텍스처
         return self._타일_캐시[파일명]
 
-    def _맵_타일(self, 문자):
-        """이 맵의 "타일"에 문자(지도 기호)가 지정돼 있으면 그 텍스처들을 아래층부터
-        리스트로(파일명 하나면 한 겹, 리스트면 여러 겹), 없거나 파일이 하나도 없으면
-        None을 돌려준다."""
-        파일들 = self.맵타일.get(문자)
+    def _맵_타일(self, 문자, 층=None):
+        """그 맵(층 - 기본은 지금 맵)의 "타일"에 문자(지도 기호)가 지정돼 있으면 그
+        텍스처들을 아래층부터 리스트로(파일명 하나면 한 겹, 리스트면 여러 겹), 없거나
+        파일이 하나도 없으면 None을 돌려준다."""
+        파일들 = (층["타일"] if 층 is not None else self.맵타일).get(문자)
         if not 파일들:
             return None
         if isinstance(파일들, str):
@@ -187,14 +213,19 @@ class 던전맵위젯(Widget):
                 self._텍스처_캐시[코드] = None
         return self._텍스처_캐시[코드]
 
+    def _칸(self, x, y):
+        """(x, y)(지금 맵 좌표)의 (문자, 그 칸을 가진 층). 지금 맵이 먼저, 그 밖이면
+        이어진 맵들을 앞에서부터 본다. 어느 맵에도 없으면 (None, None)(맵 밖)."""
+        for 층 in self._층들:
+            지도 = 층["지도"]
+            lx, ly = x - 층["오프셋"][0], y - 층["오프셋"][1]
+            if 0 <= ly < len(지도) and 0 <= lx < len(지도[ly]):
+                return 지도[ly][lx], 층
+        return None, None
+
     def _칸_문자(self, x, y):
-        """(x, y)가 그리드 범위를 벗어나면 None(맵 밖)을 돌려준다."""
-        if self.그리드 is None or y < 0 or y >= len(self.그리드):
-            return None
-        행 = self.그리드[y]
-        if x < 0 or x >= len(행):
-            return None
-        return 행[x]
+        """(x, y)의 지도 문자. 지금 맵과 이어진 맵 모두 밖이면 None(맵 밖)."""
+        return self._칸(x, y)[0]
 
     def _다시그리기(self, *args):
         self.canvas.clear()
@@ -253,22 +284,19 @@ class 던전맵위젯(Widget):
             self.위치[1] - self._행수 // 2 + 화면y,
         )
 
-    def _바닥_텍스처(self, 문자, 맵x, 맵y):
+    def _바닥_텍스처(self, 문자, 맵x, 맵y, 층=None):
         """칸의 바닥 텍스처 리스트(아래층부터). "O"는 풀밭(좌표에 따라 흙길), "X"/"#"은 그 위에
         나무/게이트를 올릴 풀밭. 그 밖이나 그림이 없으면 None(색으로 칠한다).
         맵에 그 기호의 타일이 정해져 있으면 그 타일이 먼저다(나무/게이트도 안 올린다)."""
-        맵타일 = self._맵_타일(문자)
+        맵타일 = self._맵_타일(문자, 층)
         if 맵타일 is not None:
             return 맵타일
+        시드 = 층["시드"] if 층 is not None else self._흙길시드
         풀밭 = self._타일("풀밭")
         흙길 = self._타일("흙길")
         바닥 = None
         if 문자 == "O":
-            바닥 = (
-                흙길
-                if (흙길 is not None and _흙길_여부(맵x, 맵y, self._흙길시드))
-                else 풀밭
-            )
+            바닥 = 흙길 if (흙길 is not None and _흙길_여부(맵x, 맵y, 시드)) else 풀밭
         elif 문자 in _높은타일_기호 and self._타일(_높은타일_기호[문자]) is not None:
             바닥 = 풀밭
         return [바닥] if 바닥 is not None else None
@@ -284,8 +312,8 @@ class 던전맵위젯(Widget):
         for 화면y in range(self._행수):
             for 화면x in range(self._열수):
                 맵x, 맵y = self._맵_좌표(화면x, 화면y)
-                문자 = self._칸_문자(맵x, 맵y)
-                바닥 = self._바닥_텍스처(문자, 맵x, 맵y)
+                문자, 층 = self._칸(맵x, 맵y)
+                바닥 = self._바닥_텍스처(문자, 맵x, 맵y, 층)
                 오브젝트타일 = self._오브젝트_타일(맵x, 맵y) if 문자 == "@" else None
                 if 오브젝트타일 is not None and 발판 is not None:
                     바닥 = 발판
@@ -312,8 +340,8 @@ class 던전맵위젯(Widget):
         Color(1, 1, 1, 1)
         for 화면y in range(self._행수 + 1):
             for 화면x in range(self._열수):
-                문자 = self._칸_문자(*self._맵_좌표(화면x, 화면y))
-                if 문자 not in _높은타일_기호 or self._맵_타일(문자) is not None:
+                문자, 층 = self._칸(*self._맵_좌표(화면x, 화면y))
+                if 문자 not in _높은타일_기호 or self._맵_타일(문자, 층) is not None:
                     continue
                 아래절반, 위절반 = self._높은타일_반쪽(_높은타일_기호[문자])
                 if 아래절반 is None:
@@ -526,6 +554,7 @@ class 던전화면(Screen):
             던전상태.get("던전파일명"),
             던전상태["맵정보"].get("오브젝트"),
             던전상태["맵정보"].get("타일"),
+            gameflow.이어진_맵_목록(게임상태),
         )
         self.메시지라벨.text = ""
         self.상호작용버튼.disabled = True
