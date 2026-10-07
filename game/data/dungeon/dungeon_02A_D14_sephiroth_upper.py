@@ -3,33 +3,54 @@
 # =====================
 # dungeon_format.py 양식을 따른다.
 #
-# 하늘성(2차수) 던전의 지도 틀이다. 마을에서 바로 올 수 없고,
-# 세피로타 하층(dungeon_02A_D13_sephiroth_lower)의 동쪽 포탈(16,3)을 클리어해야 들어온다.
-# 같은 좌우 2구역(각 5x5) 구조.
-# - 서쪽 벽(0,3)은 세피로타 하층으로 돌아가는 길이다(포탈 바로 앞 (15,3)에 나타난다).
-# - 동쪽 방 끝은 막다른 길이다.
-# - 나무(X) 배치는 랜덤 텍스처이며 의미는 없다.
+# 하늘성(2차수) 탑 던전의 지도 틀이다. 마을에서 바로 올 수 없고,
+# 세피로타 하층(dungeon_02A_D13_sephiroth_lower)의 천장 포탈(22,0)로 올라온다. 하층에 이어
+# 탑의 북쪽을 동쪽에서 서쪽으로 돈다(반시계 방향). 하층을 위아래로 뒤집은
+# 27x10, 이동불가 구역은 오른쪽 위/왼쪽 위/가운데 아래(탑)이다.
+# - 하층에서 올라오면 오른쪽 아래(22,8)에 나타난다. 바로 밑 바닥(22,9)은
+#   하층으로 내려가는 길이다(내려가면 하층 보스 앞 (22,2)).
+# - 서쪽 벽(0,6)은 웨스트코스트(마을)로 돌아가는 포탈이다.
+# - 마을 포탈 바로 앞(1,6)에 보스전투 이벤트가 있다. 이겨야 마을 포탈로 갈 수
+#   있다("통행가능화" - 던전을 나갔다 들어오면 다시 막힌다).
 #
-# 몬스터: 아직 정하지 않았다(다음 단계). 그때까지 인카운트가 없다.
+# 몬스터: 아직 정하지 않았다(다음 단계). 그때까지 인카운트가 없고, 보스의
+# "전투몬스터"가 비어 있어 보스는 막힌 채로 있다.
 
 맵정보 = {
     "지도명": "세피로타 상층",
     "상세지역": ["아라드", "벨마이어 공국 남부"],
     "지도": [
-        "XXXXXXXXXXXXXXXXX",
-        "XOOOXOXXXXXOOOOOX",
-        "XOXOOOXXXXXXXOOOX",
-        "#OOOOOOOOOOOOOOOX",
-        "XOOOOXXXXXXOOOOOX",
-        "XOXXOOXXXXXXOXOXX",
-        "XXXXXXXXXXXXXXXXX",
+        "XXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        "XXXXXXXXXOOOOOOOOOXXXXXXXXX",
+        "XXXXXXXOOOOOOOOOOOOOXXXXXXX",
+        "XXXXXOOOOOOOOOOOOOOOOOXXXXX",
+        "XXXOOOOOOOOXXXXXOOOOOOOOXXX",
+        "XXOOOOOOOOXXXXXXXOOOOOOOOXX",
+        "#@OOOOOOOXXXXXXXXXOOOOOOOOX",
+        "XOOOOOOOXXXXXXXXXXXOOOOOOOX",
+        "XXOOOOOXXXXXXXXXXXXXOOOOOXX",
+        "XXXXXXXXXXXXXXXXXXXXXX#XXXX",
     ],
-    "입장좌표": (1, 3),
-    "오브젝트": {},
+    "입장좌표": (22, 8),
+    "오브젝트": {
+        (1, 6): {
+            "분류": "이벤트",
+            "타입": "보스전투",
+            "이름": "세피로타 상층 보스",  # 미정 - 몬스터를 정할 때 바꾼다
+            "설명": "마을로 가는 포탈을 지키는 보스. 이겨야 포탈로 갈 수 있다.",
+            "발동방식": "말걸기",
+            "전투몬스터": [],  # 미정 - 몬스터를 정할 때 채운다(레벨/차수도)
+            "클리어시": "통행가능화",
+        },
+    },
     "연결지역": {
-        (0, 3): {
+        (0, 6): {
+            "연결맵": "town_02A_T03_westcoast",
+            "진입좌표": None,  # 마을은 화면(선택지) 형태라 좌표 개념이 없음
+        },
+        (22, 9): {
             "연결맵": "dungeon_02A_D13_sephiroth_lower",
-            "진입좌표": (15, 3),
+            "진입좌표": (22, 2),
         },
     },
 }
