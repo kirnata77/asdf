@@ -22,7 +22,7 @@ from kivy.uix.image import Image
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.scatterlayout import ScatterLayout
 from kivy.metrics import dp
-from kivy.graphics import Color, Rectangle, RoundedRectangle
+from kivy.graphics import Color, Line, Rectangle, RoundedRectangle
 from kivy.utils import escape_markup
 
 import gameflow
@@ -386,6 +386,32 @@ def _뒤로키_버튼_찾기(위젯):
         if getattr(자식, "뒤로키", False) and not 자식.disabled:
             return 자식
     return None
+
+
+class _테두리박스(ButtonBehavior, BoxLayout):
+    """테두리를 그리는 상자. 전투화면의 적/아군 상태 박스, 그래픽 박스,
+    배경 틀(전투 배경 이미지는 아직 없어 빈 채로 둔다)에 공용으로 쓴다(screens_battle에서 옮김).
+    현재턴_표시()로 테두리를 굵게 만들어 누구 턴인지 표시한다."""
+
+    def __init__(self, 테두리색, 기본두께=1.5, **kwargs):
+        kwargs.setdefault("orientation", "vertical")
+        super().__init__(**kwargs)
+        self._기본두께 = 기본두께
+        with self.canvas.before:
+            Color(*테두리색)
+            self._테두리 = Line(width=기본두께)
+        self.bind(pos=self._다시그리기, size=self._다시그리기)
+
+    def _다시그리기(self, *args):
+        self._테두리.rectangle = (
+            self.x + 1,
+            self.y + 1,
+            max(self.width - 2, 0),
+            max(self.height - 2, 0),
+        )
+
+    def 현재턴_표시(self, 켜짐):
+        self._테두리.width = self._기본두께 * 2.5 if 켜짐 else self._기본두께
 
 
 # =====================================================

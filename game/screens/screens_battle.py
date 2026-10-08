@@ -18,13 +18,13 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.widget import Widget
 from kivy.uix.popup import Popup
 from kivy.uix.image import Image
-from kivy.uix.behaviors import ButtonBehavior
 from kivy.metrics import dp
 from kivy.core.image import Image as CoreImage
-from kivy.graphics import Color, Line, Rectangle
+from kivy.graphics import Color, Rectangle
 
 import gameflow
 from game.screens.screens_common import (
+    _테두리박스,
     _캐릭터이미지_경로,
     _에셋_경로,
     뒤로키_버튼,
@@ -73,32 +73,6 @@ def _텍스처(경로):
         텍스처.mag_filter = "nearest"
         _텍스처_모음[경로] = 텍스처
     return _텍스처_모음[경로]
-
-
-class _테두리박스(ButtonBehavior, BoxLayout):
-    """테두리를 그리는 상자. 전투화면의 적/아군 상태 박스, 그래픽 박스,
-    배경 틀(전투 배경 이미지는 아직 없어 빈 채로 둔다)에 공용으로 쓴다.
-    현재턴_표시()로 테두리를 굵게 만들어 누구 턴인지 표시한다."""
-
-    def __init__(self, 테두리색, 기본두께=1.5, **kwargs):
-        kwargs.setdefault("orientation", "vertical")
-        super().__init__(**kwargs)
-        self._기본두께 = 기본두께
-        with self.canvas.before:
-            Color(*테두리색)
-            self._테두리 = Line(width=기본두께)
-        self.bind(pos=self._다시그리기, size=self._다시그리기)
-
-    def _다시그리기(self, *args):
-        self._테두리.rectangle = (
-            self.x + 1,
-            self.y + 1,
-            max(self.width - 2, 0),
-            max(self.height - 2, 0),
-        )
-
-    def 현재턴_표시(self, 켜짐):
-        self._테두리.width = self._기본두께 * 2.5 if 켜짐 else self._기본두께
 
 
 class _전투보상팝업(Popup):
