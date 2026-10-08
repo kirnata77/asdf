@@ -36,6 +36,7 @@ from game.screens.screens_common import (
     하단_첫줄_높이,
     하단_나머지_높이,
     하단_좌우여백,
+    줄_상자_채우기,
 )
 
 
@@ -327,9 +328,10 @@ class 전투화면(Screen):
     # -------------------------------------------------
 
     def _중앙정렬_라벨(self, 문자열):
-        라벨 = Label(text=문자열, font_size="13sp", halign="center", valign="middle")
-        라벨.bind(size=lambda inst, sz: setattr(inst, "text_size", sz))
-        return 라벨
+        """칸 글 - 줄마다 가로맞춤 라벨(긴 이름은 줄바꿈 대신 가로로 눌러 칸 폭에 맞춘다)."""
+        틀 = BoxLayout(orientation="vertical", padding=dp(4))
+        줄_상자_채우기(틀, 문자열.split("\n"), font_size="13sp")
+        return 틀
 
     # -------------------------------------------------
     # 화면 갱신

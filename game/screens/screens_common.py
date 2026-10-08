@@ -520,6 +520,35 @@ class 고른간격줄(Widget):
             자식.pos = (가운데 - 폭 / 2, self.y)
 
 
+class 가로맞춤_라벨(Label):
+    """한 줄 라벨 - 글이 라벨 폭보다 길면 글자 높이는 그대로 두고 가로로만 눌러 폭에 맞춘다
+    (긴 직업명 "엘리멘탈마스터"가 정사각형에서 줄바꿈되지 않게). 짧으면 그대로."""
+
+    여백 = 4
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("halign", "center")
+        kwargs.setdefault("valign", "middle")
+        super().__init__(**kwargs)
+        self.bind(texture_size=self._맞추기, size=self._맞추기)
+
+    def _맞추기(self, *args):
+        if self.texture is None:
+            return
+        tw, th = self.texture.size
+        # 폭이 바뀔 때마다 원래 글 폭에서 다시 정한다(처음 좁을 때 눌린 채 남지 않게)
+        맞춤 = [min(tw, max(1, self.width - self.여백)), th]
+        if list(self.texture_size) != 맞춤:
+            self.texture_size = 맞춤
+
+
+def 줄_상자_채우기(상자, 줄들, font_size="13sp", **kwargs):
+    """상자를 비우고 글 줄마다 가로맞춤_라벨을 위에서 아래로 쌓는다(정사각형 칸 글)."""
+    상자.clear_widgets()
+    for 줄 in 줄들:
+        상자.add_widget(가로맞춤_라벨(text=줄, font_size=font_size, **kwargs))
+
+
 def 가운데_라벨(글, font_size="13sp", **kwargs):
     라벨 = Label(
         text=글, font_size=font_size, halign="center", valign="middle", **kwargs
@@ -532,15 +561,16 @@ def 파티원_정사각형_채우기(줄, 게임상태):
     """마을/던전 상단 1줄(고른간격줄)을 파티원마다 정사각형(이름, 레벨, HP, MP)으로 채운다."""
     줄.clear_widgets()
     for 캐릭터 in 게임상태["파티"]["파티원"]:
-        상자 = _테두리박스((1, 1, 1, 1), padding=dp(2))
-        상자.add_widget(
-            가운데_라벨(
-                f"{캐릭터['캐릭터명']}\n"
-                f"Lv.{캐릭터['레벨']}\n"
-                f"HP {캐릭터['현재HP']}/{gameflow.캐릭터_최대HP(게임상태, 캐릭터)}\n"
+        상자 = _테두리박스((1, 1, 1, 1), padding=dp(4))
+        줄_상자_채우기(
+            상자,
+            [
+                캐릭터["캐릭터명"],
+                f"Lv.{캐릭터['레벨']}",
+                f"HP {캐릭터['현재HP']}/{gameflow.캐릭터_최대HP(게임상태, 캐릭터)}",
                 f"MP {캐릭터['현재MP']}/{gameflow.캐릭터_최대MP(게임상태, 캐릭터)}",
-                font_size="12sp",
-            )
+            ],
+            font_size="12sp",
         )
         줄.add_widget(상자)
 

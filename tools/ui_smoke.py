@@ -1513,6 +1513,24 @@ class 스모크앱(main.DnfMobileApp):
         assert abs(마을.배경그림.height - sc.상단_그림_높이) < 1
         assert abs(마을.배경그림.y - sc.하단_높이) < 1, 마을.배경그림.y
         assert 마을.마을명라벨.top <= sc.하단_높이 + 1 and "[" in 마을.마을명라벨.text
+        # 칸 글은 줄마다 한 줄 - 긴 이름("엘리멘탈마스터")은 가로로 눌려 칸 폭 안에 그려진다
+        줄라벨 = [
+            w
+            for w in 마을.파티줄.walk(restrict=True)
+            if isinstance(w, sc.가로맞춤_라벨)
+        ]
+        assert len(줄라벨) == 4 * 파티수, len(줄라벨)
+        for 라벨 in 줄라벨:
+            assert 라벨.texture_size[0] <= 라벨.width, (
+                라벨.text,
+                라벨.texture_size,
+                라벨.width,
+            )
+        긴이름 = next(r for r in 줄라벨 if r.text == "엘리멘탈마스터")
+        assert 긴이름.texture.size[0] > 긴이름.texture_size[0], "긴 이름이 눌리지 않음"
+        assert 긴이름.texture.size[1] == 긴이름.texture_size[1]  # 높이는 그대로
+        짧은 = [r for r in 줄라벨 if r.texture.size[0] <= r.width - r.여백]
+        assert 짧은 and all(list(r.texture_size) == list(r.texture.size) for r in 짧은)
         _찍기("layout_town")
 
         # 던전: 1줄 파티원, 2~4줄 지도 970, 하단 1줄 위치/걸음수
@@ -1544,6 +1562,19 @@ class 스모크앱(main.DnfMobileApp):
                 round(w.center_x) for w in 칸들
             ]
         assert abs(전투.아군상태틀.y - sc.하단_높이) < 1, 전투.아군상태틀.y
+        # 전투 칸 글도 짧은 줄은 그대로, 긴 줄만 눌린다
+        for 줄 in (전투.적상태틀, 전투.아군상태틀):
+            for r in [
+                w for w in 줄.walk(restrict=True) if isinstance(w, sc.가로맞춤_라벨)
+            ]:
+                한계 = r.width - r.여백
+                기대 = min(r.texture.size[0], 한계)
+                assert abs(r.texture_size[0] - 기대) < 1, (
+                    r.text,
+                    r.texture_size,
+                    r.texture.size,
+                    r.width,
+                )
         _찍기("layout_battle")
         상태["전투상태"] = None
         상태["던전상태"] = None
