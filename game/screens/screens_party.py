@@ -33,6 +33,8 @@ from game.screens.screens_common import (
     뒤로키_버튼,
     스크롤_목록,
     닫기_버튼,
+    탭_줄,
+    아이템_이름_글,
 )
 
 
@@ -126,7 +128,7 @@ class 파티관리화면(Screen):
 
         # 왼쪽: 초상화
         초상틀 = _둥근상자(
-            (0.2, 0.21, 0.25, 1), 반지름=10, size_hint=(0.24, 1), padding=dp(4)
+            (0.2, 0.21, 0.25, 1), 반지름=10, size_hint=(0.2, 1), padding=dp(4)
         )
         초상틀.add_widget(
             Image(
@@ -139,7 +141,7 @@ class 파티관리화면(Screen):
         카드.add_widget(초상틀)
 
         # 가운데: 이름/직업/레벨, HP·MP 게이지, 능력치
-        가운데 = BoxLayout(orientation="vertical", size_hint=(0.4, 1), spacing=dp(4))
+        가운데 = BoxLayout(orientation="vertical", size_hint=(0.6, 1), spacing=dp(4))
         이름글 = f"[b]{escape_markup(캐릭터['캐릭터명'])}[/b]"
         if not 생존:
             이름글 += "  [color=e05555][size=12sp]쓰러짐[/size][/color]"
@@ -184,8 +186,10 @@ class 파티관리화면(Screen):
             )
         )
         # 장비(+세트) 스탯 반영 능력치 - 장비로 오른 값은 괄호로 표시.
+        # 두 칸 x 세 줄 - 세 칸이면 "지혜 18 (+12)"처럼 괄호가 붙을 때 한 칸에 안 들어가
+        # 글자가 줄바꿈되며 이름이 잘려 보였다.
         유효능력치 = gameflow.캐릭터_유효능력치(게임상태, 캐릭터)
-        능력치판 = GridLayout(cols=3, size_hint=(1, 0.34))
+        능력치판 = GridLayout(cols=2, size_hint=(1, 0.34))
         for 이름 in self._능력치_목록:
             값 = 유효능력치[이름]
             차이 = 값 - 캐릭터[이름]
@@ -202,13 +206,9 @@ class 파티관리화면(Screen):
         가운데.add_widget(능력치판)
         카드.add_widget(가운데)
 
-        # 오른쪽: 버튼 세 개를 좌우로(레벨업 가능하면 강조색)
-        오른쪽 = BoxLayout(orientation="horizontal", size_hint=(0.36, 1), spacing=dp(6))
-        버튼크기 = {
-            "size_hint": (1, None),
-            "height": dp(44),
-            "pos_hint": {"center_y": 0.5},
-        }
+        # 오른쪽: 버튼 세 개를 위에서 아래로(레벨업 가능하면 강조색)
+        오른쪽 = BoxLayout(orientation="vertical", size_hint=(0.2, 1), spacing=dp(6))
+        버튼크기 = {"size_hint": (1, 1)}
         가능 = gameflow.캐릭터_레벨업_가능(게임상태, 캐릭터)
         레벨업버튼 = _평면버튼(
             "레벨업",
@@ -474,14 +474,15 @@ class 파티관리화면(Screen):
     # -------------------------------------------------
 
     def _마스터리선택_팝업(self, 캐릭터, 확인콜백):
-        """레벨 2 "마스터리선택" - 무기 숙련/방어구 숙련을 하나씩 골라(토글) [확인]."""
+        """레벨 2 "마스터리선택" - 무기 숙련/방어구 숙련을 하나씩 골라(토글) [확인].
+        줄마다 이름 토글 + [상세보기](설명은 상세보기 창에서만)."""
         무기목록, 방어구목록 = gameflow.캐릭터_마스터리_선택지(캐릭터)
         고른 = {"무기": None, "방어구": None}
 
         본문 = BoxLayout(orientation="vertical", spacing=6, padding=10)
-        스크롤, 목록틀 = 스크롤_목록(0.78, 간격=4)
+        스크롤, 목록틀 = 스크롤_목록(1, 간격=4)
         본문.add_widget(스크롤)
-        확인 = Button(text="확인", size_hint=(1, 0.11), disabled=True)
+        확인 = Button(text="확인", size_hint=(1, None), height=dp(48), disabled=True)
 
         def 고르기(종류, 이름):
             고른[종류] = 이름
@@ -492,23 +493,32 @@ class 파티관리화면(Screen):
                 Label(text=f"{종류} 마스터리", size_hint=(1, None), height=dp(32))
             )
             for 이름, 설명 in 목록:
-                버튼 = ToggleButton(
-                    text=f"{이름} - {설명}",
-                    group=f"마스터리_{종류}",
+                줄 = BoxLayout(
+                    orientation="horizontal",
                     size_hint=(1, None),
-                    height=dp(48),
-                    font_size="13sp",
-                    halign="center",
+                    height=dp(40),
+                    spacing=dp(6),
                 )
-                버튼.bind(
-                    size=lambda inst, sz: setattr(inst, "text_size", (sz[0] - 12, None))
+                버튼 = ToggleButton(
+                    text=이름,
+                    group=f"마스터리_{종류}",
+                    font_size="14sp",
+                    size_hint=(0.7, 1),
                 )
                 버튼.bind(
                     on_release=lambda inst, k=종류, n=이름: 고르기(
                         k, n if inst.state == "down" else None
                     )
                 )
-                목록틀.add_widget(버튼)
+                줄.add_widget(버튼)
+                상세 = Button(text="상세보기", font_size="13sp", size_hint=(0.3, 1))
+                상세.bind(
+                    on_release=lambda inst, n=이름, d=설명: _스킬_상세_팝업(
+                        n, d, 제목="마스터리 상세보기"
+                    )
+                )
+                줄.add_widget(상세)
+                목록틀.add_widget(줄)
 
         팝업 = Popup(
             title=f"{캐릭터['캐릭터명']} 마스터리 선택",
@@ -523,7 +533,7 @@ class 파티관리화면(Screen):
 
         확인.bind(on_release=확인_클릭)
         본문.add_widget(확인)
-        취소 = Button(text="취소", size_hint=(1, 0.11))
+        취소 = Button(text="취소", size_hint=(1, None), height=dp(48))
         뒤로키_버튼(취소)
         취소.bind(on_release=lambda *_: 팝업.dismiss())
         본문.add_widget(취소)
@@ -854,7 +864,7 @@ class _테두리상자(BoxLayout):
         )
 
 
-def _스킬_상세_팝업(이름, 상세글):
+def _스킬_상세_팝업(이름, 상세글, 제목="스킬 상세보기"):
     글 = f"[b]{escape_markup(이름)}[/b]\n\n{escape_markup(상세글 or '(설명 없음)')}"
     본문 = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(10))
     스크롤 = ScrollView(size_hint=(1, 1))
@@ -863,14 +873,14 @@ def _스킬_상세_팝업(이름, 상세글):
     닫기 = Button(text="닫기", size_hint=(1, None), height=dp(48))
     뒤로키_버튼(닫기)
     본문.add_widget(닫기)
-    팝업 = Popup(title="스킬 상세보기", content=본문, size_hint=(0.9, 0.8))
+    팝업 = Popup(title=제목, content=본문, size_hint=(0.9, 0.8))
     닫기.bind(on_release=lambda *_: 팝업.dismiss())
     팝업.open()
 
 
 def _아이템_상세_팝업(아이템, 사유=None):
     효과 = _아이템_요약(아이템) or "(효과 없음)"
-    글 = f"[b]{escape_markup(아이템['이름'])}[/b]\n\n{escape_markup(효과)}"
+    글 = f"[b]{아이템_이름_글(아이템)}[/b]\n\n{escape_markup(효과)}"
     if 사유:
         글 += f"\n\n[color=e05555]{escape_markup(사유)}[/color]"
     본문 = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(10))
@@ -895,7 +905,7 @@ def _장비_칸(아이템, 슬롯, 글머리="", 수량=None, 사유=None, 선�
         padding=dp(6),
         spacing=dp(6),
     )
-    이름 = escape_markup(아이템["이름"]) + (f" x{수량}" if 수량 is not None else "")
+    이름 = 아이템_이름_글(아이템) + (f" x{수량}" if 수량 is not None else "")
     요약 = _아이템_간단요약(아이템, 슬롯)
     글 = f"{글머리}[b]{이름}[/b]" + (f"\n{요약}" if 요약 else "")
     if 사유:
@@ -938,13 +948,16 @@ def _장비교체_팝업(캐릭터, 슬롯, 완료콜백):
     [해제](무기 제외)/[취소]. 바꾸면 창을 닫고 완료콜백()을 부른다."""
     게임상태 = App.get_running_app().게임상태
     현재 = gameflow.캐릭터_장착아이템(게임상태, 캐릭터, 슬롯)
-    후보 = gameflow.장비_교체_후보(게임상태, 캐릭터, 슬롯)
+    탭목록 = gameflow.장비_교체_탭목록(게임상태, 캐릭터, 슬롯)
 
     본문 = BoxLayout(orientation="vertical", spacing=6, padding=10)
     if 현재:
         본문.add_widget(_장비_칸(현재, 슬롯, 글머리="[color=9ea6b3]현재[/color]  "))
     else:
         본문.add_widget(Label(text="현재: (없음)", size_hint=(1, None), height=dp(48)))
+    # 분류 탭(무기 종류 / 방어구 재질) - 악세서리·특수장비는 탭 없음
+    if 탭목록:
+        본문.add_widget(탭_줄(탭목록, lambda 탭: 목록_채우기(탭), 탭목록[0]))
     안내 = Label(text="", size_hint=(1, 0.08))
     스크롤, 목록틀 = 스크롤_목록(0.64, 간격=dp(6))
     본문.add_widget(스크롤)
@@ -974,24 +987,30 @@ def _장비교체_팝업(캐릭터, 슬롯, 완료콜백):
             return
         완료()
 
-    if not 후보:
-        목록틀.add_widget(
-            Label(
-                text="(소지품에 바꿀 장비가 없습니다)",
-                size_hint=(1, None),
-                height=dp(40),
+    def 목록_채우기(탭):
+        목록틀.clear_widgets()
+        스크롤.scroll_y = 1
+        후보 = gameflow.장비_교체_후보(게임상태, 캐릭터, 슬롯, 탭)
+        if not 후보:
+            목록틀.add_widget(
+                Label(
+                    text="(소지품에 바꿀 장비가 없습니다)",
+                    size_hint=(1, None),
+                    height=dp(40),
+                )
             )
-        )
-    for 아이템, 수량, 착용가능, 사유 in 후보:
-        목록틀.add_widget(
-            _장비_칸(
-                아이템,
-                슬롯,
-                수량=수량,
-                사유=None if 착용가능 else 사유,
-                선택=lambda n=아이템["이름"]: 교체(n),
+        for 아이템, 수량, 착용가능, 사유 in 후보:
+            목록틀.add_widget(
+                _장비_칸(
+                    아이템,
+                    슬롯,
+                    수량=수량,
+                    사유=None if 착용가능 else 사유,
+                    선택=lambda n=아이템["이름"]: 교체(n),
+                )
             )
-        )
+
+    목록_채우기(탭목록[0] if 탭목록 else None)
 
     아래 = BoxLayout(orientation="horizontal", size_hint=(1, 0.12), spacing=6)
     해제버튼 = Button(text="해제", disabled=(현재 is None or 슬롯 == "무기"))
@@ -1095,7 +1114,7 @@ class 파티원화면(Screen):
             )
         아이템 = gameflow.캐릭터_장착아이템(게임상태, 캐릭터, 슬롯)
         버튼 = Button(
-            text=f"[b]{슬롯}[/b]\n{escape_markup(아이템['이름']) if 아이템 else '-'}",
+            text=f"[b]{슬롯}[/b]\n{아이템_이름_글(아이템) if 아이템 else '-'}",
             markup=True,
             font_size="12sp",
             halign="center",

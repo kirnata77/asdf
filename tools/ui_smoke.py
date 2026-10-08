@@ -15,6 +15,7 @@ tests/는 kivy 없이 gameflow 이하만 검사한다. 화면(game/screens) 코�
 """
 
 import json
+import re
 import os
 import random
 import shutil
@@ -60,6 +61,11 @@ from tests import support  # noqa: E402
 }
 
 
+def _글(t):
+    """라벨 글에서 색/굵기 마크업을 뺀 글(아이템 이름은 레어도 색으로 칠해져 있다)."""
+    return re.sub(r"\[/?(color|b|size)[^\]]*\]", "", t or "")
+
+
 def _찍기(이름):
     os.makedirs(스크린샷폴더, exist_ok=True)
     Window.screenshot(name=os.path.join(스크린샷폴더, 이름 + ".png"))
@@ -99,9 +105,10 @@ def _스크롤_확인(스크롤, 이름):
 
 
 def _팝업_닫기():
+    # 애니메이션 없이 바로 닫는다 - 닫히는 도중에 다음 팝업 개수를 세면 2개로 세어졌다
     for 위젯 in list(Window.children)[:-1]:
         if hasattr(위젯, "dismiss"):
-            위젯.dismiss()
+            위젯.dismiss(animation=False)
 
 
 class 스모크앱(main.DnfMobileApp):
@@ -143,12 +150,24 @@ class 스모크앱(main.DnfMobileApp):
         yield from self._단계_목록_스크롤(상태, 매니저)
         yield from self._단계_세이브(상태, 매니저)
         yield from self._단계_설정(매니저)
+        yield from self._단계_화면_배치(상태, 매니저)
+        yield from self._단계_던전목록(상태, 매니저)
         yield from self._단계_화면_틀(매니저)
 
     def _단계_파티생성(self, 상태, 매니저):
         """파티 구성 화면 - 이름칸(안내/글자 수 제한)과 이름 중복"""
         매니저.current = "파티생성"
-        이름칸 = 매니저.get_screen("파티생성").슬롯목록[0]["이름입력"]
+        # 처음엔 네 칸 모두 참여, 직업은 귀검사/격투가/거너/마법사
+        슬롯들 = 매니저.get_screen("파티생성").슬롯목록
+        assert [s["직업스피너"].text for s in 슬롯들] == [
+            "귀검사",
+            "격투가",
+            "거너",
+            "마법사",
+        ]
+        assert all(s["참여토글"].state == "down" for s in 슬롯들[1:])
+        assert all(not s["이름입력"].disabled for s in 슬롯들)
+        이름칸 = 슬롯들[0]["이름입력"]
         assert 이름칸.hint_text == gf.캐릭터명_안내, 이름칸.hint_text
         yield 0.5
         _찍기("party_create_hint")
@@ -159,7 +178,9 @@ class 스모크앱(main.DnfMobileApp):
         이름칸.text = "가나다라마바"
         yield 0.3
         _찍기("party_create_name6")
-        결과["단계"].append("파티 구성 이름칸(안내 문구, 한글 6자/영문 12자 제한)")
+        결과["단계"].append(
+            "파티 구성 기본값(4명 참여, 귀검사/격투가/거너/마법사) + 이름칸(안내 문구, 한글 6자/영문 12자 제한)"
+        )
 
         # 이름이 겹치면 시작하지 않고 안내 줄에 알린다(B4)
         파티생성 = 매니저.get_screen("파티생성")
@@ -183,8 +204,106 @@ class 스모크앱(main.DnfMobileApp):
         상점._탭목록_그리기("구매", "장비")
         yield 0.5
         _찍기("shop_buy")
+        from kivy.uix.togglebutton import ToggleButton
+
+        def 탭들():
+            return [
+                w
+                for w in 상점.내용틀.walk(restrict=True)
+                if isinstance(w, ToggleButton)
+            ]
+
+        def 탭(글):
+            return next(t for t in 탭들() if t.text == 글)
+
+        def 목록이름():
+            return [
+                _글(w.text)
+                for w in 상점._목록틀.walk(restrict=True)
+                if isinstance(w, main.Label)
+                and not isinstance(w, Button)
+                and _글(w.text) in 상태["상점카탈로그"]["장비"].get(상점._현재탭, {})
+            ]
+
+        # 아이템 이름은 레어도 색: 언커먼 파랑, 치트는 글자마다 무지개
+        이름글 = {
+            _글(w.text): w.text
+            for w in 상점._목록틀.walk(restrict=True)
+            if isinstance(w, main.Label) and not isinstance(w, Button)
+        }
+        for 이름, 글 in 이름글.items():
+            분류 = gf.아이템_찾기(상태, 이름) and gf.아이템_색분류(
+                gf.아이템_찾기(상태, 이름)
+            )
+            if 분류 == "치트":
+                assert 글.count("[color=") == len(이름.replace(" ", "")), 글
+            elif 분류:
+                assert 글.startswith(f"[color={screens_common._레어도_색[분류]}]"), 글
+        assert screens_common.아이템_이름_글(
+            gf.아이템_찾기(상태, "강철 소검")
+        ).startswith("[color=4d8cff]")
+        # 레전더리는 주황, 크로니클은 빨강(지금 데이터엔 없는 등급 - 표만 확인)
+        for 레어도, 색 in (("레전더리", "ff9a2e"), ("크로니클", "ff4040")):
+            assert screens_common.아이템_이름_글(
+                {"이름": "가상", "레어도": 레어도}
+            ).startswith(f"[color={색}]")
+        # 부위 탭 2줄이 화면 안에 다 들어간다(밀어서 넘기지 않음)
+        부위 = [t for t in 탭들() if t.group == 탭("무기").group]
+        assert [t.text for t in 부위] == sum(gf.상점_탭줄("구매", "장비"), [])
+        assert all(
+            상점.내용틀.x - 1 <= t.x and t.right <= 상점.내용틀.right + 1 for t in 부위
+        )
+        assert len({t.y for t in 부위}) == 2  # 두 줄
+        # 머리줄/뒤로 줄/탭/안내줄은 글자 높이에 맞춘 높이
+        sc = screens_common
+        assert all(abs(t.height - sc.글자_높이("14sp")) < 1 for t in 부위)
+        뒤로 = next(
+            w
+            for w in 상점.내용틀.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "◀ 뒤로"
+        )
+        assert abs(뒤로.parent.height - sc.글자_높이()) < 1, 뒤로.parent.height
+        assert abs(상점.골드라벨.parent.height - sc.글자_높이("20sp")) < 1
+        assert abs(상점.안내라벨.height - sc.글자_높이()) < 1
+        # 무기: 직업군 탭 -> 거너를 누르면 종류 탭 줄이 생기고 목록은 거너 무기만
+        assert [t.text for t in 탭들() if t.text in gf.상점_무기_직업군탭(상태)][
+            :6
+        ] == gf.상점_무기_직업군탭(상태)
+        탭("거너").trigger_action(duration=0)
+        yield 0.3
+        종류 = gf.상점_무기_종류탭(상태, "거너")
+        assert all(any(t.text == k for t in 탭들()) for k in 종류[1:]), [
+            t.text for t in 탭들()
+        ]
+        무기 = 상태["상점카탈로그"]["장비"]["무기"]
+        이름들 = 목록이름()
+        assert 이름들 and all(무기[n]["분류"] == "거너 무기" for n in 이름들), 이름들
+        탭(종류[1]).trigger_action(duration=0)
+        yield 0.3
+        assert all(무기[n]["타입"] == 종류[1] for n in 목록이름()), 목록이름()
+        _찍기("shop_buy_weapon_gunner")
+        # 방어구: 재질 탭
+        탭("상의").trigger_action(duration=0)
+        yield 0.3
+        탭("판금").trigger_action(duration=0)
+        yield 0.3
+        세트글 = [
+            w.text
+            for w in 상점._목록틀.walk(restrict=True)
+            if isinstance(w, main.Label) and _글(w.text) == "티타늄 흉갑"
+        ]
+        assert 세트글 and 세트글[0].startswith("[color=4dd65a]"), (
+            세트글
+        )  # 커먼 방어구 세트 = 초록
+        상의 = 상태["상점카탈로그"]["장비"]["상의"]
+        assert all(상의[n]["재질"] == "판금" for n in 목록이름()), 목록이름()
+        _찍기("shop_buy_top_plate")
+        결과["단계"].append(
+            "상점 장비 탭 2줄(한 화면) + 무기 직업군->종류 탭 + 방어구 재질 탭"
+        )
         상점._탭목록_그리기("판매", "장비")
         yield 0.5
+        assert len({t.y for t in 탭들() if t.group == 탭("무기").group}) == 2
         _찍기("shop_sell")
         결과["단계"].append("상점 구매/판매 목록")
 
@@ -265,6 +384,55 @@ class 스모크앱(main.DnfMobileApp):
         _팝업_닫기()
         결과["단계"].append("능력치 배분 팝업")
 
+        # 마스터리 선택 팝업: 줄마다 이름 토글 + [상세보기](설명은 상세보기 창에만)
+        from kivy.uix.togglebutton import ToggleButton
+
+        귀검사 = gf.캐릭터_생성(
+            "새귀검", "귀검사"
+        )  # 레벨 1 - 다음 레벨업이 마스터리선택
+        무기목록, 방어구목록 = gf.캐릭터_마스터리_선택지(귀검사)
+        고른 = []
+        매니저.get_screen("파티관리")._마스터리선택_팝업(
+            귀검사, lambda 무기, 방어구: 고른.append((무기, 방어구))
+        )
+        yield 0.5
+        팝업 = Window.children[0]
+        토글 = [w for w in 팝업.walk(restrict=True) if isinstance(w, ToggleButton)]
+        assert [t.text for t in 토글] == [n for n, _ in 무기목록 + 방어구목록]
+        상세들 = [
+            w
+            for w in 팝업.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "상세보기"
+        ]
+        assert len(상세들) == len(토글)
+        assert all(t.height < 50 * 2.8125 for t in 토글)  # 설명이 빠져 한 줄 높이
+        _찍기("mastery_popup")
+        상세들[0].trigger_action(duration=0)
+        yield 0.5
+        assert Window.children[0].title == "마스터리 상세보기"
+        assert any(
+            무기목록[0][1] in getattr(w, "text", "")
+            for w in Window.children[0].walk(restrict=True)
+        )
+        _찍기("mastery_detail")
+        Window.children[0].dismiss(animation=False)
+        yield 0.3
+        확인 = next(
+            w
+            for w in 팝업.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "확인"
+        )
+        assert 확인.disabled
+        토글[0].trigger_action(duration=0)
+        토글[len(무기목록)].trigger_action(duration=0)
+        assert not 확인.disabled
+        확인.trigger_action(duration=0)
+        yield 0.6
+        assert 고른 == [(무기목록[0][0], 방어구목록[0][0])], 고른
+        결과["단계"].append(
+            "마스터리 선택 팝업(이름 토글 + 상세보기, 무기/방어구 하나씩 골라 확인)"
+        )
+
         # 레벨 12 [스킬강화] 팝업: 보유 스킬마다 버튼, 누르면 그 스킬로 확정
         고른 = []
         강화항목 = gf.전직_레지스트리["귀검사"]["웨펀마스터"]["레벨업테이블"][12]
@@ -281,7 +449,7 @@ class 스모크앱(main.DnfMobileApp):
         ]
         assert len(버튼들) == 1, [getattr(w, "text", "") for w in 팝업.walk()]
         버튼들[0].dispatch("on_release")
-        yield 0.3
+        yield 0.6  # 팝업 닫힘 애니메이션이 끝날 때까지(0.3이면 가끔 아직 창에 남아 있었다)
         assert 고른 == ["귀참"] and len(Window.children) == 1, 고른
         결과["단계"].append("스킬강화 팝업(보유 스킬 버튼 -> 그 스킬로 확정)")
 
@@ -292,6 +460,25 @@ class 스모크앱(main.DnfMobileApp):
             getattr(w, "text", "") == "스킬습득" for w in 파티관리.walk(restrict=True)
         ), "스킬습득 버튼 없음"
         yield 0.3
+        # 카드 오른쪽 버튼 셋은 위에서 아래로 쌓이고, 능력치 칸은 "이름 값"이 한 줄에 다 들어간다
+        from kivy.core.text.markup import MarkupLabel
+
+        버튼y = {
+            w.text: w.y
+            for w in 파티관리.walk(restrict=True)
+            if getattr(w, "text", "") in ("레벨업", "스킬습득", "상세보기")
+        }
+        assert 버튼y["레벨업"] > 버튼y["스킬습득"] > 버튼y["상세보기"], 버튼y
+        능력치칸 = [
+            w
+            for w in 파티관리.walk(restrict=True)
+            if isinstance(w, main.Label) and "[color=9ea6b3]" in w.text
+        ]
+        assert len(능력치칸) == 6 * len(상태["파티"]["파티원"]), len(능력치칸)
+        for 칸 in 능력치칸:
+            글 = MarkupLabel(text=칸.text, font_size=칸.font_size, markup=True)
+            글.refresh()
+            assert 글.texture.width <= 칸.width, (칸.text, 글.texture.width, 칸.width)
         _찍기("party_manage")
         귀검사 = 상태["파티"]["파티원"][0]
         상태["소지품"]["골드"] = 50
@@ -350,8 +537,36 @@ class 스모크앱(main.DnfMobileApp):
             글들 = [w.text for w in 팝업.walk(restrict=True) if hasattr(w, "text")]
             assert any(요약 in 글 for 글 in 글들), 글들
             assert 글들.count("상세보기") >= 2, 글들
+            # 분류 탭: 무기는 [전체] + 귀검사 무기 종류, 상의는 [전체] + 재질 - 한 줄에 다 보인다
+            from kivy.uix.togglebutton import ToggleButton
+
+            탭들 = [w for w in 팝업.walk(restrict=True) if isinstance(w, ToggleButton)]
+            assert [t.text for t in 탭들] == gf.장비_교체_탭목록(상태, 귀검사, 슬롯)
+            assert 탭들[0].state == "down" and 탭들[0].text == "전체"
+            assert all(t.right <= 탭들[0].parent.right + 1 for t in 탭들)
+            # 다른 직업군 무기는 [전체]에도 없다
+            if 슬롯 == "무기":
+                assert not any("너클" in 글 or "빗자루" in 글 for 글 in 글들), 글들
+            두번째 = 탭들[2]  # 무기 "도" / 상의 "가죽"
+            두번째.trigger_action(duration=0)
+            yield 0.3
+            assert [t.text for t in 탭들 if t.state == "down"] == [두번째.text]
+            이름들 = {
+                i["이름"]
+                for i, *_ in gf.장비_교체_후보(상태, 귀검사, 슬롯, 두번째.text)
+            }
+            글들 = [w.text for w in 팝업.walk(restrict=True) if hasattr(w, "text")]
+            현재이름 = (gf.캐릭터_장착아이템(상태, 귀검사, 슬롯) or {}).get("이름")
+            목록글 = [글 for 글 in 글들 if not 글.startswith("[color=9ea6b3]현재")]
+            for n in 상태["상점카탈로그"]["장비"][슬롯]:
+                if n not in 이름들 and n != 현재이름:
+                    assert not any(n in 글 for 글 in 목록글), (두번째.text, n)
+            _찍기(f"equip_swap_{슬롯}_tab")
             _팝업_닫기()
             yield 0.3
+        결과["단계"].append(
+            "장비 교체 팝업 분류 탭(무기 종류/방어구 재질, 다른 직업군 무기 숨김)"
+        )
         무기 = next(iter(상태["상점카탈로그"]["장비"]["무기"].values()))
         screens_party._아이템_상세_팝업(무기)
         yield 0.5
@@ -472,7 +687,17 @@ class 스모크앱(main.DnfMobileApp):
         yield 0.3
         글들 = [b.text for b in 대상버튼들()]
         assert len(글들) == len(적) + 1 and 글들[-1] == "취소", 글들
-        assert 글들[:-1] == [p["이름"] for p in 적], 글들
+        # 버튼마다 "이름\nHP 현재/최대", 상단 적 칸에도 같은 HP 줄
+        assert 글들[:-1] == [f"{p['이름']}\n{gf.적_HP표시(상태, p)}" for p in 적], 글들
+        assert all("/" in g.split("\n")[1] for g in 글들[:-1]), 글들
+        적칸글 = [
+            w.text
+            for w in 전투.적상태틀.walk(restrict=True)
+            if isinstance(w, main.Label)
+        ]
+        assert all(any(gf.적_HP표시(상태, p) in t for t in 적칸글) for p in 적), 적칸글
+        # 팝업 폭은 기준 화면의 0.7(전에는 0.35) - 긴 이름이 버튼 안에 들어간다
+        assert abs(Window.children[0].width - 0.7 * Window.width) < 2
         _찍기("battle_target_popup")
         뒤로()
         yield 0.3
@@ -574,7 +799,7 @@ class 스모크앱(main.DnfMobileApp):
         assert "확인" in 글들, 글들
         _찍기("battle_flee_blocked")
         뒤로()
-        yield 0.3
+        yield 0.6  # 닫힘 애니메이션까지
         assert 팝업수() == 0, "확인(뒤로 키)으로 닫혀야 한다"
         assert (
             len(전투상태["로그"]) == 로그수
@@ -613,7 +838,7 @@ class 스모크앱(main.DnfMobileApp):
         # 전투 종료 팝업: 승리(전리품) -> 던전, 도망 -> 던전, 패배 -> 마을
         def 팝업글():
             return [
-                w.text
+                _글(w.text)
                 for 팝업 in list(Window.children)[:-1]
                 for w in 팝업.walk(restrict=True)
                 if hasattr(w, "text")
@@ -723,7 +948,7 @@ class 스모크앱(main.DnfMobileApp):
                         w
                         for 팝업 in list(Window.children)[:-1]
                         for w in 팝업.walk(restrict=True)
-                        if getattr(w, "text", None) == 칸[1]
+                        if _글(getattr(w, "text", None)) == 칸[1]
                     ).parent
                     박스.dispatch("on_release")
                     yield 0.3
@@ -731,6 +956,12 @@ class 스모크앱(main.DnfMobileApp):
                     팝업_버튼("선택").dispatch("on_release")
                     yield 0.3
                     assert 상태["소지품"]["장비"][칸[1]] == 보유 + 1
+                    # 받은 아이템이 전투 종료 팝업의 전리품 줄에 더해진다
+                    새글 = _글(next(t for t in 팝업글() if t.startswith("전투 승리!")))
+                    assert 새글 == "\n".join(
+                        gf.전투_종료_문구(상태, "아군승리")
+                    ) and any(줄.startswith(칸[1]) for 줄 in 새글.split("\n")[2:]), 새글
+                    _찍기("battle_end_win_reward")
                 else:  # 힐가브 - 후보 없음, 세 칸 모두 빈칸
                     assert 칸 == [None, None, None], 칸
                     _찍기("battle_reward_empty")
@@ -797,7 +1028,7 @@ class 스모크앱(main.DnfMobileApp):
             _팝업_닫기()
         결과["단계"].append("자동전투로 전투 끝까지 진행 -> 결과 팝업")
 
-        # 몬스터 크기: 소형 0.75 / 중형 1 / 대형 1.25배, 칸 바닥(발바닥) 맞춤, 대형이 뒤(먼저 그림)
+        # 몬스터 크기: 소형 1/2 / 중형 3/4 / 대형 1배(칸 전체), 칸 바닥(발바닥) 맞춤, 대형이 뒤(먼저 그림)
         from kivy.graphics import Rectangle
 
         gf.전투_시작(상태, ["고블린", "타우 비스트", "타우 아미"], 레벨=6, 차수=2)
@@ -823,8 +1054,23 @@ class 스모크앱(main.DnfMobileApp):
             0
         ] == "타우 비스트"
         assert len(set(칸들)) == 3
+        # 아군 그림: 칸에 꽉 맞춘 크기의 2/3, 칸 바닥 가운데
+        from kivy.uix.image import Image as 그림
+
+        아군그림 = [
+            w for w in 전투.아군그래픽행.walk(restrict=True) if isinstance(w, 그림)
+        ]
+        assert 아군그림, "아군 그림 없음"
+        for 이미지 in 아군그림:
+            틀 = 이미지.parent
+            tw, th = 이미지.texture_size
+            맞춤 = min(틀.width / tw, 틀.height / th) * 2 / 3
+            assert abs(이미지.height - th * 맞춤) < 1, (이미지.size, 틀.size)
+            assert abs(이미지.y - 틀.y) < 1 and abs(이미지.center_x - 틀.center_x) < 1
         _찍기("battle_monster_size")
-        결과["단계"].append("몬스터 크기 배율(소/중/대) + 발바닥 맞춤 + 대형이 뒤")
+        결과["단계"].append(
+            "몬스터 크기 배율(소 1/2, 중 3/4, 대 1) + 발바닥 맞춤 + 대형이 뒤, 아군 그림 2/3 바닥 맞춤"
+        )
 
         # 황금 고블린(도망턴 5): 자기 턴이 5번 끝나면 도망 -> 이름표 "(도망)", 그림 없음,
         # 적이 모두 도망쳤으면 "적이 도망쳤다!" 팝업 -> [확인] -> 던전
@@ -1001,6 +1247,43 @@ class 스모크앱(main.DnfMobileApp):
         assert 지도._칸_문자(19, -1) == "O", 지도._칸_문자(19, -1)
         assert 지도._칸_문자(3, -1) == "O"  # 상층 마을 포탈 앞 보스 -> 발판으로
         assert 지도._칸_문자(19, 0) == "#"  # 겹친 포탈 칸은 지금 맵
+        # 한 번 클리어한 로리엔 감옥 보스는 다시 들어오면 감옥 대신 보스 몬스터 그림(비율 유지)
+        from game.system import town_system
+
+        town_system.오브젝트_클리어_기록(
+            상태["진행도"], "dungeon_01A_D01_Lorien", (15, 3)
+        )
+        gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
+        상태["던전상태"]["위치"] = (14, 3)
+        던전.갱신()
+        yield 0.5
+        assert 지도._보스그림인가(15, 3)
+        보스 = 지도._오브젝트_타일(15, 3)
+        assert 보스 is not None and 보스 is not 지도._파일_타일(
+            "asset_tile_prison_seria.webp"
+        )
+        _찍기("dungeon_prison_cleared_boss")
+        # 잘라 그리기(get_region)라 같은 GL 텍스처의 조각이다 - id로 찾는다
+        보스칸 = [
+            c
+            for c in 그린_사각형(지도)
+            if c.texture is not None and c.texture.id == 보스.id
+        ]
+        assert len(보스칸) == 1, len(보스칸)
+        tw, th = 보스.size
+        크기 = 보스칸[0].size
+        assert abs(크기[0] / 크기[1] - tw / th) < 0.05, (
+            "보스 그림 비율",
+            크기,
+            보스.size,
+        )
+        # 보스 그림은 1칸 안(2x2는 감옥만)
+        칸폭, 칸높이 = 지도._칸_크기()
+        assert 크기[0] <= 칸폭 + 1 and 크기[1] <= 칸높이 + 1, (크기, 칸폭)
+        상태["진행도"]["클리어한오브젝트"].discard(("dungeon_01A_D01_Lorien", (15, 3)))
+        결과["단계"].append(
+            "감옥 보스전은 한 번 클리어하면 보스 칭호 몬스터 그림(1칸)으로"
+        )
         gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
         상태["던전상태"]["위치"] = (14, 3)  # 보스(감옥) 왼쪽 - 오른쪽에 로리엔 안쪽
         던전.갱신()
@@ -1208,6 +1491,140 @@ class 스모크앱(main.DnfMobileApp):
             screens_common._설정_경로 = 원래경로
             gf.반응_자동_설정(원래반응)
             shutil.rmtree(폴더, ignore_errors=True)
+            매니저.current = "마을"
+
+    def _단계_화면_배치(self, 상태, 매니저):
+        """마을/던전/전투 - 상단 1170(4줄) + 하단 1170(4줄), 정사각형 200은 같은 간격"""
+        sc = screens_common
+
+        def 같은간격(줄, 칸수):
+            칸들 = sorted(줄.children, key=lambda w: w.x)
+            assert len(칸들) == 칸수, (len(칸들), 칸수)
+            for 칸 in 칸들:
+                assert (
+                    abs(칸.width - sc.정사각형_크기) < 1
+                    and abs(칸.height - sc.정사각형_크기) < 1
+                ), 칸.size
+            간격 = (
+                [칸들[0].x - 줄.x]
+                + [b.x - a.right for a, b in zip(칸들, 칸들[1:])]
+                + [줄.right - 칸들[-1].right]
+            )
+            assert max(간격) - min(간격) < 1.5, 간격
+            return 칸들
+
+        # 마을: 1줄 파티원 정사각형(위 끝), 2~4줄 마을 그림 970, 하단 1줄 마을 이름
+        매니저.current = "마을"
+        마을 = 매니저.get_screen("마을")
+        마을.갱신()
+        yield 0.4
+        파티수 = len(상태["파티"]["파티원"])
+        같은간격(마을.파티줄, 파티수)
+        assert abs(마을.파티줄.top - sc.기준화면_높이) < 1, 마을.파티줄.top
+        assert abs(마을.배경그림.height - sc.상단_그림_높이) < 1
+        assert abs(마을.배경그림.y - sc.하단_높이) < 1, 마을.배경그림.y
+        assert 마을.마을명라벨.top <= sc.하단_높이 + 1 and "[" in 마을.마을명라벨.text
+        # 칸 글은 줄마다 한 줄 - 긴 이름("엘리멘탈마스터")은 가로로 눌려 칸 폭 안에 그려진다
+        줄라벨 = [
+            w
+            for w in 마을.파티줄.walk(restrict=True)
+            if isinstance(w, sc.가로맞춤_라벨)
+        ]
+        assert len(줄라벨) == 4 * 파티수, len(줄라벨)
+        for 라벨 in 줄라벨:
+            assert 라벨.texture_size[0] <= 라벨.width, (
+                라벨.text,
+                라벨.texture_size,
+                라벨.width,
+            )
+        긴이름 = next(r for r in 줄라벨 if r.text == "엘리멘탈마스터")
+        assert 긴이름.texture.size[0] > 긴이름.texture_size[0], "긴 이름이 눌리지 않음"
+        assert 긴이름.texture.size[1] == 긴이름.texture_size[1]  # 높이는 그대로
+        짧은 = [r for r in 줄라벨 if r.texture.size[0] <= r.width - r.여백]
+        assert 짧은 and all(list(r.texture_size) == list(r.texture.size) for r in 짧은)
+        _찍기("layout_town")
+
+        # 던전: 1줄 파티원, 2~4줄 지도 970, 하단 1줄 위치/걸음수
+        gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
+        매니저.current = "던전"
+        던전 = 매니저.get_screen("던전")
+        던전.갱신()
+        yield 0.4
+        같은간격(던전.파티줄, 파티수)
+        assert abs(던전.지도위젯.height - sc.상단_그림_높이) < 1
+        assert abs(던전.지도위젯.y - sc.하단_높이) < 1
+        assert 던전.상태라벨.text.startswith("위치"), 던전.상태라벨.text
+        _찍기("layout_dungeon")
+
+        # 전투: 적 정사각형 / 몬스터 그림 385 / 파티원 그림 385 / 파티원 정사각형, 하단 1줄 전투 기록
+        gf.전투_시작(상태, ["고블린", "고블린", "고블린 투척병"], 레벨=1, 차수=1)
+        support.반응_처리(상태)
+        매니저.current = "전투"
+        전투 = 매니저.get_screen("전투")
+        전투.갱신(신규=True)
+        yield 0.6
+        적칸 = 같은간격(전투.적상태틀, 3)
+        아군칸 = 같은간격(전투.아군상태틀, len(gf.아군_목록(상태)))
+        assert abs(전투.적상태틀.top - sc.기준화면_높이) < 1
+        for 줄, 칸들 in ((전투.적그래픽행, 적칸), (전투.아군그래픽행, 아군칸)):
+            assert abs(줄.height - sc.그림줄_높이) < 1, 줄.height
+            그림칸 = sorted(줄.children, key=lambda w: w.x)
+            assert [round(w.center_x) for w in 그림칸] == [
+                round(w.center_x) for w in 칸들
+            ]
+        assert abs(전투.아군상태틀.y - sc.하단_높이) < 1, 전투.아군상태틀.y
+        # 전투 칸 글도 짧은 줄은 그대로, 긴 줄만 눌린다
+        for 줄 in (전투.적상태틀, 전투.아군상태틀):
+            for r in [
+                w for w in 줄.walk(restrict=True) if isinstance(w, sc.가로맞춤_라벨)
+            ]:
+                한계 = r.width - r.여백
+                기대 = min(r.texture.size[0], 한계)
+                assert abs(r.texture_size[0] - 기대) < 1, (
+                    r.text,
+                    r.texture_size,
+                    r.texture.size,
+                    r.width,
+                )
+        _찍기("layout_battle")
+        상태["전투상태"] = None
+        상태["던전상태"] = None
+        매니저.current = "마을"
+        결과["단계"].append(
+            "화면 배치(마을/던전/전투 상단 4줄 + 하단, 정사각형 200 같은 간격, 그림 970/385)"
+        )
+
+    def _단계_던전목록(self, 상태, 매니저):
+        """던전 이동 목록 - 바로 앞 번호 던전 보스를 안 깬 던전은 비활성"""
+        진행도 = 상태["진행도"]
+        원래 = (진행도["현재마을"], set(진행도.get("클리어한던전", set())))
+        try:
+            진행도["클리어한던전"] = {
+                "dungeon_01A_D01_Lorien",
+                "dungeon_01A_D02_Hollow_Lorien",
+            }
+            진행도["현재마을"] = "헨돈마이어"
+            매니저.current = "던전목록"
+            yield 0.4
+            버튼 = {
+                w.text: w.disabled
+                for w in 매니저.current_screen.목록틀.walk(restrict=True)
+                if isinstance(w, Button)
+            }
+            assert 버튼 == {"머크우드": False, "선더랜드": True, "그락카락": True}, 버튼
+            _찍기("dungeon_list_locked")
+            진행도["클리어한던전"].add("dungeon_01A_D04_Hollow_mirkwood")
+            매니저.current_screen.갱신()
+            yield 0.3
+            버튼 = {
+                w.text: w.disabled
+                for w in 매니저.current_screen.목록틀.walk(restrict=True)
+                if isinstance(w, Button)
+            }
+            assert 버튼["선더랜드"] is False and 버튼["그락카락"] is True, 버튼
+            결과["단계"].append("던전 이동 목록 - 앞 던전 보스 전엔 비활성, 깨면 활성")
+        finally:
+            진행도["현재마을"], 진행도["클리어한던전"] = 원래
             매니저.current = "마을"
 
     def _단계_화면_틀(self, 매니저):

@@ -116,6 +116,8 @@ class 메인메뉴화면(Screen):
 
 class 파티생성화면(Screen):
     _능력치_목록 = ["근력", "민첩", "건강", "지능", "지혜", "매력"]
+    # 처음 열었을 때 칸마다 고른 직업 - 네 칸 모두 참여 상태로 시작한다
+    _기본_직업 = ["귀검사", "격투가", "거너", "마법사"]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -245,7 +247,7 @@ class 파티생성화면(Screen):
         )
         입력줄.add_widget(슬롯["이름입력"])
         슬롯["직업스피너"] = Spinner(
-            text=gameflow.직업목록[0],
+            text=self._기본_직업[i],
             values=gameflow.직업목록,
             font_size="15sp",
             background_normal="",
@@ -296,6 +298,7 @@ class 파티생성화면(Screen):
         else:
             토글 = ToggleButton(
                 text="참여",
+                state="down",
                 font_size="14sp",
                 background_normal="",
                 background_down="",

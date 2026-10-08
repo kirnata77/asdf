@@ -12,7 +12,7 @@ import re
 import pytest
 
 import gameflow as gf
-from game.system.combat import flow
+from game.system.combat import flow, stats
 from game.system import skill_system as ss
 from tests import support
 
@@ -138,11 +138,11 @@ def test_몬스터_크기_분류와_표시_배율():
         assert 크기[n] == 기대, (n, d["분류"], 크기[n])
     p = lambda 원본, 이름="x": {"이름": 이름, "원본": 원본}  # noqa: E731
     assert [gf.적_표시_배율(p({"크기": k})) for k in ("소형", "중형", "대형")] == [
+        0.5,
         0.75,
         1.0,
-        1.25,
     ]
-    assert gf.적_표시_배율(p({})) == 1.0  # 없으면 중형
+    assert gf.적_표시_배율(p({})) == 0.75  # 없으면 중형
     with pytest.raises(ValueError, match="크기"):
         gf.적_표시_배율(p({"크기": "거대"}))
 
@@ -184,3 +184,58 @@ def test_이어진_맵_목록은_건너_이어진_던전까지_포탈을_겹쳐_
     dx, dy = 상층["오프셋"]
     assert (19 - dx, 0 - dy) == (19, 19)
     assert 상층["타일"]["O"] == "asset_tile_emerald.webp"
+
+
+def test_적_HP표시는_현재와_유효_최대HP():
+    상태 = support.새게임([("", "귀검사")])
+    gf.전투_시작(상태, ["고블린"], 레벨=1, 차수=1)
+    적 = gf.적_목록(상태)[0]
+    최대 = stats.유효_최대HP(상태["전투상태"], 적)
+    적["현재HP"] = 최대 - 1
+    assert gf.적_HP표시(상태, 적) == f"HP {최대 - 1}/{최대}"
+
+
+def test_감옥_보스전은_한번_클리어하면_보스_그림으로_표시():
+    from game.system import town_system
+
+    상태 = support.새게임([("", "귀검사")])
+    gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
+    표시 = gf.던전_오브젝트_표시(상태)
+    assert "보스그림" not in 표시[(15, 3)]  # 처음엔 감옥
+    assert 표시[(15, 3)]["타일"] == "asset_tile_prison_seria.webp"
+    town_system.오브젝트_클리어_기록(상태["진행도"], "dungeon_01A_D01_Lorien", (15, 3))
+    표시 = gf.던전_오브젝트_표시(상태)
+    assert 표시[(15, 3)]["보스그림"] == gf.몬스터목록["겁쟁이 고블린"]["이미지"]
+    # 전용 타일이 없는 보스(D02)는 클리어해도 그대로
+    gf.던전_진입(상태, "dungeon_01A_D02_Hollow_Lorien")
+    for 좌표 in 표시_좌표(상태):
+        town_system.오브젝트_클리어_기록(
+            상태["진행도"], "dungeon_01A_D02_Hollow_Lorien", 좌표
+        )
+    assert all("보스그림" not in o for o in gf.던전_오브젝트_표시(상태).values())
+
+
+def 표시_좌표(상태):
+    return list(상태["던전상태"]["맵정보"]["오브젝트"])
+
+
+def test_아이템_색분류는_레어도_커먼_방어구_세트는_세트():
+    상태 = support.새게임([("", "귀검사")])
+
+    def 분류(이름):
+        return gf.아이템_색분류(gf.아이템_찾기(상태, 이름))
+
+    assert 분류("녹슨 중갑 상의") == "커먼"
+    assert 분류("강철 소검") == "언커먼"
+    assert 분류("치트용 소검") == "치트"
+    for 이름 in (
+        "마리아의 천 상의",
+        "적산호피의 가죽 하의",
+        "스야나무 껍질 흉갑",
+        "브론델의 각반",
+        "티타늄 신발",
+    ):
+        assert 분류(이름) == "세트", 이름
+    assert 분류("조잡한 반지") == "커먼"  # 악세서리는 세트여도 레어도 색
+    assert gf.아이템_찾기(상태, "초보자용 HP 포션")["이름"] == "초보자용 HP 포션"
+    assert gf.아이템_찾기(상태, "없는 아이템") is None

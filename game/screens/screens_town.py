@@ -30,6 +30,18 @@ from game.screens.screens_common import (
     뒤로키_버튼,
     스크롤_목록,
     닫기_버튼,
+    탭_줄,
+    글자_높이,
+    아이템_이름_글,
+    고른간격줄,
+    파티원_정사각형_채우기,
+    상단_높이,
+    하단_높이,
+    정사각형_크기,
+    상단_그림_높이,
+    하단_첫줄_높이,
+    하단_나머지_높이,
+    하단_좌우여백,
 )
 
 
@@ -41,46 +53,45 @@ from game.screens.screens_common import (
 class 마을화면(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        루트 = BoxLayout(orientation="vertical", padding=16, spacing=10)
-
-        # 위에서부터 마을 이름 한 줄 → 파티 4명 → 마을 배경 그림 → 메시지
-        # → 버튼 → 타이틀 버튼. 보유 골드는
-        # 마을 화면에 표시하지 않는다.
-        self.마을명라벨 = Label(
-            text="", size_hint=(1, 0.05), halign="left", valign="middle"
-        )
-        self.마을명라벨.bind(
-            size=lambda *_: setattr(
-                self.마을명라벨,
-                "text_size",
-                self.마을명라벨.size,
-            )
-        )
-        루트.add_widget(self.마을명라벨)
-
-        self.파티라벨 = Label(text="", size_hint=(1, 0.17), halign="left", valign="top")
-        self.파티라벨.bind(
-            size=lambda *_: setattr(
-                self.파티라벨,
-                "text_size",
-                self.파티라벨.size,
-            )
-        )
-        루트.add_widget(self.파티라벨)
-
-        # 배경 그림은 화면 폭에 맞추고 높이는 그림 비율대로 정한다(그림이
-        # 없으면 높이 0으로 접힌다).
+        # 상단(1170): 1줄 파티원 정사각형, 2~4줄 마을 그림(비율 유지, 남는 곳은 비움)
+        # 하단(1170): 1줄 마을 이름, 2~4줄 메시지/버튼/타이틀 - screens_common "화면 배치"
+        루트 = BoxLayout(orientation="vertical")
+        상단 = BoxLayout(orientation="vertical", size_hint=(1, None), height=상단_높이)
+        self.파티줄 = 고른간격줄(size_hint=(1, None), height=정사각형_크기)
+        상단.add_widget(self.파티줄)
         self.배경그림 = Image(
-            allow_stretch=True, keep_ratio=True, size_hint=(1, None), height=dp(0)
+            allow_stretch=True,
+            keep_ratio=True,
+            size_hint=(1, None),
+            height=상단_그림_높이,
         )
-        self.배경그림.bind(width=self._배경높이_맞추기, texture=self._배경높이_맞추기)
         _도트_필터(self.배경그림)
-        루트.add_widget(self.배경그림)
+        상단.add_widget(self.배경그림)
+        루트.add_widget(상단)
 
-        self.메시지라벨 = Label(text="", size_hint=(1, 0.07))
-        루트.add_widget(self.메시지라벨)
+        하단 = BoxLayout(
+            orientation="vertical",
+            size_hint=(1, None),
+            height=하단_높이,
+            padding=(하단_좌우여백, 0, 하단_좌우여백, 하단_좌우여백),
+            spacing=8,
+        )
+        self.마을명라벨 = Label(
+            text="", font_size="22sp", size_hint=(1, 하단_첫줄_높이 / 하단_높이)
+        )
+        하단.add_widget(self.마을명라벨)
+        나머지 = BoxLayout(
+            orientation="vertical",
+            size_hint=(1, 하단_나머지_높이 / 하단_높이),
+            spacing=8,
+        )
+        하단.add_widget(나머지)
+        루트.add_widget(하단)
 
-        버튼그리드 = GridLayout(cols=2, size_hint=(1, 0.42), spacing=8)
+        self.메시지라벨 = Label(text="", size_hint=(1, 0.1))
+        나머지.add_widget(self.메시지라벨)
+
+        버튼그리드 = GridLayout(cols=2, size_hint=(1, 0.72), spacing=8)
 
         휴식버튼 = Button(text="휴식 (HP/MP 전체 회복)")
         휴식버튼.bind(on_release=self._휴식)
@@ -122,13 +133,13 @@ class 마을화면(Screen):
         창고버튼 = Button(text="창고 (미구현)", disabled=True)
         버튼그리드.add_widget(창고버튼)
 
-        루트.add_widget(버튼그리드)
+        나머지.add_widget(버튼그리드)
 
-        타이틀버튼 = Button(text="타이틀로 돌아가기", size_hint=(1, 0.12))
+        타이틀버튼 = Button(text="타이틀로 돌아가기", size_hint=(1, 0.18))
         타이틀버튼.bind(
             on_release=lambda *_: setattr(self.manager, "current", "메인메뉴")
         )
-        루트.add_widget(타이틀버튼)
+        나머지.add_widget(타이틀버튼)
 
         self.add_widget(루트)
 
@@ -143,24 +154,8 @@ class 마을화면(Screen):
 
         경로 = _에셋_경로("town", 마을정보.get("배경이미지"))
         self.배경그림.source = 경로 or ""
-        self._배경높이_맞추기()
-
-        줄들 = []
-        for 캐릭터 in 게임상태["파티"]["파티원"]:
-            줄들.append(
-                f"{캐릭터['캐릭터명']} ({gameflow.캐릭터_직업표시(캐릭터)})  Lv.{캐릭터['레벨']}  "
-                f"HP {캐릭터['현재HP']}/{gameflow.캐릭터_최대HP(게임상태, 캐릭터)}  "
-                f"MP {캐릭터['현재MP']}/{gameflow.캐릭터_최대MP(게임상태, 캐릭터)}"
-            )
-        self.파티라벨.text = "\n".join(줄들)
+        파티원_정사각형_채우기(self.파티줄, 게임상태)
         self.메시지라벨.text = ""
-
-    def _배경높이_맞추기(self, *args):
-        텍스처 = self.배경그림.texture
-        if self.배경그림.source and 텍스처 is not None and 텍스처.width:
-            self.배경그림.height = self.배경그림.width * 텍스처.height / 텍스처.width
-        else:
-            self.배경그림.height = 0
 
     def on_pre_enter(self, *args):
         self.갱신()
@@ -393,18 +388,21 @@ class 상점화면(Screen):
         super().__init__(**kwargs)
         self.복귀화면 = "마을"
 
-        루트 = BoxLayout(orientation="vertical", padding=12, spacing=8)
+        # 머리줄/뒤로 줄/탭/안내줄은 글자 높이에 맞춘 높이(글자_높이) - 남는 높이는 목록이 쓴다
+        루트 = BoxLayout(orientation="vertical", padding=12, spacing=6)
 
-        머리 = BoxLayout(orientation="horizontal", size_hint=(1, 0.1))
+        머리 = BoxLayout(
+            orientation="horizontal", size_hint=(1, None), height=글자_높이("20sp")
+        )
         머리.add_widget(Label(text="상점", font_size="20sp", halign="left"))
         self.골드라벨 = Label(text="")
         머리.add_widget(self.골드라벨)
         루트.add_widget(머리)
 
-        self.내용틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.8), spacing=6)
+        self.내용틀 = BoxLayout(orientation="vertical", size_hint=(1, 1), spacing=6)
         루트.add_widget(self.내용틀)
 
-        self.안내라벨 = Label(text="", size_hint=(1, 0.1))
+        self.안내라벨 = Label(text="", size_hint=(1, None), height=글자_높이())
         루트.add_widget(self.안내라벨)
 
         self.add_widget(루트)
@@ -458,7 +456,7 @@ class 상점화면(Screen):
         self._비우기()
 
         상단 = BoxLayout(
-            orientation="horizontal", size_hint=(1, None), height=_버튼_높이
+            orientation="horizontal", size_hint=(1, None), height=글자_높이()
         )
         뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
         뒤로키_버튼(뒤로버튼)
@@ -480,7 +478,7 @@ class 상점화면(Screen):
     def _재료_그리기(self, 모드):
         self._비우기()
         상단 = BoxLayout(
-            orientation="horizontal", size_hint=(1, None), height=_버튼_높이
+            orientation="horizontal", size_hint=(1, None), height=글자_높이()
         )
         뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
         뒤로키_버튼(뒤로버튼)
@@ -497,7 +495,7 @@ class 상점화면(Screen):
         self._비우기()
 
         상단 = BoxLayout(
-            orientation="horizontal", size_hint=(1, None), height=_버튼_높이
+            orientation="horizontal", size_hint=(1, None), height=글자_높이()
         )
         뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
         뒤로키_버튼(뒤로버튼)
@@ -510,39 +508,82 @@ class 상점화면(Screen):
         상단.add_widget(Label(text=f"{모드} - {대분류}", size_hint=(0.68, 1)))
         self.내용틀.add_widget(상단)
 
-        탭스크롤 = ScrollView(size_hint=(1, None), height=_버튼_높이, do_scroll_y=False)
-        탭버튼틀 = BoxLayout(orientation="horizontal", size_hint=(None, 1), spacing=4)
-        탭버튼틀.bind(minimum_width=탭버튼틀.setter("width"))
-        탭스크롤.add_widget(탭버튼틀)
-        self.내용틀.add_widget(탭스크롤)
+        # 부위 탭 - 장비는 2줄(윗줄 무기~신발, 아랫줄 악세서리/특수장비)을 한 묶음으로,
+        # 밀어서 넘기지 않고 다 보인다. 그 아래 하위 탭(무기: 직업군 -> 종류, 방어구: 재질).
+        탭줄들 = gameflow.상점_탭줄(모드, 대분류)
+        칸수 = max(len(줄) for 줄 in 탭줄들) if 탭줄들 else 1
+        그룹 = f"상점부위{id(self)}"
+        처음탭 = 탭줄들[0][0] if 탭줄들 and 탭줄들[0] else None
+        for 줄 in 탭줄들:
+            self.내용틀.add_widget(
+                탭_줄(
+                    줄,
+                    lambda t, m=모드, d=대분류: self._부위_고르기(m, d, t),
+                    처음탭,
+                    높이=글자_높이("14sp"),  # 글자 높이에 맞춘 탭
+                    그룹=그룹,
+                    칸수=칸수,
+                )
+            )
+        self._하위탭틀 = BoxLayout(
+            orientation="vertical", size_hint=(1, None), height=0, spacing=dp(4)
+        )
+        self.내용틀.add_widget(self._하위탭틀)
 
         목록스크롤 = ScrollView(size_hint=(1, 1))
         목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=4)
         목록틀.bind(minimum_height=목록틀.setter("height"))
         목록스크롤.add_widget(목록틀)
         self.내용틀.add_widget(목록스크롤)
+        self._목록틀 = 목록틀
 
         if 모드 == "해체":
-            # 일괄해체 줄은 목록 아래(화면 하단) - 탭 줄은 상단 줄 바로 아래에 붙는다
+            # 일괄해체 줄은 목록 아래(화면 하단)
             self.내용틀.add_widget(self._일괄해체_줄(목록틀))
-            탭목록 = gameflow.상점_해체_탭목록
-        else:
-            탭목록 = gameflow.상점_탭목록(대분류)
-        for 탭이름 in 탭목록:
-            # 탭 너비는 글자 길이에 맞춘다(좌우 여백 dp(8)씩)
-            탭버튼 = Button(text=탭이름, size_hint=(None, 1), padding=(dp(8), 0))
-            탭버튼.bind(
-                texture_size=lambda inst, ts: setattr(inst, "width", ts[0] + dp(16))
-            )
-            탭버튼.bind(
-                on_release=lambda inst, m=모드, d=대분류, t=탭이름, 목록틀=목록틀: (
-                    self._아이템목록_그리기(m, d, t, 목록틀)
+
+        if 처음탭:
+            self._부위_고르기(모드, 대분류, 처음탭)
+
+    def _부위_고르기(self, 모드, 대분류, 탭):
+        """부위 탭을 누르면 하위 탭을 다시 그리고(고른 것은 [전체]로) 목록을 그린다."""
+        self._필터 = {"직업군": None, "분류": None}
+        self._하위탭_그리기(모드, 대분류, 탭)
+        self._아이템목록_그리기(모드, 대분류, 탭, self._목록틀)
+
+    def _하위탭_그리기(self, 모드, 대분류, 탭):
+        틀 = self._하위탭틀
+        틀.clear_widgets()
+        게임상태 = App.get_running_app().게임상태
+        줄들 = []
+        if 대분류 == "장비" and 탭 == "무기":
+            직업군 = self._필터["직업군"]
+            줄들.append((gameflow.상점_무기_직업군탭(게임상태), 직업군, "직업군"))
+            종류탭 = gameflow.상점_무기_종류탭(게임상태, 직업군)
+            if 종류탭:
+                줄들.append((종류탭, self._필터["분류"], "분류"))
+        elif 대분류 == "장비" and 탭 in gameflow.상점_방어구_부위:
+            줄들.append((gameflow.상점_방어구_재질탭, self._필터["분류"], "분류"))
+        높이 = 글자_높이("13sp")
+        for 탭들, 고른, 키 in 줄들:
+            틀.add_widget(
+                탭_줄(
+                    탭들,
+                    lambda 값, k=키, m=모드, d=대분류, t=탭: self._하위_고르기(
+                        m, d, t, k, 값
+                    ),
+                    고른 or 탭들[0],
+                    높이=높이,
+                    font_size="13sp",
                 )
             )
-            탭버튼틀.add_widget(탭버튼)
+        틀.height = len(줄들) * 높이 + max(0, len(줄들) - 1) * dp(4)
 
-        if 탭목록:
-            self._아이템목록_그리기(모드, 대분류, 탭목록[0], 목록틀)
+    def _하위_고르기(self, 모드, 대분류, 탭, 키, 값):
+        self._필터[키] = 값
+        if 키 == "직업군":
+            self._필터["분류"] = None  # 직업군이 바뀌면 종류는 [전체]부터
+            self._하위탭_그리기(모드, 대분류, 탭)
+        self._아이템목록_그리기(모드, 대분류, 탭, self._목록틀)
 
     def _아이템목록_그리기(self, 모드, 대분류, 탭, 목록틀):
         목록틀.clear_widgets()
@@ -570,6 +611,18 @@ class 상점화면(Screen):
             항목목록 = gameflow.상점_판매목록(게임상태, 대분류, 탭)
             빈문구 = "팔 수 있는 물건이 없습니다."
 
+        # 하위 탭(무기 직업군/종류, 방어구 재질)으로 거른다
+        필터 = getattr(self, "_필터", None) or {}
+        항목목록 = [
+            항목
+            for 항목 in 항목목록
+            if gameflow.상점_분류_일치(
+                항목[2] if len(항목) > 2 else 탭,
+                항목[0],
+                필터.get("직업군"),
+                필터.get("분류"),
+            )
+        ]
         self._현재탭 = 탭
         if not 항목목록:
             목록틀.add_widget(Label(text=빈문구, size_hint=(1, None), height=dp(40)))
@@ -599,7 +652,8 @@ class 상점화면(Screen):
         )
 
         이름라벨 = Label(
-            text=아이템["이름"],
+            text=아이템_이름_글(아이템),  # 레어도 색
+            markup=True,
             size_hint=(0.34, 1),
             halign="left",
             valign="middle",
@@ -700,7 +754,7 @@ class 상점화면(Screen):
 
     def _일괄해체_줄(self, 목록틀):
         줄 = BoxLayout(
-            orientation="horizontal", size_hint=(1, None), height=_버튼_높이, spacing=4
+            orientation="horizontal", size_hint=(1, None), height=글자_높이(), spacing=4
         )
         # 세 칸 모두 "일괄해체" 글자 너비에 맞춘 같은 크기로, 오른쪽 끝에 붙인다.
         일괄버튼 = Button(text="일괄해체", size_hint=(None, 1))
@@ -780,6 +834,16 @@ class 상점화면(Screen):
         내용틀.bind(minimum_height=내용틀.setter("height"))
         스크롤.add_widget(내용틀)
         본문.add_widget(스크롤)
+        이름줄 = Label(
+            text=f"[b]{아이템_이름_글(아이템)}[/b]",
+            markup=True,
+            size_hint=(1, None),
+            height=dp(36),
+            halign="left",
+            font_size="17sp",
+        )
+        이름줄.bind(size=lambda inst, size: setattr(inst, "text_size", size))
+        내용틀.add_widget(이름줄)
 
         for 키, 값 in 아이템.items():
             if 키 in self._상세_제외키 or 값 in (None, 0, "", {}, []):

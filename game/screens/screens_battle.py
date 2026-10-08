@@ -3,12 +3,13 @@
 # =====================
 # main.py가 game/screens/ 여섯 파일의 화면을 ScreenManager에 등록한다.
 
+import re
 import threading
 
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.gridlayout import GridLayout
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
@@ -16,16 +17,26 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.widget import Widget
 from kivy.uix.popup import Popup
 from kivy.uix.image import Image
-from kivy.uix.behaviors import ButtonBehavior
 from kivy.metrics import dp
 from kivy.core.image import Image as CoreImage
-from kivy.graphics import Color, Line, Rectangle
+from kivy.graphics import Color, Rectangle
 
 import gameflow
 from game.screens.screens_common import (
+    _테두리박스,
     _캐릭터이미지_경로,
     _에셋_경로,
     뒤로키_버튼,
+    아이템_이름_글_찾아서,
+    고른간격줄,
+    상단_높이,
+    하단_높이,
+    정사각형_크기,
+    그림줄_높이,
+    하단_첫줄_높이,
+    하단_나머지_높이,
+    하단_좌우여백,
+    줄_상자_채우기,
 )
 
 
@@ -37,25 +48,6 @@ from game.screens.screens_common import (
 # 둔다 - 모험단 프로필 그리드(_초상화_행목록)와 같은 방식.
 _적슬롯_최대 = 5
 _아군슬롯_최대 = 4
-# 적이 5마리보다 적을 때 칸 사이 간격을 넓혀 가운데로 모으는 비율
-# - 칸 자체는 _박스_비율, 칸 사이 빈 공간은
-# _간격_비율만큼의 상대 폭을 차지한다. 적이 적을수록 칸 개수가 줄어
-# 빈 공간(간격) 비중이 커지고, 자연히 전체가 중앙에 모인 것처럼 보인다.
-_박스_비율 = 2
-_간격_비율 = 1
-
-
-def _가운데정렬_채우기(틀, 위젯목록):
-    """가로 BoxLayout인 틀을 비우고, 위젯목록을 앞뒤/사이에 동일한
-    간격(스페이서)을 두고 채운다. 위젯 개수가 적을수록 간격이 상대적으로
-    넓어져 전체가 화면 중앙으로 모인다."""
-    틀.clear_widgets()
-    틀.add_widget(Widget(size_hint_x=_간격_비율))
-    for 위젯 in 위젯목록:
-        틀.add_widget(위젯)
-        틀.add_widget(Widget(size_hint_x=_간격_비율))
-
-
 # 상태/그래픽/배경 박스 테두리 색 - 전부 흰색 테두리로 통일한다.
 _박스_테두리색 = (1, 1, 1, 1)
 
@@ -70,32 +62,6 @@ def _텍스처(경로):
         텍스처.mag_filter = "nearest"
         _텍스처_모음[경로] = 텍스처
     return _텍스처_모음[경로]
-
-
-class _테두리박스(ButtonBehavior, BoxLayout):
-    """테두리를 그리는 상자. 전투화면의 적/아군 상태 박스, 그래픽 박스,
-    배경 틀(전투 배경 이미지는 아직 없어 빈 채로 둔다)에 공용으로 쓴다.
-    현재턴_표시()로 테두리를 굵게 만들어 누구 턴인지 표시한다."""
-
-    def __init__(self, 테두리색, 기본두께=1.5, **kwargs):
-        kwargs.setdefault("orientation", "vertical")
-        super().__init__(**kwargs)
-        self._기본두께 = 기본두께
-        with self.canvas.before:
-            Color(*테두리색)
-            self._테두리 = Line(width=기본두께)
-        self.bind(pos=self._다시그리기, size=self._다시그리기)
-
-    def _다시그리기(self, *args):
-        self._테두리.rectangle = (
-            self.x + 1,
-            self.y + 1,
-            max(self.width - 2, 0),
-            max(self.height - 2, 0),
-        )
-
-    def 현재턴_표시(self, 켜짐):
-        self._테두리.width = self._기본두께 * 2.5 if 켜짐 else self._기본두께
 
 
 class _전투보상팝업(Popup):
@@ -116,7 +82,14 @@ class _전투보상팝업(Popup):
         박스줄 = BoxLayout(orientation="horizontal", spacing=dp(8))
         for 번호, 이름 in enumerate(칸목록):
             박스 = _테두리박스(_박스_테두리색, 기본두께=1.2)
-            라벨 = Label(text=이름 or "", halign="center", valign="middle")
+            라벨 = Label(
+                text=아이템_이름_글_찾아서(App.get_running_app().게임상태, 이름)
+                if 이름
+                else "",
+                markup=True,
+                halign="center",
+                valign="middle",
+            )
             라벨.bind(size=lambda inst, sz: setattr(inst, "text_size", sz))
             박스.add_widget(라벨)
             if 이름 is None:
@@ -203,9 +176,13 @@ class _대상선택팝업(Popup):
         self._선택콜백 = 선택콜백
         self._취소콜백 = 취소콜백
 
+        게임상태 = App.get_running_app().게임상태
         목록 = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(6))
         for 적 in 적목록:
-            버튼 = Button(text=적["이름"])
+            버튼 = Button(
+                text=f"{적['이름']}\n{gameflow.적_HP표시(게임상태, 적)}",
+                halign="center",
+            )
             버튼.bind(on_release=lambda inst, p=적: self._선택(p))
             목록.add_widget(버튼)
         취소버튼 = Button(
@@ -216,8 +193,8 @@ class _대상선택팝업(Popup):
         목록.add_widget(취소버튼)
 
         kwargs.setdefault("title", 제목)
-        kwargs.setdefault("size_hint", (0.35, None))
-        kwargs.setdefault("height", dp(110 + 54 * (len(적목록) + 1)))
+        kwargs.setdefault("size_hint", (0.7, None))  # 이름이 넘치지 않게(전에는 0.35)
+        kwargs.setdefault("height", dp(110 + 64 * (len(적목록) + 1)))
         kwargs.setdefault("auto_dismiss", False)
         super().__init__(content=목록, **kwargs)
 
@@ -265,6 +242,26 @@ class _행동선택팝업(Popup):
         self._취소콜백()
 
 
+def _전리품_글(게임상태, 줄들):
+    """전투 종료 팝업 글 - 아이템 줄("이름" / "이름 xN")은 레어도 색으로."""
+    return "\n".join(
+        아이템_이름_글_찾아서(게임상태, re.sub(r" x\d+$", "", 줄), 줄) for 줄 in 줄들
+    )
+
+
+# 아군 그림 크기 - 칸에 꽉 맞춘 크기 대비(2026-10-07 사용자 지정 2/3, 칸 바닥에 붙인다)
+_아군그림_배율 = 2 / 3
+
+
+def _아군그림_맞추기(틀, 이미지):
+    tw, th = 이미지.texture_size
+    if not tw or not th:
+        return
+    맞춤 = min(틀.width / tw, 틀.height / th) * _아군그림_배율
+    이미지.size = (tw * 맞춤, th * 맞춤)
+    이미지.pos = (틀.center_x - 이미지.width / 2, 틀.y)
+
+
 class 전투화면(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -273,43 +270,31 @@ class 전투화면(Screen):
         self._엔진중 = False
         self.자동전투 = False  # [자동전투] 켜짐 - 이 전투 동안만(끝나면 꺼진다)
 
-        루트 = BoxLayout(orientation="vertical", padding=10, spacing=6)
+        # 상단(1170): 1줄 적 정사각형, 2줄 몬스터 그림, 3줄 파티원 그림, 4줄 파티원 정사각형.
+        # 하단(1170): 1줄 전투 기록, 2~4줄 안내/행동 버튼 - screens_common "화면 배치".
+        # 칸은 수가 다르면 간격이 바뀐다(고른간격줄). 그림 칸은 위아래 정사각형과 가운데가 맞는다.
+        루트 = BoxLayout(orientation="vertical")
+        상단 = BoxLayout(orientation="vertical", size_hint=(1, None), height=상단_높이)
+        self.적상태틀 = 고른간격줄(size_hint=(1, None), height=정사각형_크기)
+        상단.add_widget(self.적상태틀)
+        self.적그래픽행 = 고른간격줄(넓힘=True, size_hint=(1, None), height=그림줄_높이)
+        상단.add_widget(self.적그래픽행)
+        self.아군그래픽행 = 고른간격줄(
+            넓힘=True, size_hint=(1, None), height=그림줄_높이
+        )
+        상단.add_widget(self.아군그래픽행)
+        self.아군상태틀 = 고른간격줄(size_hint=(1, None), height=정사각형_크기)
+        상단.add_widget(self.아군상태틀)
+        루트.add_widget(상단)
 
-        # 적 상태 박스(최대 5칸) - 이름/HP/MP. 현재 턴이면 테두리가
-        # 굵어진다. 5마리보다 적으면 칸 사이 간격이 넓어져 가운데로 모인다
-        # (GridLayout 대신 스페이서를 둔 BoxLayout).
-        self.적상태틀 = BoxLayout(
-            orientation="horizontal", size_hint=(1, 0.13), spacing=4
+        하단 = BoxLayout(
+            orientation="vertical",
+            size_hint=(1, None),
+            height=하단_높이,
+            padding=(하단_좌우여백, 0, 하단_좌우여백, 하단_좌우여백),
+            spacing=6,
         )
-        루트.add_widget(self.적상태틀)
-
-        # 전투 배경(배경 이미지는 아직 없어 비워둠) + 그래픽 - 위 칸(5)엔
-        # 적 그래픽, 아래 칸(4)엔 아군 그래픽.
-        self.배경틀 = _테두리박스(
-            _박스_테두리색,
-            기본두께=1,
-            size_hint=(1, 0.33),
-            spacing=4,
-            padding=4,
-        )
-        self.적그래픽행 = BoxLayout(
-            orientation="horizontal", size_hint=(1, 0.55), spacing=4
-        )
-        self.배경틀.add_widget(self.적그래픽행)
-        self.아군그래픽행 = GridLayout(
-            cols=_아군슬롯_최대, size_hint=(1, 0.45), spacing=4
-        )
-        self.배경틀.add_widget(self.아군그래픽행)
-        루트.add_widget(self.배경틀)
-
-        # 아군 상태 박스(최대 4칸).
-        self.아군상태틀 = GridLayout(
-            cols=_아군슬롯_최대, size_hint=(1, 0.13), spacing=4
-        )
-        루트.add_widget(self.아군상태틀)
-
-        # 전투 로그 - 아군 상태 박스와 액션 버튼 사이에 배치.
-        로그스크롤 = ScrollView(size_hint=(1, 0.17))
+        로그스크롤 = ScrollView(size_hint=(1, 하단_첫줄_높이 / 하단_높이))
         self.로그라벨 = Label(
             text="",
             size_hint_y=None,
@@ -322,15 +307,19 @@ class 전투화면(Screen):
             width=lambda inst, w: setattr(inst, "text_size", (w, None)),
         )
         로그스크롤.add_widget(self.로그라벨)
-        루트.add_widget(로그스크롤)
-
-        self.안내라벨 = Label(text="", size_hint=(1, 0.05), font_size="14sp")
-        루트.add_widget(self.안내라벨)
-
-        # 액션 버튼 - 왼쪽위 일반공격/오른쪽위
-        # 스킬/중간왼쪽 아이템/중간오른쪽 도망/아래 전체 턴 넘기기.
-        self.액션틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.19), spacing=4)
-        루트.add_widget(self.액션틀)
+        하단.add_widget(로그스크롤)
+        나머지 = BoxLayout(
+            orientation="vertical",
+            size_hint=(1, 하단_나머지_높이 / 하단_높이),
+            spacing=6,
+        )
+        self.안내라벨 = Label(text="", size_hint=(1, 0.1), font_size="14sp")
+        나머지.add_widget(self.안내라벨)
+        # 액션 버튼 - 일반공격/스킬, 아이템/도망, 자동전투/턴 넘기기.
+        self.액션틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.9), spacing=4)
+        나머지.add_widget(self.액션틀)
+        하단.add_widget(나머지)
+        루트.add_widget(하단)
 
         self.add_widget(루트)
 
@@ -339,9 +328,10 @@ class 전투화면(Screen):
     # -------------------------------------------------
 
     def _중앙정렬_라벨(self, 문자열):
-        라벨 = Label(text=문자열, font_size="13sp", halign="center", valign="middle")
-        라벨.bind(size=lambda inst, sz: setattr(inst, "text_size", sz))
-        return 라벨
+        """칸 글 - 줄마다 가로맞춤 라벨(긴 이름은 줄바꿈 대신 가로로 눌러 칸 폭에 맞춘다)."""
+        틀 = BoxLayout(orientation="vertical", padding=dp(4))
+        줄_상자_채우기(틀, 문자열.split("\n"), font_size="13sp")
+        return 틀
 
     # -------------------------------------------------
     # 화면 갱신
@@ -508,10 +498,10 @@ class 전투화면(Screen):
         상태박스목록 = []
         그래픽박스목록 = []
         for 적 in 적목록:
-            상태박스 = _테두리박스(_박스_테두리색, size_hint_x=_박스_비율)
+            상태박스 = _테두리박스(_박스_테두리색)
             상태박스.add_widget(
                 self._중앙정렬_라벨(
-                    f"{적['이름']}\nHP {적['현재HP']}"
+                    f"{적['이름']}\n{gameflow.적_HP표시(게임상태, 적)}"
                     + (
                         ""
                         if 적["생존"]
@@ -523,13 +513,16 @@ class 전투화면(Screen):
             상태박스.현재턴_표시(적 is 현재참가자)
             상태박스목록.append(상태박스)
 
-            그래픽박스 = _테두리박스(_박스_테두리색, size_hint_x=_박스_비율)
+            그래픽박스 = _테두리박스(_박스_테두리색)
             그래픽박스.bind(pos=self._적그림_예약, size=self._적그림_예약)
             그래픽박스목록.append(그래픽박스)
 
         # 적이 5마리보다 적으면 칸 사이 간격이 넓어져 가운데로 모인다.
-        _가운데정렬_채우기(self.적상태틀, 상태박스목록)
-        _가운데정렬_채우기(self.적그래픽행, 그래픽박스목록)
+        self.적상태틀.clear_widgets()
+        self.적그래픽행.clear_widgets()
+        for 상태박스, 그래픽박스 in zip(상태박스목록, 그래픽박스목록):
+            self.적상태틀.add_widget(상태박스)
+            self.적그래픽행.add_widget(그래픽박스)
 
         # 그림은 칸 안이 아니라 적 그래픽 줄 위층(canvas.after)에 그린다 - 대형이 옆 칸을
         # 넘을 수 있고, 그리는 순서로 앞뒤를 정한다(gameflow.적_그리기_순서).
@@ -551,7 +544,7 @@ class 전투화면(Screen):
         Clock.schedule_once(self._적그림_그리기, 0)
 
     def _적그림_그리기(self, *_):
-        """몬스터 그림을 칸에 맞춘 크기(중형 1배)에 크기 배율을 곱해, 칸 바닥
+        """몬스터 그림을 칸에 꽉 맞춘 크기(대형 1배)에 크기 배율을 곱해, 칸 바닥
         가운데(발바닥)에 맞춰 그린다. 지정이 없거나 파일이 없으면 빈 칸."""
         캔버스 = self.적그래픽행.canvas.after
         캔버스.clear()
@@ -570,14 +563,8 @@ class 전투화면(Screen):
         self.아군상태틀.clear_widgets()
         self.아군그래픽행.clear_widgets()
 
-        아군목록 = gameflow.아군_목록(게임상태)
-        for i in range(_아군슬롯_최대):
-            if i >= len(아군목록):
-                self.아군상태틀.add_widget(Widget())
-                self.아군그래픽행.add_widget(Widget())
-                continue
-
-            아군 = 아군목록[i]
+        아군목록 = gameflow.아군_목록(게임상태)[:_아군슬롯_최대]
+        for 아군 in 아군목록:
             상태박스 = _테두리박스(_박스_테두리색)
             상태 = "" if 아군["생존"] else "\n(쓰러짐)"
             상태박스.add_widget(
@@ -594,12 +581,22 @@ class 전투화면(Screen):
 
             그래픽박스 = _테두리박스(_박스_테두리색)
             # 캐릭터별 직업 기반 초상화(gameflow.초상화_코드) - 던전
-            # 지도용 "플레이어 초상화"와는 별개다.
+            # 지도용 "플레이어 초상화"와는 별개다. 칸에 꽉 맞춘 크기의
+            # _아군그림_배율로 줄여 칸 바닥 가운데에 붙인다.
+            틀 = FloatLayout()
             이미지 = Image(
                 allow_stretch=True,
+                size_hint=(None, None),
                 source=_캐릭터이미지_경로(gameflow.초상화_코드(아군["원본"])),
             )
-            그래픽박스.add_widget(이미지)
+            틀.add_widget(이미지)
+
+            def 맞추기(*_, 틀=틀, 이미지=이미지):
+                _아군그림_맞추기(틀, 이미지)
+
+            틀.bind(pos=맞추기, size=맞추기)
+            이미지.bind(texture_size=맞추기)
+            그래픽박스.add_widget(틀)
             self.아군그래픽행.add_widget(그래픽박스)
 
     def _자동진행(self, *args):
@@ -1022,7 +1019,7 @@ class 전투화면(Screen):
         self.안내라벨.text = 줄들[0]
         self.액션틀.clear_widgets()
 
-        안내 = Label(text="\n".join(줄들), halign="center")
+        안내 = Label(text=_전리품_글(앱.게임상태, 줄들), halign="center", markup=True)
         확인버튼 = Button(text="확인", size_hint=(1, None), height=dp(48))
         뒤로키_버튼(확인버튼)
         본문 = BoxLayout(orientation="vertical", spacing=12, padding=12)
@@ -1037,6 +1034,10 @@ class 전투화면(Screen):
             def 보상끝():
                 보상버튼.disabled = True
                 확인버튼.disabled = False
+                # 받은 보상 아이템을 전리품 줄에 더해 다시 쓴다(포기면 그대로)
+                새줄들 = gameflow.전투_종료_문구(앱.게임상태, 결과)
+                안내.text = _전리품_글(앱.게임상태, 새줄들)
+                팝업.size_hint_y = 팝업높이(새줄들)
 
             보상버튼.bind(
                 on_release=lambda *_: _전투보상팝업(
@@ -1045,13 +1046,14 @@ class 전투화면(Screen):
             )
             본문.add_widget(보상버튼)
         본문.add_widget(확인버튼)
+
+        def 팝업높이(줄목록):
+            return min(0.85, 0.25 + 0.05 * len(줄목록) + (0.08 if 보상대기 else 0))
+
         팝업 = Popup(
             title="전투 종료",
             content=본문,
-            size_hint=(
-                0.7,
-                min(0.85, 0.25 + 0.05 * len(줄들) + (0.08 if 보상대기 else 0)),
-            ),
+            size_hint=(0.7, 팝업높이(줄들)),
             auto_dismiss=False,
         )
 

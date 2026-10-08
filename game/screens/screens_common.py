@@ -11,6 +11,7 @@ from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
+from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.widget import Widget
@@ -20,8 +21,9 @@ from kivy.uix.dropdown import DropDown
 from kivy.uix.image import Image
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.scatterlayout import ScatterLayout
-from kivy.metrics import dp
-from kivy.graphics import Color, Rectangle, RoundedRectangle
+from kivy.metrics import dp, sp
+from kivy.graphics import Color, Line, Rectangle, RoundedRectangle
+from kivy.utils import escape_markup
 
 import gameflow
 
@@ -310,11 +312,107 @@ def 스크롤_목록(높이비율, 간격=6):
     return 스크롤, 목록틀
 
 
+def 탭_줄(
+    탭목록, 고르기, 고른탭=None, 높이=None, font_size="14sp", 그룹=None, 칸수=None
+):
+    """한 줄에 다 보이는 탭 버튼들(옆으로 밀어서 넘기지 않는다 - 폭을 똑같이 나눈다).
+    누르면 그 탭만 눌린 상태가 되고 고르기(탭)를 부른다. 여러 줄을 한 묶음으로 쓰려면
+    같은 그룹 이름과 칸수(줄마다 같은 폭)를 준다."""
+    줄 = GridLayout(
+        cols=max(1, 칸수 or len(탭목록)),
+        size_hint=(1, None),
+        height=높이 or dp(44),
+        spacing=dp(4),
+    )
+    그룹 = 그룹 or f"탭줄{id(줄)}"
+    for 탭 in 탭목록:
+        버튼 = ToggleButton(
+            text=탭,
+            group=그룹,
+            allow_no_selection=False,
+            state="down" if 탭 == 고른탭 else "normal",
+            font_size=font_size,
+            shorten=True,
+            shorten_from="right",
+        )
+        버튼.bind(size=lambda inst, sz: setattr(inst, "text_size", (sz[0], None)))
+        버튼.halign = "center"
+        버튼.bind(on_release=lambda inst, t=탭: 고르기(t))
+        줄.add_widget(버튼)
+    return 줄
+
+
+# 아이템 이름 색 - 레어도별(2026-10-07 사용자 지정). "세트"는 커먼 방어구 세트 아이템
+# (gameflow.아이템_색분류), "치트"는 글자마다 무지개색. 표에 없는 레어도는 흰색.
+_레어도_색 = {
+    "커먼": "ffffff",
+    "언커먼": "4d8cff",
+    "레어": "b36bff",
+    "유니크": "ff3d9a",
+    "레전더리": "ff9a2e",  # 주황 - 크로니클(빨강)과 다른 등급
+    "크로니클": "ff4040",
+    "에픽": "ffd633",
+    "세트": "4dd65a",
+}
+_무지개_색 = ["ff4040", "ff9a2e", "ffd633", "4dd65a", "4d8cff", "6a5cff", "b36bff"]
+
+
+def 아이템_이름_글(아이템, 글=None):
+    """아이템 이름(또는 그 이름이 든 글)을 레어도 색 마크업으로. markup=True인 라벨에 쓴다."""
+    글 = escape_markup(글 if 글 is not None else 아이템.get("이름", ""))
+    분류 = gameflow.아이템_색분류(아이템)
+    if 분류 == "치트":
+        조각 = []
+        i = 0
+        for 글자 in 글:
+            if 글자.isspace():
+                조각.append(글자)
+                continue
+            조각.append(f"[color={_무지개_색[i % len(_무지개_색)]}]{글자}[/color]")
+            i += 1
+        return "".join(조각)
+    return f"[color={_레어도_색.get(분류, 'ffffff')}]{글}[/color]"
+
+
+def 아이템_이름_글_찾아서(게임상태, 이름, 글=None):
+    """이름으로 아이템을 찾아 색을 입힌다(못 찾으면 글 그대로 - 골드/재료 줄 등)."""
+    아이템 = gameflow.아이템_찾기(게임상태, 이름)
+    if 아이템 is None:
+        return escape_markup(글 if 글 is not None else 이름)
+    return 아이템_이름_글(아이템, 글)
+
+
 def _뒤로키_버튼_찾기(위젯):
     for 자식 in 위젯.walk(restrict=True):
         if getattr(자식, "뒤로키", False) and not 자식.disabled:
             return 자식
     return None
+
+
+class _테두리박스(ButtonBehavior, BoxLayout):
+    """테두리를 그리는 상자. 전투화면의 적/아군 상태 박스, 그래픽 박스,
+    배경 틀(전투 배경 이미지는 아직 없어 빈 채로 둔다)에 공용으로 쓴다(screens_battle에서 옮김).
+    현재턴_표시()로 테두리를 굵게 만들어 누구 턴인지 표시한다."""
+
+    def __init__(self, 테두리색, 기본두께=1.5, **kwargs):
+        kwargs.setdefault("orientation", "vertical")
+        super().__init__(**kwargs)
+        self._기본두께 = 기본두께
+        with self.canvas.before:
+            Color(*테두리색)
+            self._테두리 = Line(width=기본두께)
+        self.bind(pos=self._다시그리기, size=self._다시그리기)
+
+    def _다시그리기(self, *args):
+        self._테두리.rectangle = (
+            self.x + 1,
+            self.y + 1,
+            max(self.width - 2, 0),
+            max(self.height - 2, 0),
+        )
+
+    def 현재턴_표시(self, 켜짐):
+        self._테두리.width = self._기본두께 * 2.5 if 켜짐 else self._기본두께
 
 
 # =====================================================
@@ -380,6 +478,108 @@ class 기준화면틀(Widget):
                 None if 가로 is None else 가로 * 보이는폭,
                 None if 세로 is None else 세로 * 보이는높이,
             )
+
+
+# =====================================================
+# 마을/던전/전투 화면 배치 - 상단 1170 + 하단 1170, 각각 4줄(기준 화면 픽셀, 2026-10-07
+# 사용자 확정 - .memory/roadmap/game-rules.md "화면 배치"). 기준 화면 틀이 기기에 맞춰
+# 통째로 줄이고 키우므로 여기 길이는 dp가 아니라 기준 화면 픽셀 그대로 쓴다.
+# =====================================================
+상단_높이 = 1170
+하단_높이 = 1170
+정사각형_크기 = 200  # 상단 1줄(파티원/적), 전투 4줄(파티원)
+그림줄_높이 = 385  # 전투 2줄(몬스터 그림), 3줄(파티원 그림)
+상단_그림_높이 = 상단_높이 - 정사각형_크기  # 마을 그림/던전 지도(2~4줄)
+하단_첫줄_높이 = 290  # 마을명 / 위치·걸음수 / 전투 기록
+하단_나머지_높이 = 하단_높이 - 하단_첫줄_높이  # 버튼 등(2~4줄)
+하단_좌우여백 = 16
+
+
+class 고른간격줄(Widget):
+    """자식들을 양 끝과 사이가 모두 같은 간격이 되게 왼쪽부터 놓는다(칸 수가 바뀌면 간격이
+    바뀐다). 자식 폭은 칸폭, 높이는 줄 높이. 넓힘이면 자식 폭을 칸폭 + 간격으로 늘린다 -
+    칸 가운데는 같은 칸 수의 정사각형 줄과 맞는다(전투 그림 줄)."""
+
+    def __init__(self, 칸폭=정사각형_크기, 넓힘=False, **kwargs):
+        super().__init__(**kwargs)
+        self.칸폭 = 칸폭
+        self.넓힘 = 넓힘
+        self.bind(pos=self._배치, size=self._배치, children=self._배치)
+
+    def _배치(self, *args):
+        자식들 = list(reversed(self.children))  # add_widget 순서 = 왼쪽부터
+        n = len(자식들)
+        if not n:
+            return
+        간격 = max(0, (self.width - n * self.칸폭) / (n + 1))
+        폭 = self.칸폭 + (간격 if self.넓힘 else 0)
+        for i, 자식 in enumerate(자식들):
+            가운데 = self.x + 간격 * (i + 1) + self.칸폭 * i + self.칸폭 / 2
+            자식.size_hint = (None, None)
+            자식.size = (폭, self.height)
+            자식.pos = (가운데 - 폭 / 2, self.y)
+
+
+class 가로맞춤_라벨(Label):
+    """한 줄 라벨 - 글이 라벨 폭보다 길면 글자 높이는 그대로 두고 가로로만 눌러 폭에 맞춘다
+    (긴 직업명 "엘리멘탈마스터"가 정사각형에서 줄바꿈되지 않게). 짧으면 그대로."""
+
+    여백 = 4
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("halign", "center")
+        kwargs.setdefault("valign", "middle")
+        super().__init__(**kwargs)
+        self.bind(texture_size=self._맞추기, size=self._맞추기)
+
+    def _맞추기(self, *args):
+        if self.texture is None:
+            return
+        tw, th = self.texture.size
+        # 폭이 바뀔 때마다 원래 글 폭에서 다시 정한다(처음 좁을 때 눌린 채 남지 않게)
+        맞춤 = [min(tw, max(1, self.width - self.여백)), th]
+        if list(self.texture_size) != 맞춤:
+            self.texture_size = 맞춤
+
+
+def 줄_상자_채우기(상자, 줄들, font_size="13sp", **kwargs):
+    """상자를 비우고 글 줄마다 가로맞춤_라벨을 위에서 아래로 쌓는다(정사각형 칸 글)."""
+    상자.clear_widgets()
+    for 줄 in 줄들:
+        상자.add_widget(가로맞춤_라벨(text=줄, font_size=font_size, **kwargs))
+
+
+def 글자_높이(font_size="15sp", 여백=None):
+    """그 글자 크기 한 줄이 들어가는 버튼/구역 높이 - 글자 줄 높이 + 위아래 여백."""
+    return sp(float(str(font_size).rstrip("sp"))) * 1.25 + (
+        dp(8) if 여백 is None else 여백
+    )
+
+
+def 가운데_라벨(글, font_size="13sp", **kwargs):
+    라벨 = Label(
+        text=글, font_size=font_size, halign="center", valign="middle", **kwargs
+    )
+    라벨.bind(size=lambda inst, sz: setattr(inst, "text_size", sz))
+    return 라벨
+
+
+def 파티원_정사각형_채우기(줄, 게임상태):
+    """마을/던전 상단 1줄(고른간격줄)을 파티원마다 정사각형(이름, 레벨, HP, MP)으로 채운다."""
+    줄.clear_widgets()
+    for 캐릭터 in 게임상태["파티"]["파티원"]:
+        상자 = _테두리박스((1, 1, 1, 1), padding=dp(4))
+        줄_상자_채우기(
+            상자,
+            [
+                캐릭터["캐릭터명"],
+                f"Lv.{캐릭터['레벨']}",
+                f"HP {캐릭터['현재HP']}/{gameflow.캐릭터_최대HP(게임상태, 캐릭터)}",
+                f"MP {캐릭터['현재MP']}/{gameflow.캐릭터_최대MP(게임상태, 캐릭터)}",
+            ],
+            font_size="12sp",
+        )
+        줄.add_widget(상자)
 
 
 def 뒤로키_처리(창, 키, *args):

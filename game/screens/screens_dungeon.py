@@ -22,6 +22,15 @@ from game.screens.screens_common import (
     _캐릭터이미지_경로,
     _에셋_경로,
     뒤로키_버튼,
+    고른간격줄,
+    파티원_정사각형_채우기,
+    상단_높이,
+    하단_높이,
+    정사각형_크기,
+    상단_그림_높이,
+    하단_첫줄_높이,
+    하단_나머지_높이,
+    하단_좌우여백,
 )
 
 
@@ -89,6 +98,14 @@ def _흙길_여부(x, y, 시드):
     return 값 > _흙길_문턱값
 
 
+def _비율맞춤(텍스처, x, y, 폭, 높이):
+    """텍스처 비율을 지켜 (x, y, 폭, 높이) 안에 꽉 맞춘 바닥 가운데 자리 - Rectangle 인자."""
+    tw, th = 텍스처.size
+    배율 = min(폭 / tw, 높이 / th)
+    w, h = tw * 배율, th * 배율
+    return {"pos": (x + (폭 - w) / 2, y), "size": (w, h)}
+
+
 class 던전맵위젯(Widget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -147,13 +164,14 @@ class 던전맵위젯(Widget):
         """공용 타일(_타일_파일의 이름)의 텍스처를 돌려준다."""
         return self._파일_타일(_타일_파일[이름])
 
-    def _파일_타일(self, 파일명):
-        """game/assets/dungeon/의 타일 텍스처를 한 번만 읽어 캐시한다.
+    def _파일_타일(self, 파일명, 폴더="dungeon"):
+        """game/assets/<폴더>/(기본 dungeon)의 타일 텍스처를 한 번만 읽어 캐시한다.
         도트를 크게 늘려도 번지지 않게 확대/축소 필터를 nearest로 둔다.
         파일이 없으면 None."""
-        if 파일명 not in self._타일_캐시:
+        키 = (폴더, 파일명)
+        if 키 not in self._타일_캐시:
             텍스처 = None
-            경로 = _에셋_경로("dungeon", 파일명)
+            경로 = _에셋_경로(폴더, 파일명)
             if 경로:
                 try:
                     텍스처 = CoreImage(경로).texture
@@ -161,8 +179,8 @@ class 던전맵위젯(Widget):
                     텍스처.min_filter = "nearest"
                 except Exception:  # kivy는 못 읽는 그림에 Exception 자체를 던진다
                     텍스처 = None
-            self._타일_캐시[파일명] = 텍스처
-        return self._타일_캐시[파일명]
+            self._타일_캐시[키] = 텍스처
+        return self._타일_캐시[키]
 
     def _맵_타일(self, 문자, 층=None):
         """그 맵(층 - 기본은 지금 맵)의 "타일"에 문자(지도 기호)가 지정돼 있으면 그
@@ -178,16 +196,30 @@ class 던전맵위젯(Widget):
 
     def _오브젝트_타일(self, 맵x, 맵y):
         """(맵x, 맵y) 오브젝트에 "타일"이 지정돼 있으면 그 텍스처를,
-        없거나 파일이 없으면 None을 돌려준다."""
+        없거나 파일이 없으면 None을 돌려준다. 한 번 클리어한 감옥 보스전처럼
+        "보스그림"(gameflow.던전_오브젝트_표시)이 있으면 그 몬스터 그림이 먼저다."""
         정보 = self.오브젝트.get((맵x, 맵y))
-        if not 정보 or not 정보.get("타일"):
+        if not 정보:
+            return None
+        if 정보.get("보스그림"):
+            그림 = self._파일_타일(정보["보스그림"], 폴더="monster")
+            if 그림 is not None:
+                return 그림
+        if not 정보.get("타일"):
             return None
         return self._파일_타일(정보["타일"])
 
+    def _보스그림인가(self, 맵x, 맵y):
+        정보 = self.오브젝트.get((맵x, 맵y)) or {}
+        return bool(정보.get("보스그림"))
+
     def _오브젝트_타일크기(self, 맵x, 맵y):
         """오브젝트 "타일크기"(칸 수, 기본 1). 2 이상이면 그 칸 중심에 맞춰
-        크게 그린다(_큰오브젝트_그리기)."""
+        크게 그린다(_큰오브젝트_그리기). 감옥 대신 보스 그림을 그릴 때는 1칸 -
+        2x2는 감옥 그림의 크기다."""
         정보 = self.오브젝트.get((맵x, 맵y)) or {}
+        if 정보.get("보스그림"):
+            return 1
         return 정보.get("타일크기", 1)
 
     def _높은타일_반쪽(self, 이름):
@@ -331,7 +363,13 @@ class 던전맵위젯(Widget):
                 for 겹 in 바닥:
                     Rectangle(texture=겹, pos=위치, size=칸크기)
                 if 오브젝트타일 is not None:
-                    Rectangle(texture=오브젝트타일, pos=위치, size=칸크기)
+                    if self._보스그림인가(맵x, 맵y):
+                        Rectangle(
+                            texture=오브젝트타일,
+                            **_비율맞춤(오브젝트타일, *위치, *칸크기),
+                        )
+                    else:
+                        Rectangle(texture=오브젝트타일, pos=위치, size=칸크기)
 
     def _높은타일_그리기(self):
         """2단계 - 나무/게이트(세로 2칸). 윗줄부터 차례로 그려서 아래쪽
@@ -373,13 +411,17 @@ class 던전맵위젯(Widget):
                     continue
                 x, y = self._칸위치(화면x, 화면y)
                 중심x, 중심y = x + 칸폭 / 2, y + 칸높이 / 2
-                self._잘라_그리기(
-                    텍스처,
+                영역 = (
                     중심x - 칸폭 * 크기 / 2,
                     중심y - 칸높이 * 크기 / 2,
                     칸폭 * 크기,
                     칸높이 * 크기,
                 )
+                if self._보스그림인가(맵x, 맵y):
+                    # 몬스터 그림은 정사각형이 아니라 비율을 지켜 영역 바닥 가운데에
+                    맞춤 = _비율맞춤(텍스처, *영역)
+                    영역 = (*맞춤["pos"], *맞춤["size"])
+                self._잘라_그리기(텍스처, *영역)
 
     def _잘라_그리기(self, 텍스처, x, y, 폭, 높이):
         """(x, y, 폭, 높이)에 텍스처를 그리되 위젯 범위 밖은 잘라 낸다(텍스처도 같은 비율로)."""
@@ -451,10 +493,11 @@ class 던전목록화면(Screen):
             return
         self.안내라벨.text = ""
 
-        for 파일명 in 던전목록:
-            맵정보 = gameflow.던전_레지스트리.get(파일명, {})
-            표시이름 = 맵정보.get("지도명", 파일명)
-            버튼 = Button(text=표시이름, size_hint=(1, None), height=dp(56))
+        # 바로 앞 던전 보스를 아직 안 깬 던전은 보이되 누를 수 없다(gameflow.던전_열림)
+        for 파일명, 표시이름, 열림 in gameflow.던전목록_표시(앱.게임상태):
+            버튼 = Button(
+                text=표시이름, size_hint=(1, None), height=dp(56), disabled=not 열림
+            )
             버튼.bind(on_release=lambda inst, f=파일명: self._선택(f))
             self.목록틀.add_widget(버튼)
 
@@ -475,28 +518,36 @@ class 던전화면(Screen):
         super().__init__(**kwargs)
         self._대기중오브젝트 = None
 
-        루트 = BoxLayout(orientation="vertical", padding=16, spacing=8)
+        # 상단(1170): 1줄 파티원 정사각형, 2~4줄 지도(1080x970)
+        # 하단(1170): 1줄 위치·걸음수, 2~4줄 방향 버튼/메시지 - screens_common "화면 배치"
+        루트 = BoxLayout(orientation="vertical")
+        상단 = BoxLayout(orientation="vertical", size_hint=(1, None), height=상단_높이)
+        self.파티줄 = 고른간격줄(size_hint=(1, None), height=정사각형_크기)
+        상단.add_widget(self.파티줄)
+        self.지도위젯 = 던전맵위젯(size_hint=(1, None), height=상단_그림_높이)
+        상단.add_widget(self.지도위젯)
+        루트.add_widget(상단)
 
+        하단 = BoxLayout(
+            orientation="vertical",
+            size_hint=(1, None),
+            height=하단_높이,
+            padding=(하단_좌우여백, 0, 하단_좌우여백, 하단_좌우여백),
+            spacing=8,
+        )
         self.상태라벨 = Label(
-            text="",
-            size_hint=(1, 0.14),
-            halign="left",
-            valign="top",
-            font_size="16sp",
+            text="", font_size="18sp", size_hint=(1, 하단_첫줄_높이 / 하단_높이)
         )
-        self.상태라벨.bind(
-            size=lambda *_: setattr(
-                self.상태라벨,
-                "text_size",
-                self.상태라벨.size,
-            )
+        하단.add_widget(self.상태라벨)
+        나머지 = BoxLayout(
+            orientation="vertical",
+            size_hint=(1, 하단_나머지_높이 / 하단_높이),
+            spacing=8,
         )
-        루트.add_widget(self.상태라벨)
+        하단.add_widget(나머지)
+        루트.add_widget(하단)
 
-        self.지도위젯 = 던전맵위젯(size_hint=(1, 0.36))
-        루트.add_widget(self.지도위젯)
-
-        방향틀 = GridLayout(cols=3, size_hint=(1, 0.28), spacing=6)
+        방향틀 = GridLayout(cols=3, size_hint=(1, 0.56), spacing=6)
 
         파티버튼 = Button(text="파티")
         파티버튼.bind(on_release=self._파티_클릭)
@@ -528,10 +579,10 @@ class 던전화면(Screen):
         방향틀.add_widget(아래버튼)
         방향틀.add_widget(Label())
 
-        루트.add_widget(방향틀)
+        나머지.add_widget(방향틀)
 
-        self.메시지라벨 = Label(text="", size_hint=(1, 0.22))
-        루트.add_widget(self.메시지라벨)
+        self.메시지라벨 = Label(text="", size_hint=(1, 0.44))
+        나머지.add_widget(self.메시지라벨)
 
         self.add_widget(루트)
 
@@ -540,20 +591,14 @@ class 던전화면(Screen):
         게임상태 = 앱.게임상태
         던전상태 = 게임상태["던전상태"]
 
-        줄들 = [
-            f"{캐릭터['캐릭터명']} Lv.{캐릭터['레벨']}  "
-            f"HP {캐릭터['현재HP']}/{gameflow.캐릭터_최대HP(게임상태, 캐릭터)}  "
-            f"MP {캐릭터['현재MP']}/{gameflow.캐릭터_최대MP(게임상태, 캐릭터)}"
-            for 캐릭터 in 게임상태["파티"]["파티원"]
-        ]
-        줄들.append(f"위치 {던전상태['위치']}  걸음수 {던전상태['걸음수']}")
-        self.상태라벨.text = "\n".join(줄들)
+        파티원_정사각형_채우기(self.파티줄, 게임상태)
+        self.상태라벨.text = f"위치 {던전상태['위치']}  걸음수 {던전상태['걸음수']}"
         self.지도위젯.갱신(
             던전상태["그리드"],
             던전상태["위치"],
             게임상태.get("선택된초상화"),
             던전상태.get("던전파일명"),
-            던전상태["맵정보"].get("오브젝트"),
+            gameflow.던전_오브젝트_표시(게임상태),
             던전상태["맵정보"].get("타일"),
             gameflow.이어진_맵_목록(게임상태),
         )
