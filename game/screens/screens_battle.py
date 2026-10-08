@@ -37,6 +37,8 @@ from game.screens.screens_common import (
     하단_나머지_높이,
     하단_좌우여백,
     줄_상자_채우기,
+    가로맞춤_라벨,
+    글자_높이,
 )
 
 
@@ -75,54 +77,74 @@ class _전투보상팝업(Popup):
         self._고른칸 = None
         self._박스들 = []
 
+        # 칸은 세 줄(이름 / 부위 / 보유·착용) 높이, 팝업도 그 높이에 맞춘다
+        칸높이 = 글자_높이("15sp", 0) + 2 * 글자_높이("13sp", 0) + dp(16)
+        버튼높이 = dp(48)
+        큰박스높이 = 칸높이 + 버튼높이 + dp(8) + 2 * dp(10)
+        본문높이 = 큰박스높이 + 버튼높이 + dp(8) + 2 * dp(8)
+
         본문 = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(8))
         큰박스 = _테두리박스(
-            _박스_테두리색, orientation="vertical", padding=dp(10), spacing=dp(8)
+            _박스_테두리색,
+            orientation="vertical",
+            padding=dp(10),
+            spacing=dp(8),
+            size_hint_y=None,
+            height=큰박스높이,
         )
-        박스줄 = BoxLayout(orientation="horizontal", spacing=dp(8))
+        박스줄 = BoxLayout(
+            orientation="horizontal", spacing=dp(8), size_hint_y=None, height=칸높이
+        )
+        게임상태 = App.get_running_app().게임상태
         for 번호, 이름 in enumerate(칸목록):
-            박스 = _테두리박스(_박스_테두리색, 기본두께=1.2)
-            게임상태 = App.get_running_app().게임상태
-            글 = ""
+            박스 = _테두리박스(_박스_테두리색, 기본두께=1.2, padding=dp(4))
             if 이름:
-                글 = 아이템_이름_글_찾아서(게임상태, 이름)
-                보유 = gameflow.전투_보상_보유표시(게임상태, 이름)
-                if 보유:  # 이름 아래 줄에 지금 갖고 있는 개수(보유 / 착용)
-                    글 += f"\n[size=13sp][color=9ea6b3]{보유}[/color][/size]"
-            라벨 = Label(
-                text=글,
-                markup=True,
-                halign="center",
-                valign="middle",
-            )
-            라벨.bind(size=lambda inst, sz: setattr(inst, "text_size", sz))
-            박스.add_widget(라벨)
-            if 이름 is None:
-                박스.disabled = True
-            else:
+                # 이름이 길면 줄바꿈 대신 가로로 눌러 한 줄에(가로맞춤_라벨)
+                박스.add_widget(
+                    가로맞춤_라벨(
+                        text=아이템_이름_글_찾아서(게임상태, 이름),
+                        markup=True,
+                        font_size="15sp",
+                    )
+                )
+                for 줄 in (
+                    gameflow.전투_보상_부위(게임상태, 이름),
+                    gameflow.전투_보상_보유표시(게임상태, 이름),
+                ):
+                    박스.add_widget(
+                        가로맞춤_라벨(
+                            text=줄, font_size="13sp", color=(0.62, 0.65, 0.7, 1)
+                        )
+                    )
                 박스.bind(on_release=lambda _b, n=번호: self._칸_선택(n))
+            else:
+                박스.disabled = True
             박스줄.add_widget(박스)
             self._박스들.append(박스)
         큰박스.add_widget(박스줄)
 
-        포기줄 = BoxLayout(orientation="horizontal", spacing=dp(8), size_hint_y=None)
-        포기줄.height = dp(48)
-        포기줄.add_widget(Widget())
-        포기버튼 = Button(text=f"포기하기({gameflow.보상_포기_골드}골드)")
+        포기줄 = BoxLayout(
+            orientation="horizontal", spacing=dp(8), size_hint_y=None, height=버튼높이
+        )
+        포기줄.add_widget(Widget(size_hint_x=0.5))
+        포기버튼 = Button(
+            text=f"포기하기({gameflow.보상_포기_골드}골드)", size_hint_x=4
+        )  # 좌우로 넓게(전에는 줄의 1/3)
         포기버튼.bind(on_release=lambda *_: self._포기())
         포기줄.add_widget(포기버튼)
-        포기줄.add_widget(Widget())
+        포기줄.add_widget(Widget(size_hint_x=0.5))
         큰박스.add_widget(포기줄)
         본문.add_widget(큰박스)
 
         self._선택버튼 = Button(
-            text="선택", size_hint_y=None, height=dp(48), disabled=True
+            text="선택", size_hint_y=None, height=버튼높이, disabled=True
         )
         self._선택버튼.bind(on_release=lambda *_: self._받기())
         본문.add_widget(self._선택버튼)
 
+        kwargs.setdefault("size_hint", (0.9, None))
+        kwargs.setdefault("height", 본문높이 + dp(64))  # 제목줄 포함
         kwargs.setdefault("title", "전투 보상")
-        kwargs.setdefault("size_hint", (0.9, 0.5))
         kwargs.setdefault("auto_dismiss", False)
         super().__init__(content=본문, **kwargs)
 
