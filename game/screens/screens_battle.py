@@ -99,23 +99,34 @@ class _전투보상팝업(Popup):
         for 번호, 이름 in enumerate(칸목록):
             박스 = _테두리박스(_박스_테두리색, 기본두께=1.2, padding=dp(4))
             if 이름:
-                # 이름이 길면 줄바꿈 대신 가로로 눌러 한 줄에(가로맞춤_라벨)
-                박스.add_widget(
-                    가로맞춤_라벨(
-                        text=아이템_이름_글_찾아서(게임상태, 이름),
-                        markup=True,
-                        font_size="15sp",
-                    )
-                )
+                # 이름(15sp, 길면 가로로 눌러 한 줄에) / 부위 / 보유·착용(13sp 회색). 보유·착용이
+                # 없으면 그 줄을 빼고, 남은 줄 묶음을 칸 가운데에 둔다(위아래 빈 칸으로).
+                줄들 = [(아이템_이름_글_찾아서(게임상태, 이름), "15sp", None)]
                 for 줄 in (
                     gameflow.전투_보상_부위(게임상태, 이름),
                     gameflow.전투_보상_보유표시(게임상태, 이름),
                 ):
-                    박스.add_widget(
-                        가로맞춤_라벨(
-                            text=줄, font_size="13sp", color=(0.62, 0.65, 0.7, 1)
-                        )
+                    if 줄:
+                        줄들.append((줄, "13sp", (0.62, 0.65, 0.7, 1)))
+                묶음 = BoxLayout(
+                    orientation="vertical",
+                    size_hint_y=None,
+                    height=sum(글자_높이(크기, 0) for _, 크기, _ in 줄들),
+                )
+                for 글, 크기, 색 in 줄들:
+                    라벨 = 가로맞춤_라벨(
+                        text=글,
+                        markup=True,
+                        font_size=크기,
+                        size_hint_y=None,
+                        height=글자_높이(크기, 0),
                     )
+                    if 색:
+                        라벨.color = 색
+                    묶음.add_widget(라벨)
+                박스.add_widget(Widget())
+                박스.add_widget(묶음)
+                박스.add_widget(Widget())
                 박스.bind(on_release=lambda _b, n=번호: self._칸_선택(n))
             else:
                 박스.disabled = True

@@ -953,7 +953,7 @@ class 스모크앱(main.DnfMobileApp):
                         for 팝업 in list(Window.children)[:-1]
                         for w in 팝업.walk(restrict=True)
                         if _글(getattr(w, "text", None)).split("\n")[0] == 칸[1]
-                    ).parent
+                    ).parent.parent  # 이름 라벨 -> 줄 묶음 -> 보상 칸
                     박스.dispatch("on_release")
                     yield 0.3
                     # 칸마다 세 줄: 이름 / 부위 / 보유·착용, 칸 높이는 세 줄에 맞춤
@@ -965,19 +965,25 @@ class 스모크앱(main.DnfMobileApp):
                             for w in 팝업.walk(restrict=True)
                             if isinstance(w, sc.가로맞춤_라벨) and _글(w.text) == 이름칸
                         )
-                        줄글 = [_글(w.text) for w in reversed(박스_.children)]
+                        묶음 = 박스_
+                        박스_ = 묶음.parent
+                        줄글 = [_글(w.text) for w in reversed(묶음.children)]
                         개수글 = gf.전투_보상_보유표시(상태, 이름칸)
+                        # 보유·착용이 없으면 두 줄, 줄 묶음은 칸 가운데
                         assert 줄글 == [
                             이름칸,
                             gf.전투_보상_부위(상태, 이름칸),
-                            개수글,
-                        ], 줄글
+                        ] + ([개수글] if 개수글 else []), 줄글
+                        assert abs(묶음.center_y - 박스_.center_y) < 2, (
+                            묶음.center_y,
+                            박스_.center_y,
+                        )
                         if 이름칸 == 칸[0] and 칸[0] != 칸[1]:
                             assert 개수글.startswith("보유 "), 개수글
                         assert 박스_.height < 3 * sc.글자_높이("15sp") + 60, (
                             박스_.height
                         )
-                        for w in 박스_.children:
+                        for w in 묶음.children:
                             assert w.texture_size[0] <= w.width, (w.text, w.width)
                     포기 = 팝업_버튼("포기하기(10골드)")
                     assert 포기.width > 박스_.parent.width * 0.6, 포기.width
