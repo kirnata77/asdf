@@ -277,6 +277,55 @@ class 스모크앱(main.DnfMobileApp):
         _팝업_닫기()
         결과["단계"].append("능력치 배분 팝업")
 
+        # 마스터리 선택 팝업: 줄마다 이름 토글 + [상세보기](설명은 상세보기 창에만)
+        from kivy.uix.togglebutton import ToggleButton
+
+        귀검사 = gf.캐릭터_생성(
+            "새귀검", "귀검사"
+        )  # 레벨 1 - 다음 레벨업이 마스터리선택
+        무기목록, 방어구목록 = gf.캐릭터_마스터리_선택지(귀검사)
+        고른 = []
+        매니저.get_screen("파티관리")._마스터리선택_팝업(
+            귀검사, lambda 무기, 방어구: 고른.append((무기, 방어구))
+        )
+        yield 0.5
+        팝업 = Window.children[0]
+        토글 = [w for w in 팝업.walk(restrict=True) if isinstance(w, ToggleButton)]
+        assert [t.text for t in 토글] == [n for n, _ in 무기목록 + 방어구목록]
+        상세들 = [
+            w
+            for w in 팝업.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "상세보기"
+        ]
+        assert len(상세들) == len(토글)
+        assert all(t.height < 50 * 2.8125 for t in 토글)  # 설명이 빠져 한 줄 높이
+        _찍기("mastery_popup")
+        상세들[0].trigger_action(duration=0)
+        yield 0.5
+        assert Window.children[0].title == "마스터리 상세보기"
+        assert any(
+            무기목록[0][1] in getattr(w, "text", "")
+            for w in Window.children[0].walk(restrict=True)
+        )
+        _찍기("mastery_detail")
+        Window.children[0].dismiss(animation=False)
+        yield 0.3
+        확인 = next(
+            w
+            for w in 팝업.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "확인"
+        )
+        assert 확인.disabled
+        토글[0].trigger_action(duration=0)
+        토글[len(무기목록)].trigger_action(duration=0)
+        assert not 확인.disabled
+        확인.trigger_action(duration=0)
+        yield 0.6
+        assert 고른 == [(무기목록[0][0], 방어구목록[0][0])], 고른
+        결과["단계"].append(
+            "마스터리 선택 팝업(이름 토글 + 상세보기, 무기/방어구 하나씩 골라 확인)"
+        )
+
         # 레벨 12 [스킬강화] 팝업: 보유 스킬마다 버튼, 누르면 그 스킬로 확정
         고른 = []
         강화항목 = gf.전직_레지스트리["귀검사"]["웨펀마스터"]["레벨업테이블"][12]
