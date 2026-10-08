@@ -479,3 +479,58 @@ def test_장비_이름은_목록을_가로질러_겹치지_않는다():
 
 def test_루트_경로는_저장소_최상위다():
     assert os.path.isfile(루트 / "gameflow.py")
+
+
+# --------------------------------------------------------------- 드랍표
+# 런타임(loot_system)은 없는 표 이름/아이템 이름을 조용히 건너뛴다(드랍 없음, 카탈로그에 없는
+# 이름은 지급 안 함) - 오타가 "안 떨어짐"이 되므로 여기서 잡는다. "미정"은 아직 안 정한 값.
+
+
+def _드랍표_본문들(표):
+    if 표.get("타입") == "차수별":
+        return list((표.get("차수표") or {}).values())
+    return [표]
+
+
+def test_드랍표의_아이템과_표_참조는_실제로_있고_순환하지_않는다():
+    from game.data.monster.monster_drop import 드랍표_모음
+
+    카탈로그 = gf._상점_카탈로그_생성()
+    아이템 = {n for 대분류 in 카탈로그.values() for 탭 in 대분류.values() for n in 탭}
+    문제 = []
+    가리킴 = collections.defaultdict(set)
+    for 표이름, 표 in 드랍표_모음.items():
+        for 본문 in _드랍표_본문들(표):
+            for 항목 in 본문.get("아이템", []):
+                if "드랍표" in 항목:
+                    가리킴[표이름].add(항목["드랍표"])
+                    if 항목["드랍표"] not in 드랍표_모음:
+                        문제.append(f"{표이름}: 없는 드랍표 {항목['드랍표']}")
+                elif "아이템이름" in 항목:
+                    if 항목["아이템이름"] not in 아이템 | {"미정"}:
+                        문제.append(
+                            f"{표이름}: 카탈로그에 없는 아이템 {항목['아이템이름']}"
+                        )
+                elif not isinstance(항목.get("아이템조건"), dict):
+                    문제.append(f"{표이름}: 아이템 지정이 없는 항목 {항목}")
+    for 이름, 몬스터 in gf.몬스터목록.items():
+        for 참조 in 몬스터.get("드랍표") or []:
+            if 참조["이름"] not in 드랍표_모음 and 참조["이름"] != "미정":
+                문제.append(f"몬스터 {이름}: 없는 드랍표 {참조['이름']}")
+    for 파일, 맵 in gf.던전_레지스트리.items():
+        for 참조 in 맵.get("드랍표") or []:
+            if 참조["이름"] not in 드랍표_모음:
+                문제.append(f"던전 {파일}: 없는 드랍표 {참조['이름']}")
+
+    def 순환(시작, 지금, 지나온):
+        for 다음 in 가리킴.get(지금, ()):
+            if 다음 == 시작 or (
+                다음 not in 지나온 and 순환(시작, 다음, 지나온 | {다음})
+            ):
+                return True
+        return False
+
+    문제 += [
+        f"{이름}: 드랍표가 순환한다" for 이름 in 가리킴 if 순환(이름, 이름, {이름})
+    ]
+    assert not 문제, "\n".join(문제)
