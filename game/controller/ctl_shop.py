@@ -6,7 +6,7 @@
 # 맞춰 대신 호출해주는 얇은 어댑터일 뿐이다 - screens_town.py의 상점화면은
 # shop_system.py를 직접 부르지 않고 이 함수들만 쓴다.
 
-from game.system import dismantle_system, shop_system
+from game.system import dismantle_system, equipment_system, shop_system
 from game.controller.ctl_party import 플레이어뷰
 
 __all__ = [
@@ -25,6 +25,13 @@ __all__ = [
     "상점_대분류목록",
     "상점_최대구매수량",
     "상점_판매가",
+    "상점_탭줄",
+    "_무기들",
+    "상점_무기_직업군탭",
+    "상점_무기_종류탭",
+    "상점_방어구_재질탭",
+    "상점_방어구_부위",
+    "상점_분류_일치",
 ]
 
 
@@ -118,3 +125,53 @@ def 상점_판매(게임상태, 대분류, 탭, 이름, 수량):
 
 def 상점_판매가(아이템):
     return shop_system.판매가(아이템)
+
+
+# -----------------------------------------------------
+# 상점 장비 탭 - 부위 탭 2줄 + 하위 분류 탭(무기: 직업군 -> 종류, 방어구: 재질)
+# -----------------------------------------------------
+
+
+def 상점_탭줄(모드, 대분류):
+    """부위 탭을 줄로 나눈 목록. 장비는 2줄(윗줄 무기~신발, 아랫줄 악세서리/특수장비,
+    해체는 윗줄 맨 앞에 [전체]), 그 밖은 1줄."""
+    탭목록 = 상점_해체_탭목록 if 모드 == "해체" else 상점_탭목록(대분류)
+    if 대분류 != "장비":
+        return [탭목록]
+    윗줄부위 = {"무기", *equipment_system.방어구_슬롯, dismantle_system.전체_탭}
+    return [
+        [t for t in 탭목록 if t in 윗줄부위],
+        [t for t in 탭목록 if t not in 윗줄부위],
+    ]
+
+
+def _무기들(게임상태):
+    return list(게임상태["상점카탈로그"]["장비"].get("무기", {}).values())
+
+
+def 상점_무기_직업군탭(게임상태):
+    """[전체] + 무기 직업군(귀검사, 격투가, ...) - 카탈로그 순서."""
+    return [equipment_system.전체_탭] + equipment_system.무기_직업군_목록(
+        _무기들(게임상태)
+    )
+
+
+def 상점_무기_종류탭(게임상태, 직업군):
+    """직업군을 고르면 [전체] + 그 직업군 무기 종류, [전체] 직업군이면 탭 없음([])."""
+    if 직업군 in (None, equipment_system.전체_탭):
+        return []
+    return [equipment_system.전체_탭] + equipment_system.직업군_무기종류(
+        _무기들(게임상태), 직업군
+    )
+
+
+상점_방어구_재질탭 = [equipment_system.전체_탭] + equipment_system.방어구_재질
+상점_방어구_부위 = list(equipment_system.방어구_슬롯)  # 재질 탭이 붙는 부위
+
+
+def 상점_분류_일치(부위, 아이템, 직업군=None, 분류=None):
+    """하위 탭 거르기 - 무기는 직업군과 종류, 방어구는 재질. 고르지 않았거나 [전체]면 통과."""
+    if 부위 == "무기" and 직업군 not in (None, equipment_system.전체_탭):
+        if equipment_system.무기_직업군(아이템) != 직업군:
+            return False
+    return equipment_system.분류탭_일치(아이템, 부위, 분류)

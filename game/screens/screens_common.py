@@ -311,16 +311,19 @@ def 스크롤_목록(높이비율, 간격=6):
     return 스크롤, 목록틀
 
 
-def 탭_줄(탭목록, 고르기, 고른탭=None, 높이=None, font_size="14sp"):
+def 탭_줄(
+    탭목록, 고르기, 고른탭=None, 높이=None, font_size="14sp", 그룹=None, 칸수=None
+):
     """한 줄에 다 보이는 탭 버튼들(옆으로 밀어서 넘기지 않는다 - 폭을 똑같이 나눈다).
-    누르면 그 탭만 눌린 상태가 되고 고르기(탭)를 부른다."""
+    누르면 그 탭만 눌린 상태가 되고 고르기(탭)를 부른다. 여러 줄을 한 묶음으로 쓰려면
+    같은 그룹 이름과 칸수(줄마다 같은 폭)를 준다."""
     줄 = GridLayout(
-        cols=max(1, len(탭목록)),
+        cols=max(1, 칸수 or len(탭목록)),
         size_hint=(1, None),
         height=높이 or dp(44),
         spacing=dp(4),
     )
-    그룹 = f"탭줄{id(줄)}"
+    그룹 = 그룹 or f"탭줄{id(줄)}"
     for 탭 in 탭목록:
         버튼 = ToggleButton(
             text=탭,

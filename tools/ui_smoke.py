@@ -196,8 +196,65 @@ class 스모크앱(main.DnfMobileApp):
         상점._탭목록_그리기("구매", "장비")
         yield 0.5
         _찍기("shop_buy")
+        from kivy.uix.togglebutton import ToggleButton
+
+        def 탭들():
+            return [
+                w
+                for w in 상점.내용틀.walk(restrict=True)
+                if isinstance(w, ToggleButton)
+            ]
+
+        def 탭(글):
+            return next(t for t in 탭들() if t.text == 글)
+
+        def 목록이름():
+            return [
+                w.text
+                for w in 상점._목록틀.walk(restrict=True)
+                if isinstance(w, main.Label)
+                and not isinstance(w, Button)
+                and w.text in 상태["상점카탈로그"]["장비"].get(상점._현재탭, {})
+            ]
+
+        # 부위 탭 2줄이 화면 안에 다 들어간다(밀어서 넘기지 않음)
+        부위 = [t for t in 탭들() if t.group == 탭("무기").group]
+        assert [t.text for t in 부위] == sum(gf.상점_탭줄("구매", "장비"), [])
+        assert all(
+            상점.내용틀.x - 1 <= t.x and t.right <= 상점.내용틀.right + 1 for t in 부위
+        )
+        assert len({t.y for t in 부위}) == 2  # 두 줄
+        # 무기: 직업군 탭 -> 거너를 누르면 종류 탭 줄이 생기고 목록은 거너 무기만
+        assert [t.text for t in 탭들() if t.text in gf.상점_무기_직업군탭(상태)][
+            :6
+        ] == gf.상점_무기_직업군탭(상태)
+        탭("거너").trigger_action(duration=0)
+        yield 0.3
+        종류 = gf.상점_무기_종류탭(상태, "거너")
+        assert all(any(t.text == k for t in 탭들()) for k in 종류[1:]), [
+            t.text for t in 탭들()
+        ]
+        무기 = 상태["상점카탈로그"]["장비"]["무기"]
+        이름들 = 목록이름()
+        assert 이름들 and all(무기[n]["분류"] == "거너 무기" for n in 이름들), 이름들
+        탭(종류[1]).trigger_action(duration=0)
+        yield 0.3
+        assert all(무기[n]["타입"] == 종류[1] for n in 목록이름()), 목록이름()
+        _찍기("shop_buy_weapon_gunner")
+        # 방어구: 재질 탭
+        탭("상의").trigger_action(duration=0)
+        yield 0.3
+        탭("판금").trigger_action(duration=0)
+        yield 0.3
+        상의 = 상태["상점카탈로그"]["장비"]["상의"]
+        assert all(상의[n]["재질"] == "판금" for n in 목록이름()), 목록이름()
+        _찍기("shop_buy_top_plate")
+        결과["단계"].append(
+            "상점 장비 탭 2줄(한 화면) + 무기 직업군->종류 탭 + 방어구 재질 탭"
+        )
         상점._탭목록_그리기("판매", "장비")
         yield 0.5
+        assert len({t.y for t in 탭들() if t.group == 탭("무기").group}) == 2
         _찍기("shop_sell")
         결과["단계"].append("상점 구매/판매 목록")
 

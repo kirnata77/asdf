@@ -30,6 +30,7 @@ from game.screens.screens_common import (
     뒤로키_버튼,
     스크롤_목록,
     닫기_버튼,
+    탭_줄,
 )
 
 
@@ -510,39 +511,82 @@ class 상점화면(Screen):
         상단.add_widget(Label(text=f"{모드} - {대분류}", size_hint=(0.68, 1)))
         self.내용틀.add_widget(상단)
 
-        탭스크롤 = ScrollView(size_hint=(1, None), height=_버튼_높이, do_scroll_y=False)
-        탭버튼틀 = BoxLayout(orientation="horizontal", size_hint=(None, 1), spacing=4)
-        탭버튼틀.bind(minimum_width=탭버튼틀.setter("width"))
-        탭스크롤.add_widget(탭버튼틀)
-        self.내용틀.add_widget(탭스크롤)
+        # 부위 탭 - 장비는 2줄(윗줄 무기~신발, 아랫줄 악세서리/특수장비)을 한 묶음으로,
+        # 밀어서 넘기지 않고 다 보인다. 그 아래 하위 탭(무기: 직업군 -> 종류, 방어구: 재질).
+        탭줄들 = gameflow.상점_탭줄(모드, 대분류)
+        칸수 = max(len(줄) for 줄 in 탭줄들) if 탭줄들 else 1
+        그룹 = f"상점부위{id(self)}"
+        처음탭 = 탭줄들[0][0] if 탭줄들 and 탭줄들[0] else None
+        for 줄 in 탭줄들:
+            self.내용틀.add_widget(
+                탭_줄(
+                    줄,
+                    lambda t, m=모드, d=대분류: self._부위_고르기(m, d, t),
+                    처음탭,
+                    높이=dp(44),  # 탭이 여러 줄이라 목록 칸이 덜 줄게 버튼보다 낮게
+                    그룹=그룹,
+                    칸수=칸수,
+                )
+            )
+        self._하위탭틀 = BoxLayout(
+            orientation="vertical", size_hint=(1, None), height=0, spacing=dp(4)
+        )
+        self.내용틀.add_widget(self._하위탭틀)
 
         목록스크롤 = ScrollView(size_hint=(1, 1))
         목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=4)
         목록틀.bind(minimum_height=목록틀.setter("height"))
         목록스크롤.add_widget(목록틀)
         self.내용틀.add_widget(목록스크롤)
+        self._목록틀 = 목록틀
 
         if 모드 == "해체":
-            # 일괄해체 줄은 목록 아래(화면 하단) - 탭 줄은 상단 줄 바로 아래에 붙는다
+            # 일괄해체 줄은 목록 아래(화면 하단)
             self.내용틀.add_widget(self._일괄해체_줄(목록틀))
-            탭목록 = gameflow.상점_해체_탭목록
-        else:
-            탭목록 = gameflow.상점_탭목록(대분류)
-        for 탭이름 in 탭목록:
-            # 탭 너비는 글자 길이에 맞춘다(좌우 여백 dp(8)씩)
-            탭버튼 = Button(text=탭이름, size_hint=(None, 1), padding=(dp(8), 0))
-            탭버튼.bind(
-                texture_size=lambda inst, ts: setattr(inst, "width", ts[0] + dp(16))
-            )
-            탭버튼.bind(
-                on_release=lambda inst, m=모드, d=대분류, t=탭이름, 목록틀=목록틀: (
-                    self._아이템목록_그리기(m, d, t, 목록틀)
+
+        if 처음탭:
+            self._부위_고르기(모드, 대분류, 처음탭)
+
+    def _부위_고르기(self, 모드, 대분류, 탭):
+        """부위 탭을 누르면 하위 탭을 다시 그리고(고른 것은 [전체]로) 목록을 그린다."""
+        self._필터 = {"직업군": None, "분류": None}
+        self._하위탭_그리기(모드, 대분류, 탭)
+        self._아이템목록_그리기(모드, 대분류, 탭, self._목록틀)
+
+    def _하위탭_그리기(self, 모드, 대분류, 탭):
+        틀 = self._하위탭틀
+        틀.clear_widgets()
+        게임상태 = App.get_running_app().게임상태
+        줄들 = []
+        if 대분류 == "장비" and 탭 == "무기":
+            직업군 = self._필터["직업군"]
+            줄들.append((gameflow.상점_무기_직업군탭(게임상태), 직업군, "직업군"))
+            종류탭 = gameflow.상점_무기_종류탭(게임상태, 직업군)
+            if 종류탭:
+                줄들.append((종류탭, self._필터["분류"], "분류"))
+        elif 대분류 == "장비" and 탭 in gameflow.상점_방어구_부위:
+            줄들.append((gameflow.상점_방어구_재질탭, self._필터["분류"], "분류"))
+        높이 = dp(40)
+        for 탭들, 고른, 키 in 줄들:
+            틀.add_widget(
+                탭_줄(
+                    탭들,
+                    lambda 값, k=키, m=모드, d=대분류, t=탭: self._하위_고르기(
+                        m, d, t, k, 값
+                    ),
+                    고른 or 탭들[0],
+                    높이=높이,
+                    font_size="13sp",
                 )
             )
-            탭버튼틀.add_widget(탭버튼)
+        틀.height = len(줄들) * 높이 + max(0, len(줄들) - 1) * dp(4)
 
-        if 탭목록:
-            self._아이템목록_그리기(모드, 대분류, 탭목록[0], 목록틀)
+    def _하위_고르기(self, 모드, 대분류, 탭, 키, 값):
+        self._필터[키] = 값
+        if 키 == "직업군":
+            self._필터["분류"] = None  # 직업군이 바뀌면 종류는 [전체]부터
+            self._하위탭_그리기(모드, 대분류, 탭)
+        self._아이템목록_그리기(모드, 대분류, 탭, self._목록틀)
 
     def _아이템목록_그리기(self, 모드, 대분류, 탭, 목록틀):
         목록틀.clear_widgets()
@@ -570,6 +614,18 @@ class 상점화면(Screen):
             항목목록 = gameflow.상점_판매목록(게임상태, 대분류, 탭)
             빈문구 = "팔 수 있는 물건이 없습니다."
 
+        # 하위 탭(무기 직업군/종류, 방어구 재질)으로 거른다
+        필터 = getattr(self, "_필터", None) or {}
+        항목목록 = [
+            항목
+            for 항목 in 항목목록
+            if gameflow.상점_분류_일치(
+                항목[2] if len(항목) > 2 else 탭,
+                항목[0],
+                필터.get("직업군"),
+                필터.get("분류"),
+            )
+        ]
         self._현재탭 = 탭
         if not 항목목록:
             목록틀.add_widget(Label(text=빈문구, size_hint=(1, None), height=dp(40)))
