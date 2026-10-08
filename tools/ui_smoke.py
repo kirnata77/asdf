@@ -105,9 +105,10 @@ def _스크롤_확인(스크롤, 이름):
 
 
 def _팝업_닫기():
+    # 애니메이션 없이 바로 닫는다 - 닫히는 도중에 다음 팝업 개수를 세면 2개로 세어졌다
     for 위젯 in list(Window.children)[:-1]:
         if hasattr(위젯, "dismiss"):
-            위젯.dismiss()
+            위젯.dismiss(animation=False)
 
 
 class 스모크앱(main.DnfMobileApp):
@@ -782,7 +783,7 @@ class 스모크앱(main.DnfMobileApp):
         assert "확인" in 글들, 글들
         _찍기("battle_flee_blocked")
         뒤로()
-        yield 0.3
+        yield 0.6  # 닫힘 애니메이션까지
         assert 팝업수() == 0, "확인(뒤로 키)으로 닫혀야 한다"
         assert (
             len(전투상태["로그"]) == 로그수
@@ -1260,8 +1261,13 @@ class 스모크앱(main.DnfMobileApp):
             크기,
             보스.size,
         )
+        # 보스 그림은 1칸 안(2x2는 감옥만)
+        칸폭, 칸높이 = 지도._칸_크기()
+        assert 크기[0] <= 칸폭 + 1 and 크기[1] <= 칸높이 + 1, (크기, 칸폭)
         상태["진행도"]["클리어한오브젝트"].discard(("dungeon_01A_D01_Lorien", (15, 3)))
-        결과["단계"].append("감옥 보스전은 한 번 클리어하면 보스 몬스터 그림으로")
+        결과["단계"].append(
+            "감옥 보스전은 한 번 클리어하면 보스 칭호 몬스터 그림(1칸)으로"
+        )
         gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
         상태["던전상태"]["위치"] = (14, 3)  # 보스(감옥) 왼쪽 - 오른쪽에 로리엔 안쪽
         던전.갱신()
