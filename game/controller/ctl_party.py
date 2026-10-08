@@ -15,6 +15,7 @@ from game.data.equipment.eq_04_special_10_magicstone import 마법석목록
 from game.data.equipment.eq_04_special_11_earring import 귀걸이목록
 from game.data.item.item_consumable import 소모품_데이터
 from game.data.item.item_food import 음식_데이터
+from game.data.item.item_materials import 재료_데이터
 from game.data.item.item_potion import 포션_데이터
 from game.system import (
     character_creation_system as 캐릭터생성,
@@ -170,7 +171,8 @@ def 스킬데이터모음_생성():
 def _상점_카탈로그_생성():
     """상점(shop_system.py)이 쓰는 카탈로그. 무기 탭은 5직업 무기를 전부 합치고, 나머지 부위는
     eq_02~04 목록을 그대로 쓴다. 포션/음식/투척 아이템은 item_potion.py /
-    item_food.py / item_consumable.py 데이터를 쓴다. 정적 데이터라 매번 새로 만들지 않고,
+    item_food.py / item_consumable.py, 재료는 item_materials.py 데이터를 쓴다.
+    정적 데이터라 매번 새로 만들지 않고,
     새_게임상태()가 한 번 만들어 게임상태["상점카탈로그"]에 캐싱해둔다."""
     무기탭 = {}
     for 정보 in 직업_레지스트리.values():
@@ -191,7 +193,7 @@ def _상점_카탈로그_생성():
         "귀걸이": 귀걸이목록,
     }
     return shop_system.카탈로그_생성(
-        장비탭모음, 포션_데이터, 소모품_데이터, 음식_데이터
+        장비탭모음, 포션_데이터, 소모품_데이터, 음식_데이터, 재료_데이터
     )
 
 
