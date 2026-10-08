@@ -481,10 +481,11 @@ class 던전목록화면(Screen):
             return
         self.안내라벨.text = ""
 
-        for 파일명 in 던전목록:
-            맵정보 = gameflow.던전_레지스트리.get(파일명, {})
-            표시이름 = 맵정보.get("지도명", 파일명)
-            버튼 = Button(text=표시이름, size_hint=(1, None), height=dp(56))
+        # 바로 앞 던전 보스를 아직 안 깬 던전은 보이되 누를 수 없다(gameflow.던전_열림)
+        for 파일명, 표시이름, 열림 in gameflow.던전목록_표시(앱.게임상태):
+            버튼 = Button(
+                text=표시이름, size_hint=(1, None), height=dp(56), disabled=not 열림
+            )
             버튼.bind(on_release=lambda inst, f=파일명: self._선택(f))
             self.목록틀.add_widget(버튼)
 

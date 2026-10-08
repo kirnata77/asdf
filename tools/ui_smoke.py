@@ -143,6 +143,7 @@ class 스모크앱(main.DnfMobileApp):
         yield from self._단계_목록_스크롤(상태, 매니저)
         yield from self._단계_세이브(상태, 매니저)
         yield from self._단계_설정(매니저)
+        yield from self._단계_던전목록(상태, 매니저)
         yield from self._단계_화면_틀(매니저)
 
     def _단계_파티생성(self, 상태, 매니저):
@@ -1379,6 +1380,39 @@ class 스모크앱(main.DnfMobileApp):
             screens_common._설정_경로 = 원래경로
             gf.반응_자동_설정(원래반응)
             shutil.rmtree(폴더, ignore_errors=True)
+            매니저.current = "마을"
+
+    def _단계_던전목록(self, 상태, 매니저):
+        """던전 이동 목록 - 바로 앞 번호 던전 보스를 안 깬 던전은 비활성"""
+        진행도 = 상태["진행도"]
+        원래 = (진행도["현재마을"], set(진행도.get("클리어한던전", set())))
+        try:
+            진행도["클리어한던전"] = {
+                "dungeon_01A_D01_Lorien",
+                "dungeon_01A_D02_Hollow_Lorien",
+            }
+            진행도["현재마을"] = "헨돈마이어"
+            매니저.current = "던전목록"
+            yield 0.4
+            버튼 = {
+                w.text: w.disabled
+                for w in 매니저.current_screen.목록틀.walk(restrict=True)
+                if isinstance(w, Button)
+            }
+            assert 버튼 == {"머크우드": False, "선더랜드": True, "그락카락": True}, 버튼
+            _찍기("dungeon_list_locked")
+            진행도["클리어한던전"].add("dungeon_01A_D04_Hollow_mirkwood")
+            매니저.current_screen.갱신()
+            yield 0.3
+            버튼 = {
+                w.text: w.disabled
+                for w in 매니저.current_screen.목록틀.walk(restrict=True)
+                if isinstance(w, Button)
+            }
+            assert 버튼["선더랜드"] is False and 버튼["그락카락"] is True, 버튼
+            결과["단계"].append("던전 이동 목록 - 앞 던전 보스 전엔 비활성, 깨면 활성")
+        finally:
+            진행도["현재마을"], 진행도["클리어한던전"] = 원래
             매니저.current = "마을"
 
     def _단계_화면_틀(self, 매니저):

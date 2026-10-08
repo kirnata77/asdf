@@ -553,3 +553,24 @@ def test_숙소_시스템_오류():
     assert 숙소시스템.영입_자리(파티, 숙소) is None
     with pytest.raises(ValueError, match="숙소가 가득"):
         숙소시스템.영입(파티, 숙소, 밖)
+
+
+def test_던전_순서_해금은_바로_앞_번호_던전_보스_클리어():
+    전체 = [
+        "dungeon_01A_D01_Lorien",
+        "dungeon_01A_D04_Hollow_mirkwood",
+        "dungeon_01A_D05_thunderland",
+        "dungeon_02A_D11_amon_lower",
+        "dungeon_02A_D12_amon_upper",
+    ]
+    진행도 = {"클리어한던전": set()}
+    assert town_system.던전_번호("dungeon_01A_D05_thunderland") == 5
+    assert town_system.던전_번호("town_01A_T01_Elvengard") is None
+    assert town_system.던전_열림("dungeon_01A_D01_Lorien", 진행도, 전체)
+    assert not town_system.던전_열림("dungeon_01A_D05_thunderland", 진행도, 전체)
+    진행도["클리어한던전"].add("dungeon_01A_D04_Hollow_mirkwood")
+    assert town_system.던전_열림("dungeon_01A_D05_thunderland", 진행도, 전체)
+    # D11 이후는 규칙 밖(웨스트코스트 던전은 마을 개방조건으로만)
+    assert town_system.던전_열림("dungeon_02A_D12_amon_upper", 진행도, 전체)
+    # 바로 앞 번호 던전 파일이 없으면 열림
+    assert town_system.던전_열림("dungeon_01A_D04_Hollow_mirkwood", 진행도, 전체)
