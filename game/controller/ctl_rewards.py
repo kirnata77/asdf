@@ -1,8 +1,10 @@
 # 컨트롤러 - 전투 보상 - 전리품/골드/경험치 정리, 전투 종료 문구
 # (gameflow.py에서 분리 - N5. 화면은 gameflow.py 창구만 부른다. 설명은 gameflow.py 머리말)
 
+from game.data.buff.status_effects import 상태이상목록
 from game.data.monster.monster_drop import 드랍표_모음
 from game.system import (
+    drink_system,
     dungeon_system,
     equipment_system,
     loot_system,
@@ -201,6 +203,10 @@ def 전투_결과_정리(게임상태):
         캐릭터 = 참가자["원본"]
         캐릭터["현재HP"] = 참가자["현재HP"]
         캐릭터["현재MP"] = 참가자["현재MP"]
+        # 취기/만취처럼 전투 뒤에도 남는 상태이상만 캐릭터에 되돌려 쓴다
+        캐릭터["상태이상"] = drink_system.유지_상태이상(
+            참가자["상태이상"], 상태이상목록
+        )
 
     게임상태["전투_전리품"] = None
     게임상태["전투_보상"] = None

@@ -1,7 +1,8 @@
 # 컨트롤러 - 마을 - 이동, 휴식
 # (gameflow.py에서 분리 - N5. 화면은 gameflow.py 창구만 부른다. 설명은 gameflow.py 머리말)
 
-from game.system import town_system
+from game.data.buff.status_effects import 상태이상목록
+from game.system import drink_system, town_system
 from game.controller.ctl_party import 파티_최대치로_회복
 from game.controller.ctl_registry import 던전_레지스트리
 
@@ -41,6 +42,10 @@ def 이동가능던전목록(게임상태):
 
 def 휴식(게임상태):
     town_system.휴식_처리(게임상태["파티"])
+    for 캐릭터 in 게임상태["파티"]["파티원"]:  # 취기/만취는 휴식으로 풀린다
+        캐릭터["상태이상"] = drink_system.휴식_해제(
+            캐릭터.get("상태이상") or [], 상태이상목록
+        )
     # town_system은 장비를 모르므로 장비 반영 최대치로 다시 채운다.
     파티_최대치로_회복(게임상태)
 

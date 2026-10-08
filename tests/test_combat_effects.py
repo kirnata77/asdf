@@ -153,7 +153,7 @@ def 상태이상_시나리오(이름):
 
 
 def test_상태이상_전수(golden):
-    assert len(상태이상목록) == 20
+    assert len(상태이상목록) == 22  # 음주(취기/만취) 2개 포함
     golden(
         "combat_status_effects",
         {이름: 상태이상_시나리오(이름) for 이름 in 상태이상목록},

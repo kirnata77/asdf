@@ -1,6 +1,7 @@
 # 컨트롤러 - 캐릭터/파티/게임상태 만들기 - 캐릭터 생성, 장비데이터모음, 능력치/HP/MP 조회, 이름 자르기
 # (gameflow.py에서 분리 - N5. 화면은 gameflow.py 창구만 부른다. 설명은 gameflow.py 머리말)
 
+from game.data.buff.status_effects import 상태이상목록
 from game.data.equipment.eq_02_armor_01_top import 상의목록
 from game.data.equipment.eq_02_armor_02_bottom import 하의목록
 from game.data.equipment.eq_02_armor_03_shoulder import 어깨목록
@@ -19,6 +20,7 @@ from game.data.item.item_materials import 재료_데이터
 from game.data.item.item_potion import 포션_데이터
 from game.system import (
     character_creation_system as 캐릭터생성,
+    drink_system,
     equipment_system,
     player_system,
     shop_system,
@@ -117,12 +119,16 @@ def 캐릭터_장비데이터(게임상태, 캐릭터):
 
 
 def 캐릭터_유효능력치(게임상태, 캐릭터):
-    """{능력치이름: 장비 반영 값}."""
-    return equipment_system.장비반영_능력치(
+    """{능력치이름: 장비 반영 값} - 캐릭터에 남아 있는 상태이상(취기의 매력 감소 등)도 더한다."""
+    능력치 = equipment_system.장비반영_능력치(
         캐릭터,
         캐릭터_장비데이터(게임상태, 캐릭터),
         방어구세트목록,
     )
+    상태이상 = 캐릭터.get("상태이상") or []
+    for 이름 in 능력치:
+        능력치[이름] += drink_system.능력치_변동(상태이상, 상태이상목록, 이름)
+    return 능력치
 
 
 def 캐릭터_능력치_보정치(게임상태, 캐릭터, 능력치이름):
