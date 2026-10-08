@@ -15,6 +15,7 @@ tests/는 kivy 없이 gameflow 이하만 검사한다. 화면(game/screens) 코�
 """
 
 import json
+import re
 import os
 import random
 import shutil
@@ -58,6 +59,11 @@ from tests import support  # noqa: E402
     "마법사": "엘리멘탈마스터",
     "프리스트": "크루세이더",
 }
+
+
+def _글(t):
+    """라벨 글에서 색/굵기 마크업을 뺀 글(아이템 이름은 레어도 색으로 칠해져 있다)."""
+    return re.sub(r"\[/?(color|b|size)[^\]]*\]", "", t or "")
 
 
 def _찍기(이름):
@@ -210,13 +216,30 @@ class 스모크앱(main.DnfMobileApp):
 
         def 목록이름():
             return [
-                w.text
+                _글(w.text)
                 for w in 상점._목록틀.walk(restrict=True)
                 if isinstance(w, main.Label)
                 and not isinstance(w, Button)
-                and w.text in 상태["상점카탈로그"]["장비"].get(상점._현재탭, {})
+                and _글(w.text) in 상태["상점카탈로그"]["장비"].get(상점._현재탭, {})
             ]
 
+        # 아이템 이름은 레어도 색: 언커먼 파랑, 치트는 글자마다 무지개
+        이름글 = {
+            _글(w.text): w.text
+            for w in 상점._목록틀.walk(restrict=True)
+            if isinstance(w, main.Label) and not isinstance(w, Button)
+        }
+        for 이름, 글 in 이름글.items():
+            분류 = gf.아이템_찾기(상태, 이름) and gf.아이템_색분류(
+                gf.아이템_찾기(상태, 이름)
+            )
+            if 분류 == "치트":
+                assert 글.count("[color=") == len(이름.replace(" ", "")), 글
+            elif 분류:
+                assert 글.startswith(f"[color={screens_common._레어도_색[분류]}]"), 글
+        assert screens_common.아이템_이름_글(
+            gf.아이템_찾기(상태, "강철 소검")
+        ).startswith("[color=4d8cff]")
         # 부위 탭 2줄이 화면 안에 다 들어간다(밀어서 넘기지 않음)
         부위 = [t for t in 탭들() if t.group == 탭("무기").group]
         assert [t.text for t in 부위] == sum(gf.상점_탭줄("구매", "장비"), [])
@@ -246,6 +269,14 @@ class 스모크앱(main.DnfMobileApp):
         yield 0.3
         탭("판금").trigger_action(duration=0)
         yield 0.3
+        세트글 = [
+            w.text
+            for w in 상점._목록틀.walk(restrict=True)
+            if isinstance(w, main.Label) and _글(w.text) == "티타늄 흉갑"
+        ]
+        assert 세트글 and 세트글[0].startswith("[color=4dd65a]"), (
+            세트글
+        )  # 커먼 방어구 세트 = 초록
         상의 = 상태["상점카탈로그"]["장비"]["상의"]
         assert all(상의[n]["재질"] == "판금" for n in 목록이름()), 목록이름()
         _찍기("shop_buy_top_plate")
@@ -789,7 +820,7 @@ class 스모크앱(main.DnfMobileApp):
         # 전투 종료 팝업: 승리(전리품) -> 던전, 도망 -> 던전, 패배 -> 마을
         def 팝업글():
             return [
-                w.text
+                _글(w.text)
                 for 팝업 in list(Window.children)[:-1]
                 for w in 팝업.walk(restrict=True)
                 if hasattr(w, "text")
@@ -899,7 +930,7 @@ class 스모크앱(main.DnfMobileApp):
                         w
                         for 팝업 in list(Window.children)[:-1]
                         for w in 팝업.walk(restrict=True)
-                        if getattr(w, "text", None) == 칸[1]
+                        if _글(getattr(w, "text", None)) == 칸[1]
                     ).parent
                     박스.dispatch("on_release")
                     yield 0.3
@@ -908,7 +939,7 @@ class 스모크앱(main.DnfMobileApp):
                     yield 0.3
                     assert 상태["소지품"]["장비"][칸[1]] == 보유 + 1
                     # 받은 아이템이 전투 종료 팝업의 전리품 줄에 더해진다
-                    새글 = next(t for t in 팝업글() if t.startswith("전투 승리!"))
+                    새글 = _글(next(t for t in 팝업글() if t.startswith("전투 승리!")))
                     assert 새글 == "\n".join(
                         gf.전투_종료_문구(상태, "아군승리")
                     ) and any(줄.startswith(칸[1]) for 줄 in 새글.split("\n")[2:]), 새글

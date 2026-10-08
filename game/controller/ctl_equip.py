@@ -6,6 +6,7 @@
 # 슬롯 이름만 바꾸고 원래 장비는 그대로 소지품에 남는다. 바꾼 뒤에는
 # 전투용 장비데이터모음을 다시 만들고, 줄어든 최대HP/MP에 맞춰 현재값을 깎는다.
 
+from game.data.equipment.eq_02_armor_set import 방어구세트목록
 from game.system import equipment_system
 from game.controller.ctl_party import (
     장비데이터모음_생성,
@@ -16,6 +17,8 @@ from game.controller.ctl_party import (
 )
 
 __all__ = [
+    "아이템_색분류",
+    "아이템_찾기",
     "장비_슬롯목록",
     "캐릭터_장착아이템",
     "장비_교체_탭목록",
@@ -85,3 +88,17 @@ def 장비_해제(게임상태, 캐릭터, 슬롯):
         raise ValueError("무기는 해제할 수 없다. 다른 무기로 교체하세요.")
     equipment_system.장비_해제(캐릭터, 슬롯)
     장비변경_후처리(게임상태)
+
+
+def 아이템_색분류(아이템):
+    """이름 색을 정하는 분류 - 레어도("커먼"/"언커먼"/.../"치트") 또는 커먼 방어구 세트면 "세트"."""
+    return equipment_system.아이템_색분류(아이템, 방어구세트목록)
+
+
+def 아이템_찾기(게임상태, 이름):
+    """상점 카탈로그(장비/소모품/재료)에서 이름으로 아이템 데이터를 찾는다. 없으면 None."""
+    for 대분류 in 게임상태["상점카탈로그"].values():
+        for 묶음 in 대분류.values():
+            if isinstance(묶음, dict) and 이름 in 묶음:
+                return 묶음[이름]
+    return None

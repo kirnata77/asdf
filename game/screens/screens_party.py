@@ -34,6 +34,7 @@ from game.screens.screens_common import (
     스크롤_목록,
     닫기_버튼,
     탭_줄,
+    아이템_이름_글,
 )
 
 
@@ -879,7 +880,7 @@ def _스킬_상세_팝업(이름, 상세글, 제목="스킬 상세보기"):
 
 def _아이템_상세_팝업(아이템, 사유=None):
     효과 = _아이템_요약(아이템) or "(효과 없음)"
-    글 = f"[b]{escape_markup(아이템['이름'])}[/b]\n\n{escape_markup(효과)}"
+    글 = f"[b]{아이템_이름_글(아이템)}[/b]\n\n{escape_markup(효과)}"
     if 사유:
         글 += f"\n\n[color=e05555]{escape_markup(사유)}[/color]"
     본문 = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(10))
@@ -904,7 +905,7 @@ def _장비_칸(아이템, 슬롯, 글머리="", 수량=None, 사유=None, 선�
         padding=dp(6),
         spacing=dp(6),
     )
-    이름 = escape_markup(아이템["이름"]) + (f" x{수량}" if 수량 is not None else "")
+    이름 = 아이템_이름_글(아이템) + (f" x{수량}" if 수량 is not None else "")
     요약 = _아이템_간단요약(아이템, 슬롯)
     글 = f"{글머리}[b]{이름}[/b]" + (f"\n{요약}" if 요약 else "")
     if 사유:
@@ -1113,7 +1114,7 @@ class 파티원화면(Screen):
             )
         아이템 = gameflow.캐릭터_장착아이템(게임상태, 캐릭터, 슬롯)
         버튼 = Button(
-            text=f"[b]{슬롯}[/b]\n{escape_markup(아이템['이름']) if 아이템 else '-'}",
+            text=f"[b]{슬롯}[/b]\n{아이템_이름_글(아이템) if 아이템 else '-'}",
             markup=True,
             font_size="12sp",
             halign="center",

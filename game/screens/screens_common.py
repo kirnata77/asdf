@@ -23,6 +23,7 @@ from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.scatterlayout import ScatterLayout
 from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle, RoundedRectangle
+from kivy.utils import escape_markup
 
 import gameflow
 
@@ -339,6 +340,45 @@ def 탭_줄(
         버튼.bind(on_release=lambda inst, t=탭: 고르기(t))
         줄.add_widget(버튼)
     return 줄
+
+
+# 아이템 이름 색 - 레어도별(2026-10-07 사용자 지정). "세트"는 커먼 방어구 세트 아이템
+# (gameflow.아이템_색분류), "치트"는 글자마다 무지개색. 표에 없는 레어도는 흰색.
+_레어도_색 = {
+    "커먼": "ffffff",
+    "언커먼": "4d8cff",
+    "레어": "b36bff",
+    "유니크": "ff3d9a",
+    "크로니클": "ff4040",
+    "에픽": "ffd633",
+    "세트": "4dd65a",
+}
+_무지개_색 = ["ff4040", "ff9a2e", "ffd633", "4dd65a", "4d8cff", "6a5cff", "b36bff"]
+
+
+def 아이템_이름_글(아이템, 글=None):
+    """아이템 이름(또는 그 이름이 든 글)을 레어도 색 마크업으로. markup=True인 라벨에 쓴다."""
+    글 = escape_markup(글 if 글 is not None else 아이템.get("이름", ""))
+    분류 = gameflow.아이템_색분류(아이템)
+    if 분류 == "치트":
+        조각 = []
+        i = 0
+        for 글자 in 글:
+            if 글자.isspace():
+                조각.append(글자)
+                continue
+            조각.append(f"[color={_무지개_색[i % len(_무지개_색)]}]{글자}[/color]")
+            i += 1
+        return "".join(조각)
+    return f"[color={_레어도_색.get(분류, 'ffffff')}]{글}[/color]"
+
+
+def 아이템_이름_글_찾아서(게임상태, 이름, 글=None):
+    """이름으로 아이템을 찾아 색을 입힌다(못 찾으면 글 그대로 - 골드/재료 줄 등)."""
+    아이템 = gameflow.아이템_찾기(게임상태, 이름)
+    if 아이템 is None:
+        return escape_markup(글 if 글 is not None else 이름)
+    return 아이템_이름_글(아이템, 글)
 
 
 def _뒤로키_버튼_찾기(위젯):

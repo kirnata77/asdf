@@ -31,6 +31,7 @@ from game.screens.screens_common import (
     스크롤_목록,
     닫기_버튼,
     탭_줄,
+    아이템_이름_글,
 )
 
 
@@ -655,7 +656,8 @@ class 상점화면(Screen):
         )
 
         이름라벨 = Label(
-            text=아이템["이름"],
+            text=아이템_이름_글(아이템),  # 레어도 색
+            markup=True,
             size_hint=(0.34, 1),
             halign="left",
             valign="middle",
@@ -836,6 +838,16 @@ class 상점화면(Screen):
         내용틀.bind(minimum_height=내용틀.setter("height"))
         스크롤.add_widget(내용틀)
         본문.add_widget(스크롤)
+        이름줄 = Label(
+            text=f"[b]{아이템_이름_글(아이템)}[/b]",
+            markup=True,
+            size_hint=(1, None),
+            height=dp(36),
+            halign="left",
+            font_size="17sp",
+        )
+        이름줄.bind(size=lambda inst, size: setattr(inst, "text_size", size))
+        내용틀.add_widget(이름줄)
 
         for 키, 값 in 아이템.items():
             if 키 in self._상세_제외키 or 값 in (None, 0, "", {}, []):

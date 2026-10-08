@@ -3,6 +3,7 @@
 # =====================
 # main.py가 game/screens/ 여섯 파일의 화면을 ScreenManager에 등록한다.
 
+import re
 import threading
 
 from kivy.app import App
@@ -27,6 +28,7 @@ from game.screens.screens_common import (
     _캐릭터이미지_경로,
     _에셋_경로,
     뒤로키_버튼,
+    아이템_이름_글_찾아서,
 )
 
 
@@ -117,7 +119,14 @@ class _전투보상팝업(Popup):
         박스줄 = BoxLayout(orientation="horizontal", spacing=dp(8))
         for 번호, 이름 in enumerate(칸목록):
             박스 = _테두리박스(_박스_테두리색, 기본두께=1.2)
-            라벨 = Label(text=이름 or "", halign="center", valign="middle")
+            라벨 = Label(
+                text=아이템_이름_글_찾아서(App.get_running_app().게임상태, 이름)
+                if 이름
+                else "",
+                markup=True,
+                halign="center",
+                valign="middle",
+            )
             라벨.bind(size=lambda inst, sz: setattr(inst, "text_size", sz))
             박스.add_widget(라벨)
             if 이름 is None:
@@ -268,6 +277,13 @@ class _행동선택팝업(Popup):
     def _취소(self):
         self.dismiss(animation=False)
         self._취소콜백()
+
+
+def _전리품_글(게임상태, 줄들):
+    """전투 종료 팝업 글 - 아이템 줄("이름" / "이름 xN")은 레어도 색으로."""
+    return "\n".join(
+        아이템_이름_글_찾아서(게임상태, re.sub(r" x\d+$", "", 줄), 줄) for 줄 in 줄들
+    )
 
 
 # 아군 그림 크기 - 칸에 꽉 맞춘 크기 대비(2026-10-07 사용자 지정 2/3, 칸 바닥에 붙인다)
@@ -1050,7 +1066,7 @@ class 전투화면(Screen):
         self.안내라벨.text = 줄들[0]
         self.액션틀.clear_widgets()
 
-        안내 = Label(text="\n".join(줄들), halign="center")
+        안내 = Label(text=_전리품_글(앱.게임상태, 줄들), halign="center", markup=True)
         확인버튼 = Button(text="확인", size_hint=(1, None), height=dp(48))
         뒤로키_버튼(확인버튼)
         본문 = BoxLayout(orientation="vertical", spacing=12, padding=12)
@@ -1067,7 +1083,7 @@ class 전투화면(Screen):
                 확인버튼.disabled = False
                 # 받은 보상 아이템을 전리품 줄에 더해 다시 쓴다(포기면 그대로)
                 새줄들 = gameflow.전투_종료_문구(앱.게임상태, 결과)
-                안내.text = "\n".join(새줄들)
+                안내.text = _전리품_글(앱.게임상태, 새줄들)
                 팝업.size_hint_y = 팝업높이(새줄들)
 
             보상버튼.bind(
