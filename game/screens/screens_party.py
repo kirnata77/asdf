@@ -33,6 +33,7 @@ from game.screens.screens_common import (
     뒤로키_버튼,
     스크롤_목록,
     닫기_버튼,
+    탭_줄,
 )
 
 
@@ -936,13 +937,16 @@ def _장비교체_팝업(캐릭터, 슬롯, 완료콜백):
     [해제](무기 제외)/[취소]. 바꾸면 창을 닫고 완료콜백()을 부른다."""
     게임상태 = App.get_running_app().게임상태
     현재 = gameflow.캐릭터_장착아이템(게임상태, 캐릭터, 슬롯)
-    후보 = gameflow.장비_교체_후보(게임상태, 캐릭터, 슬롯)
+    탭목록 = gameflow.장비_교체_탭목록(게임상태, 캐릭터, 슬롯)
 
     본문 = BoxLayout(orientation="vertical", spacing=6, padding=10)
     if 현재:
         본문.add_widget(_장비_칸(현재, 슬롯, 글머리="[color=9ea6b3]현재[/color]  "))
     else:
         본문.add_widget(Label(text="현재: (없음)", size_hint=(1, None), height=dp(48)))
+    # 분류 탭(무기 종류 / 방어구 재질) - 악세서리·특수장비는 탭 없음
+    if 탭목록:
+        본문.add_widget(탭_줄(탭목록, lambda 탭: 목록_채우기(탭), 탭목록[0]))
     안내 = Label(text="", size_hint=(1, 0.08))
     스크롤, 목록틀 = 스크롤_목록(0.64, 간격=dp(6))
     본문.add_widget(스크롤)
@@ -972,24 +976,30 @@ def _장비교체_팝업(캐릭터, 슬롯, 완료콜백):
             return
         완료()
 
-    if not 후보:
-        목록틀.add_widget(
-            Label(
-                text="(소지품에 바꿀 장비가 없습니다)",
-                size_hint=(1, None),
-                height=dp(40),
+    def 목록_채우기(탭):
+        목록틀.clear_widgets()
+        스크롤.scroll_y = 1
+        후보 = gameflow.장비_교체_후보(게임상태, 캐릭터, 슬롯, 탭)
+        if not 후보:
+            목록틀.add_widget(
+                Label(
+                    text="(소지품에 바꿀 장비가 없습니다)",
+                    size_hint=(1, None),
+                    height=dp(40),
+                )
             )
-        )
-    for 아이템, 수량, 착용가능, 사유 in 후보:
-        목록틀.add_widget(
-            _장비_칸(
-                아이템,
-                슬롯,
-                수량=수량,
-                사유=None if 착용가능 else 사유,
-                선택=lambda n=아이템["이름"]: 교체(n),
+        for 아이템, 수량, 착용가능, 사유 in 후보:
+            목록틀.add_widget(
+                _장비_칸(
+                    아이템,
+                    슬롯,
+                    수량=수량,
+                    사유=None if 착용가능 else 사유,
+                    선택=lambda n=아이템["이름"]: 교체(n),
+                )
             )
-        )
+
+    목록_채우기(탭목록[0] if 탭목록 else None)
 
     아래 = BoxLayout(orientation="horizontal", size_hint=(1, 0.12), spacing=6)
     해제버튼 = Button(text="해제", disabled=(현재 is None or 슬롯 == "무기"))

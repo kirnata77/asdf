@@ -11,6 +11,7 @@ from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
+from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.widget import Widget
@@ -308,6 +309,33 @@ def 스크롤_목록(높이비율, 간격=6):
     스크롤 = ScrollView(size_hint=(1, 높이비율))
     스크롤.add_widget(목록틀)
     return 스크롤, 목록틀
+
+
+def 탭_줄(탭목록, 고르기, 고른탭=None, 높이=None, font_size="14sp"):
+    """한 줄에 다 보이는 탭 버튼들(옆으로 밀어서 넘기지 않는다 - 폭을 똑같이 나눈다).
+    누르면 그 탭만 눌린 상태가 되고 고르기(탭)를 부른다."""
+    줄 = GridLayout(
+        cols=max(1, len(탭목록)),
+        size_hint=(1, None),
+        height=높이 or dp(44),
+        spacing=dp(4),
+    )
+    그룹 = f"탭줄{id(줄)}"
+    for 탭 in 탭목록:
+        버튼 = ToggleButton(
+            text=탭,
+            group=그룹,
+            allow_no_selection=False,
+            state="down" if 탭 == 고른탭 else "normal",
+            font_size=font_size,
+            shorten=True,
+            shorten_from="right",
+        )
+        버튼.bind(size=lambda inst, sz: setattr(inst, "text_size", (sz[0], None)))
+        버튼.halign = "center"
+        버튼.bind(on_release=lambda inst, t=탭: 고르기(t))
+        줄.add_widget(버튼)
+    return 줄
 
 
 def _뒤로키_버튼_찾기(위젯):

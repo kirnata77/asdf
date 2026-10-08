@@ -381,8 +381,36 @@ class 스모크앱(main.DnfMobileApp):
             글들 = [w.text for w in 팝업.walk(restrict=True) if hasattr(w, "text")]
             assert any(요약 in 글 for 글 in 글들), 글들
             assert 글들.count("상세보기") >= 2, 글들
+            # 분류 탭: 무기는 [전체] + 귀검사 무기 종류, 상의는 [전체] + 재질 - 한 줄에 다 보인다
+            from kivy.uix.togglebutton import ToggleButton
+
+            탭들 = [w for w in 팝업.walk(restrict=True) if isinstance(w, ToggleButton)]
+            assert [t.text for t in 탭들] == gf.장비_교체_탭목록(상태, 귀검사, 슬롯)
+            assert 탭들[0].state == "down" and 탭들[0].text == "전체"
+            assert all(t.right <= 탭들[0].parent.right + 1 for t in 탭들)
+            # 다른 직업군 무기는 [전체]에도 없다
+            if 슬롯 == "무기":
+                assert not any("너클" in 글 or "빗자루" in 글 for 글 in 글들), 글들
+            두번째 = 탭들[2]  # 무기 "도" / 상의 "가죽"
+            두번째.trigger_action(duration=0)
+            yield 0.3
+            assert [t.text for t in 탭들 if t.state == "down"] == [두번째.text]
+            이름들 = {
+                i["이름"]
+                for i, *_ in gf.장비_교체_후보(상태, 귀검사, 슬롯, 두번째.text)
+            }
+            글들 = [w.text for w in 팝업.walk(restrict=True) if hasattr(w, "text")]
+            현재이름 = (gf.캐릭터_장착아이템(상태, 귀검사, 슬롯) or {}).get("이름")
+            목록글 = [글 for 글 in 글들 if not 글.startswith("[color=9ea6b3]현재")]
+            for n in 상태["상점카탈로그"]["장비"][슬롯]:
+                if n not in 이름들 and n != 현재이름:
+                    assert not any(n in 글 for 글 in 목록글), (두번째.text, n)
+            _찍기(f"equip_swap_{슬롯}_tab")
             _팝업_닫기()
             yield 0.3
+        결과["단계"].append(
+            "장비 교체 팝업 분류 탭(무기 종류/방어구 재질, 다른 직업군 무기 숨김)"
+        )
         무기 = next(iter(상태["상점카탈로그"]["장비"]["무기"].values()))
         screens_party._아이템_상세_팝업(무기)
         yield 0.5
