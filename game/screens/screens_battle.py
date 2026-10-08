@@ -82,10 +82,15 @@ class _전투보상팝업(Popup):
         박스줄 = BoxLayout(orientation="horizontal", spacing=dp(8))
         for 번호, 이름 in enumerate(칸목록):
             박스 = _테두리박스(_박스_테두리색, 기본두께=1.2)
+            게임상태 = App.get_running_app().게임상태
+            글 = ""
+            if 이름:
+                글 = 아이템_이름_글_찾아서(게임상태, 이름)
+                보유 = gameflow.전투_보상_보유표시(게임상태, 이름)
+                if 보유:  # 이름 아래 줄에 지금 갖고 있는 개수(보유 / 착용)
+                    글 += f"\n[size=13sp][color=9ea6b3]{보유}[/color][/size]"
             라벨 = Label(
-                text=아이템_이름_글_찾아서(App.get_running_app().게임상태, 이름)
-                if 이름
-                else "",
+                text=글,
                 markup=True,
                 halign="center",
                 valign="middle",

@@ -937,9 +937,13 @@ class 스모크앱(main.DnfMobileApp):
                 assert (
                     팝업_버튼("확인").disabled and not 팝업_버튼("전투 보상").disabled
                 )
+                칸 = gf.전투_보상_칸(상태)
+                if all(칸) and 칸[0] != 칸[1]:
+                    # 첫 칸 아이템은 소지품에 하나 넣어 둔다 - "보유 1" 줄이 그려지는지 보려고
+                    장비칸 = 상태["소지품"]["장비"]
+                    장비칸[칸[0]] = 장비칸.get(칸[0], 0) + 1
                 팝업_버튼("전투 보상").dispatch("on_release")
                 yield 0.5
-                칸 = gf.전투_보상_칸(상태)
                 assert 팝업_버튼("선택").disabled  # 박스를 누르기 전
                 if 전리품줄 is True:  # 고블린들 - 후보가 있다
                     assert all(칸), 칸
@@ -948,10 +952,23 @@ class 스모크앱(main.DnfMobileApp):
                         w
                         for 팝업 in list(Window.children)[:-1]
                         for w in 팝업.walk(restrict=True)
-                        if _글(getattr(w, "text", None)) == 칸[1]
+                        if _글(getattr(w, "text", None)).split("\n")[0] == 칸[1]
                     ).parent
                     박스.dispatch("on_release")
                     yield 0.3
+                    # 칸마다 이름 아래 보유/착용 개수(없으면 이름만)
+                    for 이름칸 in 칸:
+                        글 = next(
+                            _글(w.text)
+                            for 팝업 in list(Window.children)[:-1]
+                            for w in 팝업.walk(restrict=True)
+                            if isinstance(w, main.Label)
+                            and _글(getattr(w, "text", "")).split("\n")[0] == 이름칸
+                        )
+                        개수글 = gf.전투_보상_보유표시(상태, 이름칸)
+                        if 이름칸 == 칸[0] and 칸[0] != 칸[1]:
+                            assert 개수글.startswith("보유 "), 개수글
+                        assert 글 == (f"{이름칸}\n{개수글}" if 개수글 else 이름칸), 글
                     _찍기("battle_reward")
                     팝업_버튼("선택").dispatch("on_release")
                     yield 0.3
