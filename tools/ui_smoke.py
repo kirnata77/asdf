@@ -254,6 +254,17 @@ class 스모크앱(main.DnfMobileApp):
             상점.내용틀.x - 1 <= t.x and t.right <= 상점.내용틀.right + 1 for t in 부위
         )
         assert len({t.y for t in 부위}) == 2  # 두 줄
+        # 머리줄/뒤로 줄/탭/안내줄은 글자 높이에 맞춘 높이
+        sc = screens_common
+        assert all(abs(t.height - sc.글자_높이("14sp")) < 1 for t in 부위)
+        뒤로 = next(
+            w
+            for w in 상점.내용틀.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "◀ 뒤로"
+        )
+        assert abs(뒤로.parent.height - sc.글자_높이()) < 1, 뒤로.parent.height
+        assert abs(상점.골드라벨.parent.height - sc.글자_높이("20sp")) < 1
+        assert abs(상점.안내라벨.height - sc.글자_높이()) < 1
         # 무기: 직업군 탭 -> 거너를 누르면 종류 탭 줄이 생기고 목록은 거너 무기만
         assert [t.text for t in 탭들() if t.text in gf.상점_무기_직업군탭(상태)][
             :6

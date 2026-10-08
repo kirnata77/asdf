@@ -31,6 +31,7 @@ from game.screens.screens_common import (
     스크롤_목록,
     닫기_버튼,
     탭_줄,
+    글자_높이,
     아이템_이름_글,
     고른간격줄,
     파티원_정사각형_채우기,
@@ -387,18 +388,21 @@ class 상점화면(Screen):
         super().__init__(**kwargs)
         self.복귀화면 = "마을"
 
-        루트 = BoxLayout(orientation="vertical", padding=12, spacing=8)
+        # 머리줄/뒤로 줄/탭/안내줄은 글자 높이에 맞춘 높이(글자_높이) - 남는 높이는 목록이 쓴다
+        루트 = BoxLayout(orientation="vertical", padding=12, spacing=6)
 
-        머리 = BoxLayout(orientation="horizontal", size_hint=(1, 0.1))
+        머리 = BoxLayout(
+            orientation="horizontal", size_hint=(1, None), height=글자_높이("20sp")
+        )
         머리.add_widget(Label(text="상점", font_size="20sp", halign="left"))
         self.골드라벨 = Label(text="")
         머리.add_widget(self.골드라벨)
         루트.add_widget(머리)
 
-        self.내용틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.8), spacing=6)
+        self.내용틀 = BoxLayout(orientation="vertical", size_hint=(1, 1), spacing=6)
         루트.add_widget(self.내용틀)
 
-        self.안내라벨 = Label(text="", size_hint=(1, 0.1))
+        self.안내라벨 = Label(text="", size_hint=(1, None), height=글자_높이())
         루트.add_widget(self.안내라벨)
 
         self.add_widget(루트)
@@ -452,7 +456,7 @@ class 상점화면(Screen):
         self._비우기()
 
         상단 = BoxLayout(
-            orientation="horizontal", size_hint=(1, None), height=_버튼_높이
+            orientation="horizontal", size_hint=(1, None), height=글자_높이()
         )
         뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
         뒤로키_버튼(뒤로버튼)
@@ -474,7 +478,7 @@ class 상점화면(Screen):
     def _재료_그리기(self, 모드):
         self._비우기()
         상단 = BoxLayout(
-            orientation="horizontal", size_hint=(1, None), height=_버튼_높이
+            orientation="horizontal", size_hint=(1, None), height=글자_높이()
         )
         뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
         뒤로키_버튼(뒤로버튼)
@@ -491,7 +495,7 @@ class 상점화면(Screen):
         self._비우기()
 
         상단 = BoxLayout(
-            orientation="horizontal", size_hint=(1, None), height=_버튼_높이
+            orientation="horizontal", size_hint=(1, None), height=글자_높이()
         )
         뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
         뒤로키_버튼(뒤로버튼)
@@ -516,7 +520,7 @@ class 상점화면(Screen):
                     줄,
                     lambda t, m=모드, d=대분류: self._부위_고르기(m, d, t),
                     처음탭,
-                    높이=dp(44),  # 탭이 여러 줄이라 목록 칸이 덜 줄게 버튼보다 낮게
+                    높이=글자_높이("14sp"),  # 글자 높이에 맞춘 탭
                     그룹=그룹,
                     칸수=칸수,
                 )
@@ -559,7 +563,7 @@ class 상점화면(Screen):
                 줄들.append((종류탭, self._필터["분류"], "분류"))
         elif 대분류 == "장비" and 탭 in gameflow.상점_방어구_부위:
             줄들.append((gameflow.상점_방어구_재질탭, self._필터["분류"], "분류"))
-        높이 = dp(40)
+        높이 = 글자_높이("13sp")
         for 탭들, 고른, 키 in 줄들:
             틀.add_widget(
                 탭_줄(
@@ -750,7 +754,7 @@ class 상점화면(Screen):
 
     def _일괄해체_줄(self, 목록틀):
         줄 = BoxLayout(
-            orientation="horizontal", size_hint=(1, None), height=_버튼_높이, spacing=4
+            orientation="horizontal", size_hint=(1, None), height=글자_높이(), spacing=4
         )
         # 세 칸 모두 "일괄해체" 글자 너비에 맞춘 같은 크기로, 오른쪽 끝에 붙인다.
         일괄버튼 = Button(text="일괄해체", size_hint=(None, 1))

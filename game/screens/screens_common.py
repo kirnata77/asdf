@@ -21,7 +21,7 @@ from kivy.uix.dropdown import DropDown
 from kivy.uix.image import Image
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.scatterlayout import ScatterLayout
-from kivy.metrics import dp
+from kivy.metrics import dp, sp
 from kivy.graphics import Color, Line, Rectangle, RoundedRectangle
 from kivy.utils import escape_markup
 
@@ -547,6 +547,13 @@ def 줄_상자_채우기(상자, 줄들, font_size="13sp", **kwargs):
     상자.clear_widgets()
     for 줄 in 줄들:
         상자.add_widget(가로맞춤_라벨(text=줄, font_size=font_size, **kwargs))
+
+
+def 글자_높이(font_size="15sp", 여백=None):
+    """그 글자 크기 한 줄이 들어가는 버튼/구역 높이 - 글자 줄 높이 + 위아래 여백."""
+    return sp(float(str(font_size).rstrip("sp"))) * 1.25 + (
+        dp(8) if 여백 is None else 여백
+    )
 
 
 def 가운데_라벨(글, font_size="13sp", **kwargs):
