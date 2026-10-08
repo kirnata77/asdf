@@ -242,6 +242,11 @@ class 스모크앱(main.DnfMobileApp):
         assert screens_common.아이템_이름_글(
             gf.아이템_찾기(상태, "강철 소검")
         ).startswith("[color=4d8cff]")
+        # 레전더리는 주황, 크로니클은 빨강(지금 데이터엔 없는 등급 - 표만 확인)
+        for 레어도, 색 in (("레전더리", "ff9a2e"), ("크로니클", "ff4040")):
+            assert screens_common.아이템_이름_글(
+                {"이름": "가상", "레어도": 레어도}
+            ).startswith(f"[color={색}]")
         # 부위 탭 2줄이 화면 안에 다 들어간다(밀어서 넘기지 않음)
         부위 = [t for t in 탭들() if t.group == 탭("무기").group]
         assert [t.text for t in 부위] == sum(gf.상점_탭줄("구매", "장비"), [])
