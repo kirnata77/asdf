@@ -479,6 +479,71 @@ class 기준화면틀(Widget):
             )
 
 
+# =====================================================
+# 마을/던전/전투 화면 배치 - 상단 1170 + 하단 1170, 각각 4줄(기준 화면 픽셀, 2026-10-07
+# 사용자 확정 - .memory/roadmap/game-rules.md "화면 배치"). 기준 화면 틀이 기기에 맞춰
+# 통째로 줄이고 키우므로 여기 길이는 dp가 아니라 기준 화면 픽셀 그대로 쓴다.
+# =====================================================
+상단_높이 = 1170
+하단_높이 = 1170
+정사각형_크기 = 200  # 상단 1줄(파티원/적), 전투 4줄(파티원)
+그림줄_높이 = 385  # 전투 2줄(몬스터 그림), 3줄(파티원 그림)
+상단_그림_높이 = 상단_높이 - 정사각형_크기  # 마을 그림/던전 지도(2~4줄)
+하단_첫줄_높이 = 290  # 마을명 / 위치·걸음수 / 전투 기록
+하단_나머지_높이 = 하단_높이 - 하단_첫줄_높이  # 버튼 등(2~4줄)
+하단_좌우여백 = 16
+
+
+class 고른간격줄(Widget):
+    """자식들을 양 끝과 사이가 모두 같은 간격이 되게 왼쪽부터 놓는다(칸 수가 바뀌면 간격이
+    바뀐다). 자식 폭은 칸폭, 높이는 줄 높이. 넓힘이면 자식 폭을 칸폭 + 간격으로 늘린다 -
+    칸 가운데는 같은 칸 수의 정사각형 줄과 맞는다(전투 그림 줄)."""
+
+    def __init__(self, 칸폭=정사각형_크기, 넓힘=False, **kwargs):
+        super().__init__(**kwargs)
+        self.칸폭 = 칸폭
+        self.넓힘 = 넓힘
+        self.bind(pos=self._배치, size=self._배치, children=self._배치)
+
+    def _배치(self, *args):
+        자식들 = list(reversed(self.children))  # add_widget 순서 = 왼쪽부터
+        n = len(자식들)
+        if not n:
+            return
+        간격 = max(0, (self.width - n * self.칸폭) / (n + 1))
+        폭 = self.칸폭 + (간격 if self.넓힘 else 0)
+        for i, 자식 in enumerate(자식들):
+            가운데 = self.x + 간격 * (i + 1) + self.칸폭 * i + self.칸폭 / 2
+            자식.size_hint = (None, None)
+            자식.size = (폭, self.height)
+            자식.pos = (가운데 - 폭 / 2, self.y)
+
+
+def 가운데_라벨(글, font_size="13sp", **kwargs):
+    라벨 = Label(
+        text=글, font_size=font_size, halign="center", valign="middle", **kwargs
+    )
+    라벨.bind(size=lambda inst, sz: setattr(inst, "text_size", sz))
+    return 라벨
+
+
+def 파티원_정사각형_채우기(줄, 게임상태):
+    """마을/던전 상단 1줄(고른간격줄)을 파티원마다 정사각형(이름, 레벨, HP, MP)으로 채운다."""
+    줄.clear_widgets()
+    for 캐릭터 in 게임상태["파티"]["파티원"]:
+        상자 = _테두리박스((1, 1, 1, 1), padding=dp(2))
+        상자.add_widget(
+            가운데_라벨(
+                f"{캐릭터['캐릭터명']}\n"
+                f"Lv.{캐릭터['레벨']}\n"
+                f"HP {캐릭터['현재HP']}/{gameflow.캐릭터_최대HP(게임상태, 캐릭터)}\n"
+                f"MP {캐릭터['현재MP']}/{gameflow.캐릭터_최대MP(게임상태, 캐릭터)}",
+                font_size="12sp",
+            )
+        )
+        줄.add_widget(상자)
+
+
 def 뒤로키_처리(창, 키, *args):
     if 키 != 27:
         return False

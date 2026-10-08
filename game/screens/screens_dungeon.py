@@ -22,6 +22,15 @@ from game.screens.screens_common import (
     _캐릭터이미지_경로,
     _에셋_경로,
     뒤로키_버튼,
+    고른간격줄,
+    파티원_정사각형_채우기,
+    상단_높이,
+    하단_높이,
+    정사각형_크기,
+    상단_그림_높이,
+    하단_첫줄_높이,
+    하단_나머지_높이,
+    하단_좌우여백,
 )
 
 
@@ -506,28 +515,36 @@ class 던전화면(Screen):
         super().__init__(**kwargs)
         self._대기중오브젝트 = None
 
-        루트 = BoxLayout(orientation="vertical", padding=16, spacing=8)
+        # 상단(1170): 1줄 파티원 정사각형, 2~4줄 지도(1080x970)
+        # 하단(1170): 1줄 위치·걸음수, 2~4줄 방향 버튼/메시지 - screens_common "화면 배치"
+        루트 = BoxLayout(orientation="vertical")
+        상단 = BoxLayout(orientation="vertical", size_hint=(1, None), height=상단_높이)
+        self.파티줄 = 고른간격줄(size_hint=(1, None), height=정사각형_크기)
+        상단.add_widget(self.파티줄)
+        self.지도위젯 = 던전맵위젯(size_hint=(1, None), height=상단_그림_높이)
+        상단.add_widget(self.지도위젯)
+        루트.add_widget(상단)
 
+        하단 = BoxLayout(
+            orientation="vertical",
+            size_hint=(1, None),
+            height=하단_높이,
+            padding=(하단_좌우여백, 0, 하단_좌우여백, 하단_좌우여백),
+            spacing=8,
+        )
         self.상태라벨 = Label(
-            text="",
-            size_hint=(1, 0.14),
-            halign="left",
-            valign="top",
-            font_size="16sp",
+            text="", font_size="18sp", size_hint=(1, 하단_첫줄_높이 / 하단_높이)
         )
-        self.상태라벨.bind(
-            size=lambda *_: setattr(
-                self.상태라벨,
-                "text_size",
-                self.상태라벨.size,
-            )
+        하단.add_widget(self.상태라벨)
+        나머지 = BoxLayout(
+            orientation="vertical",
+            size_hint=(1, 하단_나머지_높이 / 하단_높이),
+            spacing=8,
         )
-        루트.add_widget(self.상태라벨)
+        하단.add_widget(나머지)
+        루트.add_widget(하단)
 
-        self.지도위젯 = 던전맵위젯(size_hint=(1, 0.36))
-        루트.add_widget(self.지도위젯)
-
-        방향틀 = GridLayout(cols=3, size_hint=(1, 0.28), spacing=6)
+        방향틀 = GridLayout(cols=3, size_hint=(1, 0.56), spacing=6)
 
         파티버튼 = Button(text="파티")
         파티버튼.bind(on_release=self._파티_클릭)
@@ -559,10 +576,10 @@ class 던전화면(Screen):
         방향틀.add_widget(아래버튼)
         방향틀.add_widget(Label())
 
-        루트.add_widget(방향틀)
+        나머지.add_widget(방향틀)
 
-        self.메시지라벨 = Label(text="", size_hint=(1, 0.22))
-        루트.add_widget(self.메시지라벨)
+        self.메시지라벨 = Label(text="", size_hint=(1, 0.44))
+        나머지.add_widget(self.메시지라벨)
 
         self.add_widget(루트)
 
@@ -571,14 +588,8 @@ class 던전화면(Screen):
         게임상태 = 앱.게임상태
         던전상태 = 게임상태["던전상태"]
 
-        줄들 = [
-            f"{캐릭터['캐릭터명']} Lv.{캐릭터['레벨']}  "
-            f"HP {캐릭터['현재HP']}/{gameflow.캐릭터_최대HP(게임상태, 캐릭터)}  "
-            f"MP {캐릭터['현재MP']}/{gameflow.캐릭터_최대MP(게임상태, 캐릭터)}"
-            for 캐릭터 in 게임상태["파티"]["파티원"]
-        ]
-        줄들.append(f"위치 {던전상태['위치']}  걸음수 {던전상태['걸음수']}")
-        self.상태라벨.text = "\n".join(줄들)
+        파티원_정사각형_채우기(self.파티줄, 게임상태)
+        self.상태라벨.text = f"위치 {던전상태['위치']}  걸음수 {던전상태['걸음수']}"
         self.지도위젯.갱신(
             던전상태["그리드"],
             던전상태["위치"],

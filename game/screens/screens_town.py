@@ -32,6 +32,15 @@ from game.screens.screens_common import (
     닫기_버튼,
     탭_줄,
     아이템_이름_글,
+    고른간격줄,
+    파티원_정사각형_채우기,
+    상단_높이,
+    하단_높이,
+    정사각형_크기,
+    상단_그림_높이,
+    하단_첫줄_높이,
+    하단_나머지_높이,
+    하단_좌우여백,
 )
 
 
@@ -43,46 +52,45 @@ from game.screens.screens_common import (
 class 마을화면(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        루트 = BoxLayout(orientation="vertical", padding=16, spacing=10)
-
-        # 위에서부터 마을 이름 한 줄 → 파티 4명 → 마을 배경 그림 → 메시지
-        # → 버튼 → 타이틀 버튼. 보유 골드는
-        # 마을 화면에 표시하지 않는다.
-        self.마을명라벨 = Label(
-            text="", size_hint=(1, 0.05), halign="left", valign="middle"
-        )
-        self.마을명라벨.bind(
-            size=lambda *_: setattr(
-                self.마을명라벨,
-                "text_size",
-                self.마을명라벨.size,
-            )
-        )
-        루트.add_widget(self.마을명라벨)
-
-        self.파티라벨 = Label(text="", size_hint=(1, 0.17), halign="left", valign="top")
-        self.파티라벨.bind(
-            size=lambda *_: setattr(
-                self.파티라벨,
-                "text_size",
-                self.파티라벨.size,
-            )
-        )
-        루트.add_widget(self.파티라벨)
-
-        # 배경 그림은 화면 폭에 맞추고 높이는 그림 비율대로 정한다(그림이
-        # 없으면 높이 0으로 접힌다).
+        # 상단(1170): 1줄 파티원 정사각형, 2~4줄 마을 그림(비율 유지, 남는 곳은 비움)
+        # 하단(1170): 1줄 마을 이름, 2~4줄 메시지/버튼/타이틀 - screens_common "화면 배치"
+        루트 = BoxLayout(orientation="vertical")
+        상단 = BoxLayout(orientation="vertical", size_hint=(1, None), height=상단_높이)
+        self.파티줄 = 고른간격줄(size_hint=(1, None), height=정사각형_크기)
+        상단.add_widget(self.파티줄)
         self.배경그림 = Image(
-            allow_stretch=True, keep_ratio=True, size_hint=(1, None), height=dp(0)
+            allow_stretch=True,
+            keep_ratio=True,
+            size_hint=(1, None),
+            height=상단_그림_높이,
         )
-        self.배경그림.bind(width=self._배경높이_맞추기, texture=self._배경높이_맞추기)
         _도트_필터(self.배경그림)
-        루트.add_widget(self.배경그림)
+        상단.add_widget(self.배경그림)
+        루트.add_widget(상단)
 
-        self.메시지라벨 = Label(text="", size_hint=(1, 0.07))
-        루트.add_widget(self.메시지라벨)
+        하단 = BoxLayout(
+            orientation="vertical",
+            size_hint=(1, None),
+            height=하단_높이,
+            padding=(하단_좌우여백, 0, 하단_좌우여백, 하단_좌우여백),
+            spacing=8,
+        )
+        self.마을명라벨 = Label(
+            text="", font_size="22sp", size_hint=(1, 하단_첫줄_높이 / 하단_높이)
+        )
+        하단.add_widget(self.마을명라벨)
+        나머지 = BoxLayout(
+            orientation="vertical",
+            size_hint=(1, 하단_나머지_높이 / 하단_높이),
+            spacing=8,
+        )
+        하단.add_widget(나머지)
+        루트.add_widget(하단)
 
-        버튼그리드 = GridLayout(cols=2, size_hint=(1, 0.42), spacing=8)
+        self.메시지라벨 = Label(text="", size_hint=(1, 0.1))
+        나머지.add_widget(self.메시지라벨)
+
+        버튼그리드 = GridLayout(cols=2, size_hint=(1, 0.72), spacing=8)
 
         휴식버튼 = Button(text="휴식 (HP/MP 전체 회복)")
         휴식버튼.bind(on_release=self._휴식)
@@ -124,13 +132,13 @@ class 마을화면(Screen):
         창고버튼 = Button(text="창고 (미구현)", disabled=True)
         버튼그리드.add_widget(창고버튼)
 
-        루트.add_widget(버튼그리드)
+        나머지.add_widget(버튼그리드)
 
-        타이틀버튼 = Button(text="타이틀로 돌아가기", size_hint=(1, 0.12))
+        타이틀버튼 = Button(text="타이틀로 돌아가기", size_hint=(1, 0.18))
         타이틀버튼.bind(
             on_release=lambda *_: setattr(self.manager, "current", "메인메뉴")
         )
-        루트.add_widget(타이틀버튼)
+        나머지.add_widget(타이틀버튼)
 
         self.add_widget(루트)
 
@@ -145,24 +153,8 @@ class 마을화면(Screen):
 
         경로 = _에셋_경로("town", 마을정보.get("배경이미지"))
         self.배경그림.source = 경로 or ""
-        self._배경높이_맞추기()
-
-        줄들 = []
-        for 캐릭터 in 게임상태["파티"]["파티원"]:
-            줄들.append(
-                f"{캐릭터['캐릭터명']} ({gameflow.캐릭터_직업표시(캐릭터)})  Lv.{캐릭터['레벨']}  "
-                f"HP {캐릭터['현재HP']}/{gameflow.캐릭터_최대HP(게임상태, 캐릭터)}  "
-                f"MP {캐릭터['현재MP']}/{gameflow.캐릭터_최대MP(게임상태, 캐릭터)}"
-            )
-        self.파티라벨.text = "\n".join(줄들)
+        파티원_정사각형_채우기(self.파티줄, 게임상태)
         self.메시지라벨.text = ""
-
-    def _배경높이_맞추기(self, *args):
-        텍스처 = self.배경그림.texture
-        if self.배경그림.source and 텍스처 is not None and 텍스처.width:
-            self.배경그림.height = self.배경그림.width * 텍스처.height / 텍스처.width
-        else:
-            self.배경그림.height = 0
 
     def on_pre_enter(self, *args):
         self.갱신()

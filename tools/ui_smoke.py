@@ -149,6 +149,7 @@ class 스모크앱(main.DnfMobileApp):
         yield from self._단계_목록_스크롤(상태, 매니저)
         yield from self._단계_세이브(상태, 매니저)
         yield from self._단계_설정(매니저)
+        yield from self._단계_화면_배치(상태, 매니저)
         yield from self._단계_던전목록(상태, 매니저)
         yield from self._단계_화면_틀(매니저)
 
@@ -1469,6 +1470,76 @@ class 스모크앱(main.DnfMobileApp):
             gf.반응_자동_설정(원래반응)
             shutil.rmtree(폴더, ignore_errors=True)
             매니저.current = "마을"
+
+    def _단계_화면_배치(self, 상태, 매니저):
+        """마을/던전/전투 - 상단 1170(4줄) + 하단 1170(4줄), 정사각형 200은 같은 간격"""
+        sc = screens_common
+
+        def 같은간격(줄, 칸수):
+            칸들 = sorted(줄.children, key=lambda w: w.x)
+            assert len(칸들) == 칸수, (len(칸들), 칸수)
+            for 칸 in 칸들:
+                assert (
+                    abs(칸.width - sc.정사각형_크기) < 1
+                    and abs(칸.height - sc.정사각형_크기) < 1
+                ), 칸.size
+            간격 = (
+                [칸들[0].x - 줄.x]
+                + [b.x - a.right for a, b in zip(칸들, 칸들[1:])]
+                + [줄.right - 칸들[-1].right]
+            )
+            assert max(간격) - min(간격) < 1.5, 간격
+            return 칸들
+
+        # 마을: 1줄 파티원 정사각형(위 끝), 2~4줄 마을 그림 970, 하단 1줄 마을 이름
+        매니저.current = "마을"
+        마을 = 매니저.get_screen("마을")
+        마을.갱신()
+        yield 0.4
+        파티수 = len(상태["파티"]["파티원"])
+        같은간격(마을.파티줄, 파티수)
+        assert abs(마을.파티줄.top - sc.기준화면_높이) < 1, 마을.파티줄.top
+        assert abs(마을.배경그림.height - sc.상단_그림_높이) < 1
+        assert abs(마을.배경그림.y - sc.하단_높이) < 1, 마을.배경그림.y
+        assert 마을.마을명라벨.top <= sc.하단_높이 + 1 and "[" in 마을.마을명라벨.text
+        _찍기("layout_town")
+
+        # 던전: 1줄 파티원, 2~4줄 지도 970, 하단 1줄 위치/걸음수
+        gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
+        매니저.current = "던전"
+        던전 = 매니저.get_screen("던전")
+        던전.갱신()
+        yield 0.4
+        같은간격(던전.파티줄, 파티수)
+        assert abs(던전.지도위젯.height - sc.상단_그림_높이) < 1
+        assert abs(던전.지도위젯.y - sc.하단_높이) < 1
+        assert 던전.상태라벨.text.startswith("위치"), 던전.상태라벨.text
+        _찍기("layout_dungeon")
+
+        # 전투: 적 정사각형 / 몬스터 그림 385 / 파티원 그림 385 / 파티원 정사각형, 하단 1줄 전투 기록
+        gf.전투_시작(상태, ["고블린", "고블린", "고블린 투척병"], 레벨=1, 차수=1)
+        support.반응_처리(상태)
+        매니저.current = "전투"
+        전투 = 매니저.get_screen("전투")
+        전투.갱신(신규=True)
+        yield 0.6
+        적칸 = 같은간격(전투.적상태틀, 3)
+        아군칸 = 같은간격(전투.아군상태틀, len(gf.아군_목록(상태)))
+        assert abs(전투.적상태틀.top - sc.기준화면_높이) < 1
+        for 줄, 칸들 in ((전투.적그래픽행, 적칸), (전투.아군그래픽행, 아군칸)):
+            assert abs(줄.height - sc.그림줄_높이) < 1, 줄.height
+            그림칸 = sorted(줄.children, key=lambda w: w.x)
+            assert [round(w.center_x) for w in 그림칸] == [
+                round(w.center_x) for w in 칸들
+            ]
+        assert abs(전투.아군상태틀.y - sc.하단_높이) < 1, 전투.아군상태틀.y
+        _찍기("layout_battle")
+        상태["전투상태"] = None
+        상태["던전상태"] = None
+        매니저.current = "마을"
+        결과["단계"].append(
+            "화면 배치(마을/던전/전투 상단 4줄 + 하단, 정사각형 200 같은 간격, 그림 970/385)"
+        )
 
     def _단계_던전목록(self, 상태, 매니저):
         """던전 이동 목록 - 바로 앞 번호 던전 보스를 안 깬 던전은 비활성"""
