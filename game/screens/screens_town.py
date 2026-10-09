@@ -50,6 +50,7 @@ from game.screens.screens_common import (
 # =====================================================
 
 
+버튼_간격 = 8  # 마을 버튼 사이, 마을 그림과 버튼 사이
 하단_버튼_높이 = (
     785  # 휴식~창고 5줄 + 타이틀(예전 하단 880 구역에서 메시지 칸을 뺀 크기)
 )
@@ -66,7 +67,10 @@ class 마을화면(Screen):
         self.파티줄 = 파티칸줄(size_hint=(1, None), height=정사각형_크기)
         상단.add_widget(self.파티줄)
         그림칸 = AnchorLayout(
-            anchor_y="bottom", size_hint=(1, None), height=상단_그림_높이
+            anchor_y="bottom",
+            size_hint=(1, None),
+            height=상단_그림_높이,
+            padding=(하단_좌우여백, 0, 하단_좌우여백, 0),  # 양 옆 끝을 버튼과 맞춘다
         )
         self.배경그림 = Image(
             allow_stretch=True,
@@ -86,21 +90,22 @@ class 마을화면(Screen):
             orientation="vertical",
             size_hint=(1, None),
             height=하단_높이,
-            padding=(하단_좌우여백, 8, 하단_좌우여백, 하단_좌우여백),
-            spacing=8,
+            # 그림과 버튼 사이도 버튼 사이 간격과 같게
+            padding=(하단_좌우여백, 버튼_간격, 하단_좌우여백, 하단_좌우여백),
+            spacing=버튼_간격,
         )
         나머지 = BoxLayout(
             orientation="vertical",
             size_hint=(1, None),
             height=하단_버튼_높이,
-            spacing=8,
+            spacing=버튼_간격,
         )
         하단.add_widget(나머지)
         self.메시지라벨 = Label(text="")
         하단.add_widget(self.메시지라벨)
         루트.add_widget(하단)
 
-        버튼그리드 = GridLayout(cols=2, size_hint=(1, 0.8), spacing=8)
+        버튼그리드 = GridLayout(cols=2, size_hint=(1, 0.8), spacing=버튼_간격)
 
         휴식버튼 = Button(text="휴식 (HP/MP 전체 회복)")
         휴식버튼.bind(on_release=self._휴식)

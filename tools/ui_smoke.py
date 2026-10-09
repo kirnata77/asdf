@@ -1646,13 +1646,24 @@ class 스모크앱(main.DnfMobileApp):
         assert abs(그림.height - 그림.width / 그림.image_ratio) < 1, 그림.size
         assert abs(그림.y - sc.하단_높이) < 1, 그림.y  # 칸 아래에 붙는다(빈 곳은 위)
         assert abs(그림.norm_image_size[1] - 그림.height) < 1, 그림.norm_image_size
+        # 양 옆 끝은 버튼과 같은 16 여백
+        assert abs(그림.x - sc.하단_좌우여백) < 1, 그림.x
+        assert abs(그림.right - (sc.기준화면_폭 - sc.하단_좌우여백)) < 1, 그림.right
         assert not hasattr(마을, "마을명라벨")
         버튼구역 = next(
             w for w in 마을.메시지라벨.parent.children if w is not 마을.메시지라벨
         )
-        assert abs(버튼구역.top - (sc.하단_높이 - 8)) < 1, (
-            버튼구역.top
-        )  # 그림 바로 아래
+        # 그림과 버튼 사이 = 버튼 사이 간격, 버튼 양 옆 끝 = 그림 양 옆 끝
+        from game.screens import screens_town
+
+        간격 = screens_town.버튼_간격
+        assert abs(버튼구역.top - (sc.하단_높이 - 간격)) < 1, 버튼구역.top
+        버튼들 = sorted(
+            (w for w in 버튼구역.walk(restrict=True) if isinstance(w, Button)),
+            key=lambda w: (-w.y, w.x),
+        )
+        assert abs(버튼들[0].y - 버튼들[2].top - 간격) < 1, (버튼들[0].y, 버튼들[2].top)
+        assert abs(버튼들[0].x - 그림.x) < 1 and abs(버튼들[1].right - 그림.right) < 1
         assert 마을.메시지라벨.top <= 버튼구역.y + 1, (마을.메시지라벨.top, 버튼구역.y)
         # 칸 글은 줄마다 한 줄 - 칸 폭보다 긴 글은 가로로 눌려 칸 폭 안에 그려진다
         줄라벨 = [
