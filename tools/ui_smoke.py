@@ -1633,7 +1633,7 @@ class 스모크앱(main.DnfMobileApp):
                 assert abs(칸들[0].x - 줄.x - sc.하단_좌우여백) < 1, 칸들[0].x
             return 칸들
 
-        # 마을: 1줄 파티원 상자(위 끝), 2~4줄 마을 그림 970, 하단은 버튼 구역(880)을 세로 가운데
+        # 마을: 1줄 파티원 상자(위 끝), 2~4줄 마을 그림(970 칸 아래에 붙음), 하단은 버튼이 위에 붙고 메시지는 그 아래
         매니저.current = "마을"
         마을 = 매니저.get_screen("마을")
         마을.갱신()
@@ -1641,12 +1641,19 @@ class 스모크앱(main.DnfMobileApp):
         파티수 = len(상태["파티"]["파티원"])
         파티칸(마을.파티줄, 파티수)
         assert abs(마을.파티줄.top - sc.기준화면_높이) < 1, 마을.파티줄.top
-        assert abs(마을.배경그림.height - sc.상단_그림_높이) < 1
-        assert abs(마을.배경그림.y - sc.하단_높이) < 1, 마을.배경그림.y
+        그림 = 마을.배경그림
+        assert 그림.image_ratio > 1.5  # 헨돈마이어 720x342 - 970 칸보다 낮은 그림
+        assert abs(그림.height - 그림.width / 그림.image_ratio) < 1, 그림.size
+        assert abs(그림.y - sc.하단_높이) < 1, 그림.y  # 칸 아래에 붙는다(빈 곳은 위)
+        assert abs(그림.norm_image_size[1] - 그림.height) < 1, 그림.norm_image_size
         assert not hasattr(마을, "마을명라벨")
-        버튼구역 = 마을.메시지라벨.parent
-        assert abs(버튼구역.height - sc.하단_나머지_높이) < 1, 버튼구역.height
-        assert abs(버튼구역.center_y - sc.하단_높이 / 2) < 1, 버튼구역.center_y
+        버튼구역 = next(
+            w for w in 마을.메시지라벨.parent.children if w is not 마을.메시지라벨
+        )
+        assert abs(버튼구역.top - (sc.하단_높이 - 8)) < 1, (
+            버튼구역.top
+        )  # 그림 바로 아래
+        assert 마을.메시지라벨.top <= 버튼구역.y + 1, (마을.메시지라벨.top, 버튼구역.y)
         # 칸 글은 줄마다 한 줄 - 칸 폭보다 긴 글은 가로로 눌려 칸 폭 안에 그려진다
         줄라벨 = [
             w

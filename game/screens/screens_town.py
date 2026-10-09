@@ -4,6 +4,7 @@
 # main.py가 game/screens/ 여섯 파일의 화면을 ScreenManager에 등록한다.
 
 from kivy.app import App
+from kivy.clock import Clock
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
@@ -40,7 +41,6 @@ from game.screens.screens_common import (
     하단_높이,
     정사각형_크기,
     상단_그림_높이,
-    하단_나머지_높이,
     하단_좌우여백,
 )
 
@@ -50,44 +50,57 @@ from game.screens.screens_common import (
 # =====================================================
 
 
+하단_버튼_높이 = (
+    785  # 휴식~창고 5줄 + 타이틀(예전 하단 880 구역에서 메시지 칸을 뺀 크기)
+)
+
+
 class 마을화면(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # 상단(1170): 1줄 파티원 정사각형, 2~4줄 마을 그림(비율 유지, 남는 곳은 비움)
-        # 하단(1170): 메시지/버튼/타이틀(880)을 세로 가운데 - 마을 이름 줄은 없다(2026-10-09)
+        # 상단(1170): 1줄 파티원 상자, 2~4줄 마을 그림(비율 유지, 970 칸의 아래에 붙이고 남는 위는 비움)
+        # 하단(1170): 버튼/타이틀을 위에 붙이고(그림과 사이에 검은 곳 없이), 메시지는 그 아래
+        # - 마을 이름 줄은 없다(2026-10-09 사용자 요청)
         루트 = BoxLayout(orientation="vertical")
         상단 = BoxLayout(orientation="vertical", size_hint=(1, None), height=상단_높이)
         self.파티줄 = 파티칸줄(size_hint=(1, None), height=정사각형_크기)
         상단.add_widget(self.파티줄)
+        그림칸 = AnchorLayout(
+            anchor_y="bottom", size_hint=(1, None), height=상단_그림_높이
+        )
         self.배경그림 = Image(
             allow_stretch=True,
             keep_ratio=True,
             size_hint=(1, None),
             height=상단_그림_높이,
         )
+        # 폭/그림이 바뀐 다음 프레임에 한 번 - 배치 중간값(기본 폭 100)으로 남지 않게
+        self._그림_높이_예약 = Clock.create_trigger(self._그림_높이)
+        self.배경그림.bind(texture=self._그림_높이_예약, size=self._그림_높이_예약)
         _도트_필터(self.배경그림)
-        상단.add_widget(self.배경그림)
+        그림칸.add_widget(self.배경그림)
+        상단.add_widget(그림칸)
         루트.add_widget(상단)
 
-        하단 = AnchorLayout(
-            anchor_y="center",
+        하단 = BoxLayout(
+            orientation="vertical",
             size_hint=(1, None),
             height=하단_높이,
-            padding=(하단_좌우여백, 0, 하단_좌우여백, 0),
+            padding=(하단_좌우여백, 8, 하단_좌우여백, 하단_좌우여백),
+            spacing=8,
         )
         나머지 = BoxLayout(
             orientation="vertical",
             size_hint=(1, None),
-            height=하단_나머지_높이,
+            height=하단_버튼_높이,
             spacing=8,
         )
         하단.add_widget(나머지)
+        self.메시지라벨 = Label(text="")
+        하단.add_widget(self.메시지라벨)
         루트.add_widget(하단)
 
-        self.메시지라벨 = Label(text="", size_hint=(1, 0.1))
-        나머지.add_widget(self.메시지라벨)
-
-        버튼그리드 = GridLayout(cols=2, size_hint=(1, 0.72), spacing=8)
+        버튼그리드 = GridLayout(cols=2, size_hint=(1, 0.8), spacing=8)
 
         휴식버튼 = Button(text="휴식 (HP/MP 전체 회복)")
         휴식버튼.bind(on_release=self._휴식)
@@ -131,13 +144,19 @@ class 마을화면(Screen):
 
         나머지.add_widget(버튼그리드)
 
-        타이틀버튼 = Button(text="타이틀로 돌아가기", size_hint=(1, 0.18))
+        타이틀버튼 = Button(text="타이틀로 돌아가기", size_hint=(1, 0.2))
         타이틀버튼.bind(
             on_release=lambda *_: setattr(self.manager, "current", "메인메뉴")
         )
         나머지.add_widget(타이틀버튼)
 
         self.add_widget(루트)
+
+    def _그림_높이(self, *args):
+        """마을 그림 높이를 비율대로(최대 970) - 칸 아래에 붙어 버튼과 사이가 비지 않는다."""
+        비율 = self.배경그림.image_ratio
+        높이 = self.배경그림.width / 비율 if 비율 else 상단_그림_높이
+        self.배경그림.height = min(상단_그림_높이, 높이)
 
     def 갱신(self):
         앱 = App.get_running_app()
