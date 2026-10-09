@@ -520,6 +520,35 @@ class 고른간격줄(Widget):
             자식.pos = (가운데 - 폭 / 2, self.y)
 
 
+파티칸_틈 = 8  # 파티원 상자 사이 틈(양 끝은 하단_좌우여백)
+
+
+class 파티칸줄(Widget):
+    """파티원 상자 줄(마을/던전 상단 1줄, 전투 3~4줄) - 최대 인원(4명)이 양 끝 여백
+    하단_좌우여백과 사이 틈 파티칸_틈만 남기고 줄 폭을 꽉 채우는 폭으로 놓는다.
+    인원이 적으면 같은 폭 그대로 가운데에 모은다. 높이는 줄 높이(2026-10-09 사용자 요청)."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bind(pos=self._배치, size=self._배치, children=self._배치)
+
+    def 칸폭(self):
+        최대 = gameflow.파티_최대인원
+        return (self.width - 2 * 하단_좌우여백 - (최대 - 1) * 파티칸_틈) / 최대
+
+    def _배치(self, *args):
+        자식들 = list(reversed(self.children))  # add_widget 순서 = 왼쪽부터
+        n = len(자식들)
+        if not n:
+            return
+        폭 = self.칸폭()
+        왼쪽 = self.x + (self.width - n * 폭 - (n - 1) * 파티칸_틈) / 2
+        for i, 자식 in enumerate(자식들):
+            자식.size_hint = (None, None)
+            자식.size = (폭, self.height)
+            자식.pos = (왼쪽 + i * (폭 + 파티칸_틈), self.y)
+
+
 class 가로맞춤_라벨(Label):
     """한 줄 라벨 - 글이 라벨 폭보다 길면 글자 높이는 그대로 두고 가로로만 눌러 폭에 맞춘다
     (긴 직업명 "엘리멘탈마스터"가 정사각형에서 줄바꿈되지 않게). 짧으면 그대로."""

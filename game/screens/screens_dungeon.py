@@ -22,7 +22,7 @@ from game.screens.screens_common import (
     _캐릭터이미지_경로,
     _에셋_경로,
     뒤로키_버튼,
-    고른간격줄,
+    파티칸줄,
     파티원_정사각형_채우기,
     상단_높이,
     하단_높이,
@@ -522,7 +522,7 @@ class 던전화면(Screen):
         # 하단(1170): 1줄 위치·걸음수, 2~4줄 방향 버튼/메시지 - screens_common "화면 배치"
         루트 = BoxLayout(orientation="vertical")
         상단 = BoxLayout(orientation="vertical", size_hint=(1, None), height=상단_높이)
-        self.파티줄 = 고른간격줄(size_hint=(1, None), height=정사각형_크기)
+        self.파티줄 = 파티칸줄(size_hint=(1, None), height=정사각형_크기)
         상단.add_widget(self.파티줄)
         self.지도위젯 = 던전맵위젯(size_hint=(1, None), height=상단_그림_높이)
         상단.add_widget(self.지도위젯)

@@ -232,7 +232,7 @@
 #     │   │                  asset_tile_tree.webp    나무 (8x16, 세로 2칸)
 #     │   │                  asset_tile_gate_grandflores.webp 게이트 - 그란플로리스 (8x16, 세로 2칸, 공용)
 #     │   │                  asset_tile_gate_skycastle.webp 게이트 - 하늘성 (64x64, 한 칸, 투명 배경)
-#     │   │                  asset_tile_prison_seria.webp 감옥 - 세리아 (16x16, 오브젝트 "타일크기" 2)
+#     │   │                  asset_tile_prison_seria.webp 감옥 - 세리아 (96x96, 오브젝트 "타일크기" 2)
 #     │   │                  asset_tile_prison_lorien.webp 감옥 - 로리안 (128x128, 투명 배경, 아몬 하층 보스 "타일크기" 2)
 #     │   │                  asset_tile_emerald.webp 하늘성 탑 발판 - 에메랄드빛 돌 (8x8, 하늘성 탑 4곳의 "타일")
 #     │   │                  asset_tile_skyyellow.webp 하늘 - 노을빛 (8x8, 하늘성 탑 4곳의 "타일")
@@ -242,7 +242,7 @@
 #     │   └── town/       마을 배경 그림 (asset_town_*.webp)
 #     │                      asset_town_elvengard.webp   엘븐가드 (720x350)
 #     │                      asset_town_hendonmyre.webp  헨돈마이어 (720x342)
-#     │                      asset_town_westcoast.webp   웨스트코스트 (임시 - 헨돈마이어 복사본)
+#     │                      asset_town_westcoast.webp   웨스트코스트 (1323x1189, 항구)
 #     └── __init__.py
 #
 # 주의: assets/font/ 안에는 폰트 파일(.ttf/.otf)만 둔다. 문서·노트

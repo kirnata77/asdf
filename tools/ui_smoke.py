@@ -1615,18 +1615,59 @@ class 스모크앱(main.DnfMobileApp):
             assert max(간격) - min(간격) < 1.5, 간격
             return 칸들
 
-        # 마을: 1줄 파티원 정사각형(위 끝), 2~4줄 마을 그림 970, 하단 1줄 마을 이름
+        def 파티칸(줄, 칸수):
+            """파티원 상자 - 4명이면 양 끝 16, 사이 8만 남기고 줄을 꽉 채운다(폭 256)."""
+            칸들 = sorted(줄.children, key=lambda w: w.x)
+            assert len(칸들) == 칸수, (len(칸들), 칸수)
+            폭 = (줄.width - 2 * sc.하단_좌우여백 - 3 * sc.파티칸_틈) / 4
+            assert abs(폭 - 256) < 1, 폭
+            for 칸 in 칸들:
+                assert abs(칸.width - 폭) < 1 and abs(칸.height - 줄.height) < 1, (
+                    칸.size
+                )
+            assert all(
+                abs(b.x - a.right - sc.파티칸_틈) < 1 for a, b in zip(칸들, 칸들[1:])
+            ), [c.x for c in 칸들]
+            assert abs((칸들[0].x - 줄.x) - (줄.right - 칸들[-1].right)) < 1  # 가운데
+            if 칸수 == 4:
+                assert abs(칸들[0].x - 줄.x - sc.하단_좌우여백) < 1, 칸들[0].x
+            return 칸들
+
+        # 마을: 1줄 파티원 상자(위 끝), 2~4줄 마을 그림(970 칸 아래에 붙음), 하단은 버튼이 위에 붙고 메시지는 그 아래
         매니저.current = "마을"
         마을 = 매니저.get_screen("마을")
         마을.갱신()
         yield 0.4
         파티수 = len(상태["파티"]["파티원"])
-        같은간격(마을.파티줄, 파티수)
+        파티칸(마을.파티줄, 파티수)
         assert abs(마을.파티줄.top - sc.기준화면_높이) < 1, 마을.파티줄.top
-        assert abs(마을.배경그림.height - sc.상단_그림_높이) < 1
-        assert abs(마을.배경그림.y - sc.하단_높이) < 1, 마을.배경그림.y
-        assert 마을.마을명라벨.top <= sc.하단_높이 + 1 and "[" in 마을.마을명라벨.text
-        # 칸 글은 줄마다 한 줄 - 긴 이름("엘리멘탈마스터")은 가로로 눌려 칸 폭 안에 그려진다
+        그림 = 마을.배경그림
+        assert 그림.image_ratio > 1.5  # 헨돈마이어 720x342 - 970 칸보다 낮은 그림
+        assert abs(그림.height - 그림.width / 그림.image_ratio) < 1, 그림.size
+        assert abs(그림.y - sc.하단_높이) < 1, 그림.y  # 칸 아래에 붙는다(빈 곳은 위)
+        assert abs(그림.norm_image_size[1] - 그림.height) < 1, 그림.norm_image_size
+        # 양 옆 끝은 버튼과 같은 16 여백
+        assert abs(그림.x - sc.하단_좌우여백) < 1, 그림.x
+        assert abs(그림.right - (sc.기준화면_폭 - sc.하단_좌우여백)) < 1, 그림.right
+        assert not hasattr(마을, "마을명라벨")
+        버튼구역 = next(
+            w for w in 마을.메시지라벨.parent.children if w is not 마을.메시지라벨
+        )
+        # 그림과 버튼 사이 16, 버튼 사이 8, 버튼 양 옆 끝 = 그림 양 옆 끝
+        from game.screens import screens_town
+
+        간격 = screens_town.버튼_간격
+        assert abs(그림.y - 버튼구역.top - screens_town.그림_버튼_간격) < 1, (
+            버튼구역.top
+        )
+        버튼들 = sorted(
+            (w for w in 버튼구역.walk(restrict=True) if isinstance(w, Button)),
+            key=lambda w: (-w.y, w.x),
+        )
+        assert abs(버튼들[0].y - 버튼들[2].top - 간격) < 1, (버튼들[0].y, 버튼들[2].top)
+        assert abs(버튼들[0].x - 그림.x) < 1 and abs(버튼들[1].right - 그림.right) < 1
+        assert 마을.메시지라벨.top <= 버튼구역.y + 1, (마을.메시지라벨.top, 버튼구역.y)
+        # 칸 글은 줄마다 한 줄 - 칸 폭보다 긴 글은 가로로 눌려 칸 폭 안에 그려진다
         줄라벨 = [
             w
             for w in 마을.파티줄.walk(restrict=True)
@@ -1639,26 +1680,29 @@ class 스모크앱(main.DnfMobileApp):
                 라벨.texture_size,
                 라벨.width,
             )
-        긴이름 = next(r for r in 줄라벨 if r.text == "엘리멘탈마스터")
-        assert 긴이름.texture.size[0] > 긴이름.texture_size[0], "긴 이름이 눌리지 않음"
-        assert 긴이름.texture.size[1] == 긴이름.texture_size[1]  # 높이는 그대로
-        짧은 = [r for r in 줄라벨 if r.texture.size[0] <= r.width - r.여백]
-        assert 짧은 and all(list(r.texture_size) == list(r.texture.size) for r in 짧은)
+        # 상자가 256으로 넓어져 "엘리멘탈마스터"도 그대로 들어간다 - 폭보다 긴 줄만 눌린다
+        for r in 줄라벨:
+            기대 = [min(r.texture.size[0], r.width - r.여백), r.texture.size[1]]
+            assert all(abs(x - y) < 1 for x, y in zip(r.texture_size, 기대)), (
+                r.text,
+                r.texture_size,
+                r.texture.size,
+            )
         _찍기("layout_town")
 
-        # 던전: 1줄 파티원, 2~4줄 지도 970, 하단 1줄 위치/걸음수
+        # 던전: 1줄 파티원 상자, 2~4줄 지도 970, 하단 1줄 위치/걸음수
         gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
         매니저.current = "던전"
         던전 = 매니저.get_screen("던전")
         던전.갱신()
         yield 0.4
-        같은간격(던전.파티줄, 파티수)
+        파티칸(던전.파티줄, 파티수)
         assert abs(던전.지도위젯.height - sc.상단_그림_높이) < 1
         assert abs(던전.지도위젯.y - sc.하단_높이) < 1
         assert 던전.상태라벨.text.startswith("위치"), 던전.상태라벨.text
         _찍기("layout_dungeon")
 
-        # 전투: 적 정사각형 / 몬스터 그림 385 / 파티원 그림 385 / 파티원 정사각형, 하단 1줄 전투 기록
+        # 전투: 적 정사각형 / 몬스터 그림 385 / 파티원 그림 385 / 파티원 상자, 하단 1줄 전투 기록
         gf.전투_시작(상태, ["고블린", "고블린", "고블린 투척병"], 레벨=1, 차수=1)
         support.반응_처리(상태)
         매니저.current = "전투"
@@ -1666,7 +1710,8 @@ class 스모크앱(main.DnfMobileApp):
         전투.갱신(신규=True)
         yield 0.6
         적칸 = 같은간격(전투.적상태틀, 3)
-        아군칸 = 같은간격(전투.아군상태틀, len(gf.아군_목록(상태)))
+        아군칸 = 파티칸(전투.아군상태틀, len(gf.아군_목록(상태)))
+        파티칸(전투.아군그래픽행, len(아군칸))
         assert abs(전투.적상태틀.top - sc.기준화면_높이) < 1
         for 줄, 칸들 in ((전투.적그래픽행, 적칸), (전투.아군그래픽행, 아군칸)):
             assert abs(줄.height - sc.그림줄_높이) < 1, 줄.height
@@ -1693,7 +1738,7 @@ class 스모크앱(main.DnfMobileApp):
         상태["던전상태"] = None
         매니저.current = "마을"
         결과["단계"].append(
-            "화면 배치(마을/던전/전투 상단 4줄 + 하단, 정사각형 200 같은 간격, 그림 970/385)"
+            "화면 배치(마을/던전/전투 상단 4줄 + 하단, 적 정사각형 200 같은 간격, 파티원 상자 256 꽉 채움, 마을 버튼 세로 가운데, 그림 970/385)"
         )
 
     def _단계_던전목록(self, 상태, 매니저):
