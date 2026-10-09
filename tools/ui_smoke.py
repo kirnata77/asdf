@@ -1653,11 +1653,13 @@ class 스모크앱(main.DnfMobileApp):
         버튼구역 = next(
             w for w in 마을.메시지라벨.parent.children if w is not 마을.메시지라벨
         )
-        # 그림과 버튼 사이 = 버튼 사이 간격, 버튼 양 옆 끝 = 그림 양 옆 끝
+        # 그림과 버튼 사이 16, 버튼 사이 8, 버튼 양 옆 끝 = 그림 양 옆 끝
         from game.screens import screens_town
 
         간격 = screens_town.버튼_간격
-        assert abs(버튼구역.top - (sc.하단_높이 - 간격)) < 1, 버튼구역.top
+        assert abs(그림.y - 버튼구역.top - screens_town.그림_버튼_간격) < 1, (
+            버튼구역.top
+        )
         버튼들 = sorted(
             (w for w in 버튼구역.walk(restrict=True) if isinstance(w, Button)),
             key=lambda w: (-w.y, w.x),
