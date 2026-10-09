@@ -240,7 +240,7 @@
 #     │   │                  asset_tile_skycastlewall.webp 하늘성 벽 - 노란 벽돌 (8x8, 하늘성 탑 4곳의 "타일")
 #     │   ├── monster/     몬스터 이미지 (asset_monster_*.webp)
 #     │   └── town/       마을 배경 그림 (asset_town_*.webp)
-#     │                      asset_town_elvengard.webp   엘븐가드 (720x350)
+#     │                      asset_town_elvengard.webp   엘븐가드 (1323x1189, 숲 마을)
 #     │                      asset_town_hendonmyre.webp  헨돈마이어 (720x342)
 #     │                      asset_town_westcoast.webp   웨스트코스트 (1323x1189, 항구)
 #     └── __init__.py
