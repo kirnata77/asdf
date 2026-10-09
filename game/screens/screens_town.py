@@ -4,6 +4,7 @@
 # main.py가 game/screens/ 여섯 파일의 화면을 ScreenManager에 등록한다.
 
 from kivy.app import App
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
@@ -33,13 +34,12 @@ from game.screens.screens_common import (
     탭_줄,
     글자_높이,
     아이템_이름_글,
-    고른간격줄,
+    파티칸줄,
     파티원_정사각형_채우기,
     상단_높이,
     하단_높이,
     정사각형_크기,
     상단_그림_높이,
-    하단_첫줄_높이,
     하단_나머지_높이,
     하단_좌우여백,
 )
@@ -54,10 +54,10 @@ class 마을화면(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # 상단(1170): 1줄 파티원 정사각형, 2~4줄 마을 그림(비율 유지, 남는 곳은 비움)
-        # 하단(1170): 1줄 마을 이름, 2~4줄 메시지/버튼/타이틀 - screens_common "화면 배치"
+        # 하단(1170): 메시지/버튼/타이틀(880)을 세로 가운데 - 마을 이름 줄은 없다(2026-10-09)
         루트 = BoxLayout(orientation="vertical")
         상단 = BoxLayout(orientation="vertical", size_hint=(1, None), height=상단_높이)
-        self.파티줄 = 고른간격줄(size_hint=(1, None), height=정사각형_크기)
+        self.파티줄 = 파티칸줄(size_hint=(1, None), height=정사각형_크기)
         상단.add_widget(self.파티줄)
         self.배경그림 = Image(
             allow_stretch=True,
@@ -69,20 +69,16 @@ class 마을화면(Screen):
         상단.add_widget(self.배경그림)
         루트.add_widget(상단)
 
-        하단 = BoxLayout(
-            orientation="vertical",
+        하단 = AnchorLayout(
+            anchor_y="center",
             size_hint=(1, None),
             height=하단_높이,
-            padding=(하단_좌우여백, 0, 하단_좌우여백, 하단_좌우여백),
-            spacing=8,
+            padding=(하단_좌우여백, 0, 하단_좌우여백, 0),
         )
-        self.마을명라벨 = Label(
-            text="", font_size="22sp", size_hint=(1, 하단_첫줄_높이 / 하단_높이)
-        )
-        하단.add_widget(self.마을명라벨)
         나머지 = BoxLayout(
             orientation="vertical",
-            size_hint=(1, 하단_나머지_높이 / 하단_높이),
+            size_hint=(1, None),
+            height=하단_나머지_높이,
             spacing=8,
         )
         하단.add_widget(나머지)
@@ -150,7 +146,6 @@ class 마을화면(Screen):
             return
 
         마을정보 = gameflow.현재_마을정보(게임상태)
-        self.마을명라벨.text = f"[ {마을정보['마을명']} ]"
 
         경로 = _에셋_경로("town", 마을정보.get("배경이미지"))
         self.배경그림.source = 경로 or ""

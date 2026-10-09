@@ -22,12 +22,16 @@ from game.system import (
     character_creation_system as 캐릭터생성,
     drink_system,
     equipment_system,
+    party_system,
     player_system,
     shop_system,
 )
 from game.controller.ctl_registry import 전직_레지스트리, 직업_레지스트리
 
+파티_최대인원 = party_system.파티_최대인원  # 화면의 파티원 상자 폭(4칸 기준)
+
 __all__ = [
+    "파티_최대인원",
     "캐릭터_생성",
     "장비데이터모음_생성",
     "캐릭터_장비데이터",

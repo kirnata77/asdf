@@ -29,6 +29,7 @@ from game.screens.screens_common import (
     뒤로키_버튼,
     아이템_이름_글_찾아서,
     고른간격줄,
+    파티칸줄,
     상단_높이,
     하단_높이,
     정사각형_크기,
@@ -310,18 +311,16 @@ class 전투화면(Screen):
 
         # 상단(1170): 1줄 적 정사각형, 2줄 몬스터 그림, 3줄 파티원 그림, 4줄 파티원 정사각형.
         # 하단(1170): 1줄 전투 기록, 2~4줄 안내/행동 버튼 - screens_common "화면 배치".
-        # 칸은 수가 다르면 간격이 바뀐다(고른간격줄). 그림 칸은 위아래 정사각형과 가운데가 맞는다.
+        # 적 칸은 수가 다르면 간격이 바뀐다(고른간격줄), 아군 칸은 4명 기준 폭(파티칸줄). 그림 칸은 위아래 칸과 가운데가 맞는다.
         루트 = BoxLayout(orientation="vertical")
         상단 = BoxLayout(orientation="vertical", size_hint=(1, None), height=상단_높이)
         self.적상태틀 = 고른간격줄(size_hint=(1, None), height=정사각형_크기)
         상단.add_widget(self.적상태틀)
         self.적그래픽행 = 고른간격줄(넓힘=True, size_hint=(1, None), height=그림줄_높이)
         상단.add_widget(self.적그래픽행)
-        self.아군그래픽행 = 고른간격줄(
-            넓힘=True, size_hint=(1, None), height=그림줄_높이
-        )
+        self.아군그래픽행 = 파티칸줄(size_hint=(1, None), height=그림줄_높이)
         상단.add_widget(self.아군그래픽행)
-        self.아군상태틀 = 고른간격줄(size_hint=(1, None), height=정사각형_크기)
+        self.아군상태틀 = 파티칸줄(size_hint=(1, None), height=정사각형_크기)
         상단.add_widget(self.아군상태틀)
         루트.add_widget(상단)
 
