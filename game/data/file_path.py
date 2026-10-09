@@ -242,7 +242,7 @@
 #     │   └── town/       마을 배경 그림 (asset_town_*.webp)
 #     │                      asset_town_elvengard.webp   엘븐가드 (720x350)
 #     │                      asset_town_hendonmyre.webp  헨돈마이어 (720x342)
-#     │                      asset_town_westcoast.webp   웨스트코스트 (임시 - 헨돈마이어 복사본)
+#     │                      asset_town_westcoast.webp   웨스트코스트 (1323x1189, 항구)
 #     └── __init__.py
 #
 # 주의: assets/font/ 안에는 폰트 파일(.ttf/.otf)만 둔다. 문서·노트
