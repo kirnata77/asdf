@@ -8,15 +8,18 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   check:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:
@@ -32,10 +35,14 @@ jobs:
   # 화면(kivy) 스모크 - 실제 앱을 Xvfb에서 띄워 주요 화면을 돌려 본다(tools/ui_smoke.py).
   # 실패하면 PR을 막는다(2026-10-06 연속 초록 확인 뒤 continue-on-error를 지웠다). 스크린샷은 아티팩트로 남는다.
   ui-smoke:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:

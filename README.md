@@ -4,7 +4,7 @@ Kivy로 만든 턴제 RPG 프로토타입. 5개 직업(귀검사/격투가/거�
 장비/상점을 진행한다. 안드로이드 APK는 buildozer로 빌드한다.
 
 - 원격 저장소: https://github.com/kirnata77/asdf (기본 브랜치 `main-branch`)
-- 규칙(계층, 완료 기준, 테스트, git): [`CLAUDE.md`](CLAUDE.md) - 기여 전에 읽는다
+- 규칙(완료 기준, 가드레일): [`CLAUDE.md`](CLAUDE.md), 주제별 규칙은 [`.claude/rules/`](.claude/rules/), 절차는 [`.claude/skills/`](.claude/skills/) - 기여 전에 읽는다
 - 지금 진행 중인 일: [`MEMORY.md`](MEMORY.md)
 
 ## 실행
@@ -51,7 +51,7 @@ APK는 GitHub Actions의 "Build APK" 워크플로(수동 실행)가 만든다. �
 
 | 파일 | 내용 |
 |---|---|
-| [`CLAUDE.md`](CLAUDE.md) | 규칙과 완료 기준 |
+| [`CLAUDE.md`](CLAUDE.md), [`.claude/`](.claude/) | 규칙(완료 기준, 가드레일), 주제별 규칙, 스킬 |
 | [`docs/architecture_review.md`](docs/architecture_review.md) | 구조/아키텍처 점검, 다음 로드맵 |
 | [`docs/refactoring_report.md`](docs/refactoring_report.md) | 점검 항목의 리팩터링 전/후 비교(병합 후 재측정) |
 | [`docs/scenarios.md`](docs/scenarios.md) | 풀 시나리오 장부 |

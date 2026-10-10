@@ -1,6 +1,6 @@
 """풀 시나리오 장부(docs/scenarios.md)와 테스트(@pytest.mark.scenario("S1"))를 대조한다.
 
-규칙은 CLAUDE.md "풀 시나리오 테스트". tests/test_repo_hygiene.py가 부른다.
+규칙은 .claude/rules/scenarios.md. tests/test_repo_hygiene.py가 부른다.
 """
 
 import ast

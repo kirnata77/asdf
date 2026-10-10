@@ -7,10 +7,12 @@
 
 워크플로 `.github/workflows/build-apk.yml`("Build APK")이 디버그 APK를 만든다.
 
-- **언제 도나:** 수동 실행(`workflow_dispatch`)과, 이 워크플로 파일 자체가 바뀐 push에서만. **게임 코드 push/PR로는 돌지 않는다.**
-  그래서 게임 코드 변경이 빌드를 깨도 PR 단계에서는 모른다 - 릴리스 전에 Actions 탭에서 "Run workflow"로 한 번 돌린다.
+- **언제 도나:** `v*` 태그를 push할 때만(2026-10-10부터). **게임 코드 push/PR이나 이 파일의 변경으로는 돌지 않는다.**
+  그래서 게임 코드 변경이 빌드를 깨도 PR 단계에서는 모른다 - 큰 기능이 끝날 때마다 사용자가 `buildozer.spec`의 `version`을 올리고
+  `git tag v<version> && git push origin v<version>`으로 돌린다. 태그가 `v<spec의 version>`이 아니면 첫 단계에서 실패한다.
 - **무엇을 하나:** JDK 17 + Python 3.11 + buildozer/cython 설치 -> `yes | buildozer -v android debug`(SDK 라이선스 자동 동의) -> APK 업로드.
-- **산출물:** 워크플로 아티팩트 `dnfmobile-apk`와 릴리스 `latest-apk`(매번 지우고 새로 만든다). 폰에서는 릴리스의 `*.apk`를 받아 설치한다.
+- **산출물:** 워크플로 아티팩트 `dnfmobile-apk`와 태그 이름의 릴리스(`v0.1` 등, 같은 태그를 다시 돌리면 APK만 덮어쓴다).
+  폰에서는 릴리스의 `*.apk`를 받아 설치한다. 옛 `latest-apk` 릴리스는 더 갱신되지 않는다.
   파일 이름 예: `dnfmobile-0.1-arm64-v8a-debug.apk`.
 - **캐시:** `~/.buildozer`(SDK/NDK)를 `buildozer-<OS>-<buildozer.spec 해시>` 키로 캐시한다.
   **`buildozer.spec`은 주석 한 글자만 바뀌어도 키가 바뀌어** 다음 빌드가 SDK/NDK를 새로 받는다(수십 분). 꼭 필요할 때만, 여러 변경을 묶어서 바꾼다.
