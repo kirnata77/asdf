@@ -11,7 +11,7 @@
 - **2차수:** 웨스트코스트(T03, D10 보스 클리어로 개방) + 하늘성 D11~D16은 지도 틀만. 몬스터/인카운트/보스 전투몬스터 미정. 풀 시나리오 S7은 계획 상태.
 - 풀 시나리오 S1~S6·S8 구현([계획](.memory/roadmap/scenario-tests.md) 전부 완료). 구조 점검 N0~N7 전부 완료: [architecture_review.md](docs/architecture_review.md) 10절, [refactor.md](.memory/roadmap/refactor.md).
 - 리팩터링 보고서 후속(종족 속성, skill 6모듈, 팝업 도우미, 몬스터 기본값 표 등): [refactoring_report.md](docs/refactoring_report.md) 9절. combat 순환은 안 함 - 이유 거기.
-- 테스트 689개(이 브랜치, 2026-10-10 이 세션에서 측정). 커버리지 94.44%는 옛 값 - 이 세션에서는 측정하지 못했다.
+- 테스트 697개, 커버리지 94.62%(풀 시나리오만 72%)(2026-10-10 측정). 시나리오 공백(숙소·해체·포션·레벨 11~20 등)과 S9/S10 제안: [이슈 #74](https://github.com/kirnata77/asdf/issues/74).
 - CI `ui-smoke`는 PR을 막는다. 병합된 PR의 브랜치는 이름과 상관없이 자동 삭제(`delete-merged-branch.yml`). 기본 브랜치는 2026-10-07에 `main` -> `main-branch`.
 - 옛 *Now*의 경위 문단 원문: [보관본](.memory/sessions/2026-10-10-memory-index-archive.md).
 
