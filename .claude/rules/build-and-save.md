@@ -12,8 +12,9 @@ paths:
 - **세이브 호환성.** `game/saves/*.json` 형식(세이브 키 이름 포함)을 바꾸면 `save_system.세이브_버전`을
   올리고 `_마이그레이션` 표에 (새 버전, 변환 함수)를 더한다(옛 세이브 테스트 포함). 불러올 때마다 규칙에 맞춰
   다시 계산하는 값(최대HP 등)은 형식이 아니라 규칙이라 `gameflow.게임_불러오기`가 한다.
-- **`buildozer.spec`을 바꾸면** CI 캐시 키가 바뀌어 다음 APK 빌드가 SDK/NDK를 새로
-  받는다(수십 분). 꼭 필요할 때만 바꾼다. 릴리스마다 `version`을 올리므로 그때마다 캐시가 바뀐다는 점도 안다.
+- **SDK/NDK 캐시 키는 `buildozer.spec`의 `android.*` 줄만 해시한다.** `version`이나 주석을 바꿔도(릴리스마다 올린다) 캐시가 유지되고,
+  `android.*` 줄을 바꿀 때만 키가 바뀌어 SDK/NDK를 새로 받는다(수십 분). 그러니 `android.*`는 꼭 필요할 때만 바꾼다.
+  캐시는 `main-branch`에서 도는 `warm-cache.yml`이 채우고, 태그 빌드(`build-apk.yml`)는 불러오기만 한다.
 - **APK는 `v*` 태그 push로만 빌드된다.** 태그는 `v<spec의 version>`이어야 하고, 다르면 빌드가 첫 단계에서 실패한다.
   릴리스 이름은 태그(`v0.1.1`)이고 릴리스 본문은 그때의 `CHANGELOG.md`다.
 - **버전은 major.minor.patch.** 변경 내역은 `CHANGELOG.md`만 본다(`MEMORY.md`는 세션 단기 기억). 큰 기능 PR이 `## 미릴리스`에 한 줄을 더한다.
