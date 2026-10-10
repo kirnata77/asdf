@@ -9,7 +9,7 @@ pythonpath = ["."]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
 markers = [
-    "scenario(id): 풀 시나리오 - docs/scenarios.md 표의 ID (CLAUDE.md \"풀 시나리오 테스트\")",
+    "scenario(id): 풀 시나리오 - docs/scenarios.md 표의 ID (.claude/rules/scenarios.md)",
 ]
 
 [tool.ruff]
@@ -17,7 +17,7 @@ target-version = "py311"
 extend-exclude = [".buildozer", "bin"]
 
 [tool.ruff.format]
-# 저장소 규칙: 모든 텍스트 파일은 LF (CLAUDE.md "줄끝").
+# 저장소 규칙: 모든 텍스트 파일은 LF (.claude/rules/eol.md).
 line-ending = "lf"
 
 [tool.ruff.lint]

@@ -1,4 +1,4 @@
-"""줄끝 규칙 검사/수정 - 저장소의 모든 텍스트 파일은 LF (CLAUDE.md "줄끝").
+"""줄끝 규칙 검사/수정 - 저장소의 모든 텍스트 파일은 LF (.claude/rules/eol.md).
 
     python tools/fix_eol.py          # CRLF(또는 CR)가 섞인 파일을 LF로 바꾼다
     python tools/fix_eol.py --check  # 바꾸지 않고 위반 파일만 출력(있으면 종료코드 1)
