@@ -1642,8 +1642,9 @@ class 스모크앱(main.DnfMobileApp):
         파티칸(마을.파티줄, 파티수)
         assert abs(마을.파티줄.top - sc.기준화면_높이) < 1, 마을.파티줄.top
         그림 = 마을.배경그림
-        assert 그림.image_ratio > 1.5  # 헨돈마이어 720x342 - 970 칸보다 낮은 그림
-        assert abs(그림.height - 그림.width / 그림.image_ratio) < 1, 그림.size
+        # 높이는 비율대로, 최대 970(어느 마을 그림이 와도 - 지금 마을 그림 비율에 기대지 않는다)
+        기대높이 = min(sc.상단_그림_높이, 그림.width / 그림.image_ratio)
+        assert abs(그림.height - 기대높이) < 1, (그림.size, 그림.image_ratio)
         assert abs(그림.y - sc.하단_높이) < 1, 그림.y  # 칸 아래에 붙는다(빈 곳은 위)
         assert abs(그림.norm_image_size[1] - 그림.height) < 1, 그림.norm_image_size
         # 양 옆 끝은 버튼과 같은 16 여백
