@@ -107,6 +107,11 @@ def 스킬_파일_문제(폴더이름, 텍스트):
         문제.append(f"{폴더이름}: name이 폴더 이름과 다르다({값.get('name')!r})")
     if not 값.get("description"):
         문제.append(f"{폴더이름}: description이 비었다 - 스킬은 이 글로 골라진다")
+    설명 = 값.get("description", "")
+    if ": " in 설명 or " #" in 설명:
+        문제.append(
+            f"{폴더이름}: description에 ': ' 또는 ' #'가 있어 YAML이 깨진다 - 풀어 쓰거나 따옴표로 감싼다"
+        )
     return 문제
 
 
@@ -187,6 +192,11 @@ def test_스킬_검사는_어긋남을_잡는다():
     assert "name이 폴더 이름과 다르다" in "\n".join(스킬_파일_문제("bar", 좋음))
     assert "description이 비었다" in "\n".join(
         스킬_파일_문제("foo", "---\nname: foo\ndescription:\n---\n")
+    )
+    깨짐 = "---\nname: foo\ndescription: 언제 쓰나: 이런 때\n---\n"
+    assert "YAML이 깨진다" in "\n".join(스킬_파일_문제("foo", 깨짐))
+    assert "YAML이 깨진다" in "\n".join(
+        스킬_파일_문제("foo", "---\nname: foo\ndescription: 이것 # 주석\n---\n")
     )
 
 
