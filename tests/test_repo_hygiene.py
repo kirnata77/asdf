@@ -1,6 +1,7 @@
 """저장소 규칙 검사 (코드 동작이 아니라 파일 자체)."""
 
 import os
+import re
 import subprocess
 
 from tools import fix_eol, scenario_registry
@@ -247,3 +248,29 @@ def test_시나리오_마커는_소스에서_읽는다():
         "def test_b(x): pass\n"
     )
     assert scenario_registry.테스트_표시(소스, "t.py") == {"t.py::test_a": "S1"}
+
+
+# ------------------------------------------------------------ APK 빌드 트리거
+
+
+def _저장소_파일(상대경로):
+    return _읽기(os.path.join(fix_eol.ROOT, 상대경로))
+
+
+def test_APK_빌드는_v_태그_push로만_돈다():
+    """CLAUDE.md "Git" - 큰 기능을 끝내면 사용자가 v<version> 태그를 push해 빌드한다. 다른 트리거를 되살리지 않는다."""
+    워크플로 = _저장소_파일(".github/workflows/build-apk.yml")
+    on = 워크플로.split("\npermissions:")[0]
+    assert re.search(r"^  push:\n    tags:\n      - 'v\*'\n", on, re.M), on
+    assert (
+        "workflow_dispatch" not in on and "paths:" not in on and "branches:" not in on
+    )
+    assert "$GITHUB_REF_NAME" in 워크플로 or "github.ref_name" in 워크플로
+
+
+def test_APK_태그_검사가_읽는_spec_버전이_있다():
+    """워크플로의 태그-버전 검사와 같은 정규식으로 buildozer.spec의 version을 읽을 수 있어야 한다."""
+    워크플로 = _저장소_파일(".github/workflows/build-apk.yml")
+    assert "buildozer.spec" in 워크플로 and "does not match" in 워크플로
+    줄 = re.findall(r"^version *= *(\S+)\s*$", _저장소_파일("buildozer.spec"), re.M)
+    assert len(줄) == 1 and re.fullmatch(r"\d+(\.\d+)*", 줄[0]), 줄
