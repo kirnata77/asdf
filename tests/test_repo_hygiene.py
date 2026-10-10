@@ -115,6 +115,23 @@ def _읽기(경로):
         return f.read()
 
 
+MEMORY_최대_줄_글자 = 200  # 한 줄에 문단 하나를 통째로 넣는 빈틈을 막는다
+
+
+def test_MEMORY_md는_한_줄이_200자_이하():
+    """.claude/rules/memory.md - 줄 수와 바이트만 막으면 한 줄에 문단을 넣어 색인을 우회한다."""
+    텍스트 = _읽기(os.path.join(fix_eol.ROOT, "MEMORY.md"))
+    긴_줄 = [
+        f"{번호}번째 줄 {len(줄)}자"
+        for 번호, 줄 in enumerate(텍스트.splitlines(), start=1)
+        if len(줄) > MEMORY_최대_줄_글자
+    ]
+    assert not 긴_줄, (
+        f"MEMORY.md에 {MEMORY_최대_줄_글자}자를 넘는 줄이 있다: {', '.join(긴_줄)} - "
+        "항목마다 짧은 한 줄만 두고 자세한 것은 .memory/로 옮긴다"
+    )
+
+
 def test_CLAUDE_md는_100줄_이하():
     """CLAUDE.md는 매 세션 읽힌다. 한 부분에만 해당하는 규칙은 .claude/rules/, 절차는 스킬로."""
     텍스트 = _읽기(os.path.join(fix_eol.ROOT, "CLAUDE.md"))
