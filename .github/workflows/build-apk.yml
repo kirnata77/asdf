@@ -72,5 +72,5 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           # 같은 태그를 다시 돌리면 릴리스가 이미 있으므로 APK만 덮어쓴다.
-          gh release create "$TAG" bin/*.apk --verify-tag --title "$TAG (debug APK)" --notes "태그 $TAG ($GITHUB_SHA)에서 빌드한 디버그 APK" \
+          gh release create "$TAG" bin/*.apk --verify-tag --title "$TAG (debug APK)" --notes-file CHANGELOG.md \
             || gh release upload "$TAG" bin/*.apk --clobber
