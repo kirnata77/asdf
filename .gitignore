@@ -19,8 +19,8 @@ game/saves/
 # 압축 파일 (업로드용으로 만든 zip 등)
 *.zip
 
-# Claude Code 로컬 설정
-.claude/
+# Claude Code 로컬 설정 (규칙/스킬은 커밋한다: .claude/rules/, .claude/skills/)
+.claude/settings.local.json
 
 # 운영체제가 만드는 파일
 Thumbs.db

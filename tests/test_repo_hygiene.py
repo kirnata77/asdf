@@ -9,7 +9,7 @@ from tools import fix_eol, scenario_registry
 def test_모든_텍스트파일은_LF():
     위반 = fix_eol.crlf_files()
     assert not 위반, (
-        "LF 규칙 위반(CLAUDE.md '줄끝') - `python tools/fix_eol.py`로 고친다:\n"
+        "LF 규칙 위반(.claude/rules/eol.md) - `python tools/fix_eol.py`로 고친다:\n"
         + "\n".join(위반)
     )
 
@@ -44,7 +44,7 @@ MEMORY_최대_바이트 = 6 * 1024  # 한글은 글자당 3바이트라 줄 수�
 
 
 def test_MEMORY_md는_줄과_크기_상한을_지킨다():
-    """CLAUDE.md "기억 파일" - 색인이 길어지면 매 세션 읽는 비용이 커지고 중요한 것이 묻힌다."""
+    """.claude/rules/memory.md - 색인이 길어지면 매 세션 읽는 비용이 커지고 중요한 것이 묻힌다."""
     경로 = os.path.join(fix_eol.ROOT, "MEMORY.md")
     with open(경로, "rb") as f:
         내용 = f.read()
@@ -59,11 +59,125 @@ def test_MEMORY_md는_줄과_크기_상한을_지킨다():
     )
 
 
+# ------------------------------------------------------------ CLAUDE.md / 규칙 파일 / 스킬
+
+CLAUDE_최대_줄 = 100  # 매 세션 읽는다 - 길면 지시가 덜 지켜진다
+규칙_최대_줄 = 80  # .claude/rules/*.md: 해당 파일을 건드릴 때만 읽힌다
+
+
+def _머리말(텍스트):
+    """첫 줄이 ---로 시작하는 머리말의 줄들. 없거나 닫히지 않았으면 None."""
+    줄들 = 텍스트.splitlines()
+    if not 줄들 or 줄들[0] != "---":
+        return None
+    for i, 줄 in enumerate(줄들[1:], start=1):
+        if 줄 == "---":
+            return 줄들[1:i]
+    return None
+
+
+def 규칙_파일_문제(이름, 텍스트):
+    """.claude/rules/ 파일이 어기는 규칙들(없으면 빈 목록)."""
+    문제 = []
+    줄수 = len(텍스트.splitlines())
+    if 줄수 > 규칙_최대_줄:
+        문제.append(
+            f"{이름}: {줄수}줄(상한 {규칙_최대_줄}) - 나누거나 절차는 스킬로 옮긴다"
+        )
+    머리말 = _머리말(텍스트)
+    if 머리말 is None or not any(m.startswith("paths:") for m in 머리말):
+        문제.append(
+            f"{이름}: 머리말에 paths:가 없다 - 없으면 매 세션 읽힌다(---, paths: 목록, ---로 시작)"
+        )
+    return 문제
+
+
+def 스킬_파일_문제(폴더이름, 텍스트):
+    """.claude/skills/<폴더>/SKILL.md가 어기는 규칙들."""
+    머리말 = _머리말(텍스트)
+    if 머리말 is None:
+        return [f"{폴더이름}: 머리말(---)이 없다"]
+    값 = {}
+    for 줄 in 머리말:
+        if ":" in 줄 and not 줄.startswith(" "):
+            키, _, 내용 = 줄.partition(":")
+            값[키.strip()] = 내용.strip()
+    문제 = []
+    if 값.get("name") != 폴더이름:
+        문제.append(f"{폴더이름}: name이 폴더 이름과 다르다({값.get('name')!r})")
+    if not 값.get("description"):
+        문제.append(f"{폴더이름}: description이 비었다 - 스킬은 이 글로 골라진다")
+    return 문제
+
+
+def _읽기(경로):
+    with open(경로, encoding="utf-8") as f:
+        return f.read()
+
+
+def test_CLAUDE_md는_100줄_이하():
+    """CLAUDE.md는 매 세션 읽힌다. 한 부분에만 해당하는 규칙은 .claude/rules/, 절차는 스킬로."""
+    텍스트 = _읽기(os.path.join(fix_eol.ROOT, "CLAUDE.md"))
+    줄수 = len(텍스트.splitlines())
+    assert 줄수 <= CLAUDE_최대_줄, (
+        f"CLAUDE.md가 {줄수}줄이다(상한 {CLAUDE_최대_줄}) - 한 부분에만 해당하는 규칙은 "
+        ".claude/rules/<주제>.md(paths: 머리말)로, 절차는 .claude/skills/로 옮긴다"
+    )
+
+
+def test_규칙_파일은_80줄_이하이고_paths를_가진다():
+    폴더 = os.path.join(fix_eol.ROOT, ".claude", "rules")
+    파일들 = (
+        sorted(f for f in os.listdir(폴더) if f.endswith(".md"))
+        if os.path.isdir(폴더)
+        else []
+    )
+    문제 = []
+    for 이름 in 파일들:
+        문제 += 규칙_파일_문제(이름, _읽기(os.path.join(폴더, 이름)))
+    assert not 문제, "\n".join(문제)
+
+
+def test_스킬은_이름과_설명을_가진다():
+    폴더 = os.path.join(fix_eol.ROOT, ".claude", "skills")
+    이름들 = sorted(os.listdir(폴더)) if os.path.isdir(폴더) else []
+    문제 = []
+    for 이름 in 이름들:
+        경로 = os.path.join(폴더, 이름, "SKILL.md")
+        if not os.path.exists(경로):
+            문제.append(f"{이름}: SKILL.md가 없다")
+            continue
+        문제 += 스킬_파일_문제(이름, _읽기(경로))
+    assert not 문제, "\n".join(문제)
+
+
+def test_규칙_파일_검사는_어긋남을_잡는다():
+    좋음 = '---\npaths:\n  - "game/**"\n---\n\n# 제목\n'
+    assert 규칙_파일_문제("a.md", 좋음) == []
+    assert "paths:가 없다" in "\n".join(규칙_파일_문제("b.md", "# 머리말 없음\n"))
+    assert "paths:가 없다" in "\n".join(규칙_파일_문제("c.md", "---\nname: x\n---\n"))
+    assert "paths:가 없다" in "\n".join(
+        규칙_파일_문제("d.md", "---\npaths:\n  - x\n")
+    )  # 안 닫힘
+    긴 = 좋음 + "줄\n" * 규칙_최대_줄
+    assert "줄(상한 80)" in "\n".join(규칙_파일_문제("e.md", 긴))
+
+
+def test_스킬_검사는_어긋남을_잡는다():
+    좋음 = "---\nname: foo\ndescription: 무엇을 언제\n---\n본문\n"
+    assert 스킬_파일_문제("foo", 좋음) == []
+    assert "머리말(---)이 없다" in "\n".join(스킬_파일_문제("foo", "본문\n"))
+    assert "name이 폴더 이름과 다르다" in "\n".join(스킬_파일_문제("bar", 좋음))
+    assert "description이 비었다" in "\n".join(
+        스킬_파일_문제("foo", "---\nname: foo\ndescription:\n---\n")
+    )
+
+
 # ------------------------------------------------------------ 풀 시나리오 장부
 
 
 def test_시나리오_문서와_테스트_마커가_일치한다():
-    """docs/scenarios.md 표 <-> @pytest.mark.scenario("ID") (CLAUDE.md "풀 시나리오 테스트")."""
+    """docs/scenarios.md 표 <-> @pytest.mark.scenario("ID") (.claude/rules/scenarios.md)."""
     문제 = scenario_registry.점검()
     assert not 문제, "\n".join(문제)
 

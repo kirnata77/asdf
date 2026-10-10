@@ -1,4 +1,4 @@
-"""풀 시나리오 도우미 (docs/scenarios.md, CLAUDE.md "풀 시나리오 테스트").
+"""풀 시나리오 도우미 (docs/scenarios.md, .claude/rules/scenarios.md).
 
 tests/support.py와 달리 전투를 **실제로 굴린다**(`강제_승리` 없음). 전부 gameflow(화면이 부르는
 API)를 통해서만 진행하므로, 화면의 버튼 하나가 하는 일과 같은 호출만 쓴다.
