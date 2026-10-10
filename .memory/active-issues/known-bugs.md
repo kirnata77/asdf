@@ -72,7 +72,7 @@
 - **APK 빌드**는 `build-apk.yml`에서만 되고, `v*` 태그를 push할 때만 실행된다(2026-10-10부터).
   이 브랜치로는 빌드해 보지 않았다. 게임 코드는 안 바뀌었고, `tools/check.py`가
   `source.dir = .`/`include_exts = py` 때문에 APK에 같이 들어가지만 무해하다
-  (`tests/`는 `source.exclude_dirs`로 이미 빠짐). 빼려면 spec 수정 = CI 캐시 무효화.
+  (`tests/`는 `source.exclude_dirs`로 이미 빠짐). 빼려면 spec 수정(캐시 키는 `android.*` 줄만 보므로 캐시는 유지된다).
 - **릴리스 게시 403(원인 미확인):** 2026-10-10 `main-branch` push로 돈 Build APK(런 7)에서 APK 빌드는 성공했는데 `gh release create`가
   `HTTP 403: Resource not accessible by integration`으로 실패했다(같은 날 앞선 브랜치 런은 성공). 태그/규칙 세트나 Actions 권한 설정이 의심되나 확인 못 함
   (이 세션은 저장소 설정을 못 본다). 첫 `v*` 태그 빌드에서 게시 단계가 같은 403이면 APK는 워크플로 아티팩트 `dnfmobile-apk`에서 받는다.

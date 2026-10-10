@@ -46,11 +46,19 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython
 
-      - name: Cache buildozer downloads (Android SDK/NDK)
-        uses: actions/cache@v4
+      # SDK/NDK 캐시는 불러오기만 한다. 태그 실행이 저장한 캐시는 그 태그에서만 보여 다음 릴리스가 못 쓰므로,
+      # 저장은 main-branch에서 도는 warm-cache.yml이 한다(키 규칙도 같다: android.* 줄만 해시).
+      - name: Compute the cache key from the android.* settings
+        id: key
+        run: echo "hash=$(grep '^android\.' buildozer.spec | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore buildozer downloads (Android SDK/NDK)
+        uses: actions/cache/restore@v4
         with:
           path: ~/.buildozer
-          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-${{ runner.os }}-${{ steps.key.outputs.hash }}
+          restore-keys: |
+            buildozer-${{ runner.os }}-
 
       - name: Build debug APK
         run: |

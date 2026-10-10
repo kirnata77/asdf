@@ -341,3 +341,56 @@ def test_CHANGELOG_검사는_어긋남을_잡는다():
         "최신순" in m
         for m in _변경내역_문제("## 미릴리스\n\n## 0.1.1\n\n## 0.1.2\n", "0.1.2")
     )
+
+
+# ------------------------------------------------------------ 워크플로 권한과 SDK/NDK 캐시
+
+ANDROID_해시_명령 = "grep '^android\\.' buildozer.spec | sha256sum"
+
+
+def _워크플로들():
+    폴더 = os.path.join(fix_eol.ROOT, ".github", "workflows")
+    return {
+        n: _읽기(os.path.join(폴더, n))
+        for n in sorted(os.listdir(폴더))
+        if n.endswith(".yml")
+    }
+
+
+def test_워크플로는_권한을_비우고_checkout은_자격증명을_남기지_않는다():
+    """CLAUDE.md "GitHub 워크플로" - 맨 위 `permissions: {}`와 잡별 권한, checkout마다 persist-credentials: false."""
+    for 이름, 본문 in _워크플로들().items():
+        assert re.search(r"^permissions: \{\}$", 본문, re.M), 이름
+        assert 본문.count("uses: actions/checkout@") == 본문.count(
+            "persist-credentials: false"
+        ), 이름
+
+
+def test_SDK_NDK_캐시_키는_android_줄만_해시한다():
+    """version을 올려도(릴리스마다) 캐시가 유지되고, android.* 줄이 바뀔 때만 키가 바뀐다."""
+    for 이름 in ("build-apk.yml", "warm-cache.yml"):
+        본문 = _워크플로들()[이름]
+        assert ANDROID_해시_명령 in 본문, 이름
+        assert "hashFiles('buildozer.spec')" not in 본문, 이름
+        assert "restore-keys" in 본문, 이름
+
+
+def test_태그_빌드는_캐시를_불러오기만_한다():
+    """태그 실행이 저장한 캐시는 다음 태그가 못 쓴다 - 저장은 main-branch의 warm-cache.yml만 한다."""
+    태그 = _워크플로들()["build-apk.yml"]
+    assert "actions/cache/restore@v4" in 태그
+    assert "uses: actions/cache@" not in 태그 and "actions/cache/save" not in 태그
+
+
+def test_캐시_채우기는_main_branch에서_spec이_바뀔_때만_돈다():
+    본문 = _워크플로들()["warm-cache.yml"]
+    on = 본문.split("\npermissions:")[0]
+    assert re.search(
+        r"^  push:\n    branches:\n      - main-branch\n    paths:\n      - buildozer\.spec\n",
+        on,
+        re.M,
+    ), on
+    assert "schedule" not in on and "tags:" not in on and "workflow_dispatch" not in on
+    assert (
+        "gh release" not in 본문 and "contents: write" not in 본문
+    )  # 릴리스를 만들지 않는다

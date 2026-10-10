@@ -1,0 +1,70 @@
+name: Warm build cache
+
+# main-branch에서 Android SDK/NDK 캐시(~/.buildozer)를 채운다. build-apk.yml은 v* 태그에서 돌고, 태그 실행은 기본 브랜치의
+# 캐시만 불러올 수 있어서(태그가 저장한 캐시는 다음 태그가 못 쓴다) 저장은 여기서 한다. 릴리스는 만들지 않는다.
+# buildozer.spec이 바뀌었을 때만 돌고, android.* 줄이 그대로면(version만 올린 릴리스 등) 캐시가 이미 있어 바로 끝난다.
+# 정기 갱신은 하지 않기로 했다: 7일 안 쓰인 캐시는 GitHub가 지우므로 그 뒤 첫 릴리스는 SDK/NDK를 새로 받을 수 있다.
+on:
+  push:
+    branches:
+      - main-branch
+    paths:
+      - buildozer.spec
+      - .github/workflows/warm-cache.yml
+
+permissions: {}
+
+jobs:
+  warm:
+    permissions:
+      contents: read
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Compute the cache key from the android.* settings
+        id: key
+        run: echo "hash=$(grep '^android\.' buildozer.spec | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      # 정확히 맞는 캐시가 있으면 cache-hit이 true라 아래 빌드를 건너뛴다. 없으면 가장 가까운 옛 캐시를 불러와
+      # 빌드가 받는 양을 줄이고, 잡이 성공하면 이 키로 저장한다.
+      - name: Restore buildozer downloads (Android SDK/NDK)
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: buildozer-${{ runner.os }}-${{ steps.key.outputs.hash }}
+          restore-keys: |
+            buildozer-${{ runner.os }}-
+
+      - name: Set up Java
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Python
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          pip install --upgrade pip
+          pip install buildozer cython
+
+      # 디버그 APK를 한 번 만들어 SDK/NDK를 내려받게 한다(결과 APK는 쓰지 않는다). main-branch에서 빌드가 깨졌는지도 알려 준다.
+      - name: Build debug APK to fill the cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          set +o pipefail
+          yes | buildozer -v android debug
+          ls -l bin/*.apk
