@@ -266,6 +266,9 @@ def test_APK_빌드는_v_태그_push로만_돈다():
         "workflow_dispatch" not in on and "paths:" not in on and "branches:" not in on
     )
     assert "$GITHUB_REF_NAME" in 워크플로 or "github.ref_name" in 워크플로
+    assert (
+        "--notes-file CHANGELOG.md" in 워크플로
+    )  # 릴리스 페이지에 이번 마이너의 변경 내역이 보인다
 
 
 def test_APK_태그_검사가_읽는_spec_버전이_있다():
@@ -273,4 +276,68 @@ def test_APK_태그_검사가_읽는_spec_버전이_있다():
     워크플로 = _저장소_파일(".github/workflows/build-apk.yml")
     assert "buildozer.spec" in 워크플로 and "does not match" in 워크플로
     줄 = re.findall(r"^version *= *(\S+)\s*$", _저장소_파일("buildozer.spec"), re.M)
-    assert len(줄) == 1 and re.fullmatch(r"\d+(\.\d+)*", 줄[0]), 줄
+    assert len(줄) == 1 and re.fullmatch(r"\d+\.\d+\.\d+", 줄[0]), (
+        줄
+    )  # major.minor.patch
+
+
+# ------------------------------------------------------------ CHANGELOG.md
+
+
+def _spec_버전():
+    return re.findall(r"^version *= *(\S+)\s*$", _저장소_파일("buildozer.spec"), re.M)[
+        0
+    ]
+
+
+def _변경내역_제목들(본문):
+    """`## ` 제목 줄의 이름 목록. 버전 제목은 `## 0.1.1 (날짜)` 꼴이다."""
+    return [줄[3:].strip() for 줄 in 본문.splitlines() if 줄.startswith("## ")]
+
+
+def _변경내역_문제(본문, 버전):
+    """CHANGELOG 규칙을 어긴 곳(없으면 빈 목록). 마이너 버전을 릴리스하면 파일을 비우고 새로 시작한다."""
+    제목들 = _변경내역_제목들(본문)
+    문제 = []
+    if not 제목들 or 제목들[0] != "미릴리스":
+        문제.append("첫 제목이 `## 미릴리스`가 아니다")
+    버전들 = [
+        m.group(1)
+        for t in 제목들[1:]
+        if (m := re.match(r"(\d+\.\d+\.\d+)( \(\d{4}-\d{2}-\d{2}\))?$", t))
+    ]
+    if len(버전들) != len(제목들) - 1:
+        문제.append("버전 제목이 `## x.y.z (YYYY-MM-DD)` 꼴이 아니다")
+    if 버전 not in 버전들:
+        문제.append(f"buildozer.spec 버전 {버전}의 제목이 없다")
+    마이너 = ".".join(버전.split(".")[:2])
+    for v in 버전들:
+        if ".".join(v.split(".")[:2]) != 마이너:
+            문제.append(f"{v}: 현재 마이너 {마이너}가 아니다(마이너 릴리스 때 비운다)")
+    if 버전들 != sorted(
+        버전들, key=lambda v: tuple(map(int, v.split("."))), reverse=True
+    ):
+        문제.append("버전 제목이 최신순이 아니다")
+    return 문제
+
+
+def test_CHANGELOG는_규칙을_지킨다():
+    """.claude/rules/build-and-save.md - 이 파일이 변경 내역의 유일한 출처다(MEMORY.md는 단기 기억)."""
+    문제 = _변경내역_문제(_저장소_파일("CHANGELOG.md"), _spec_버전())
+    assert not 문제, "\n".join(문제)
+
+
+def test_CHANGELOG_검사는_어긋남을_잡는다():
+    좋음 = "# 변경 내역\n\n## 미릴리스\n- a\n\n## 0.1.2 (2026-10-11)\n- b\n\n## 0.1.1 (2026-10-10)\n- c\n"
+    assert _변경내역_문제(좋음, "0.1.2") == []
+    assert any(
+        "미릴리스" in m for m in _변경내역_문제("## 0.1.1 (2026-10-10)\n", "0.1.1")
+    )
+    assert any("0.1.3" in m for m in _변경내역_문제(좋음, "0.1.3"))
+    # 마이너를 올렸는데 옛 마이너 내용이 남아 있다
+    남음 = "## 미릴리스\n\n## 0.2.0 (2026-11-01)\n\n## 0.1.1 (2026-10-10)\n"
+    assert any("0.1.1" in m and "마이너" in m for m in _변경내역_문제(남음, "0.2.0"))
+    assert any(
+        "최신순" in m
+        for m in _변경내역_문제("## 미릴리스\n\n## 0.1.1\n\n## 0.1.2\n", "0.1.2")
+    )

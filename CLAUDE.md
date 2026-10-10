@@ -39,6 +39,7 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
    CI에도 같은 스모크를 도는 `ui-smoke` 잡이 있고, 실패하면 PR을 막는다.
 4. **기억 갱신** - `MEMORY.md`의 *Now*와 `.memory/`를 코드와 같은 커밋에서 고친다(`.claude/rules/memory.md`).
 5. **큰 기능은 풀 시나리오로 검증한다** - `.claude/rules/scenarios.md`.
+6. **큰 기능이면 `CHANGELOG.md`의 `미릴리스`에 한 줄**을 같은 커밋에 더한다. 변경 내역은 거기만 보고, `MEMORY.md`에는 쓰지 않는다.
 
 **돌리지 못한 검증은 통과로 쓰지 않는다.** 커밋 본문에
 `NOT VERIFIED: <무엇을> 실행해 보지 못함 - <이유>`로 남긴다. APK 빌드는 CI(`build-apk.yml`)에서만
@@ -89,5 +90,6 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 - **게이트 먼저, 커밋은 그다음.** 원격에 올라간 커밋은 고치지 않는다(강제 push 금지). 절차 전체는 `repo-workflow` 스킬.
 - Claude의 커밋은 `Claude <noreply@anthropic.com>`으로 쓴다: 커밋마다 `git -c user.name=Claude -c user.email=noreply@anthropic.com commit`,
   git config에는 넣지 않는다. PR·이슈·병합은 사용자의 것이다.
-- **APK 빌드는 `v*` 태그 push로만 돈다**(`build-apk.yml`). 큰 기능이 하나 끝날 때마다 사용자에게 `buildozer.spec`의 `version`을 올리고
-  같은 이름의 태그(`v<version>`)를 push해 빌드를 돌려 달라고 부탁한다. Claude는 태그를 push하지 않고 릴리스를 지우지 않는다.
+- **APK 빌드는 `v*` 태그 push로만 돈다**(`build-apk.yml`). 사용자는 PC가 없어 릴리스 작업은 Claude가 한다. 큰 기능이 병합될 때마다
+  "지금 릴리스할까, 더 모은 뒤에 할까"를 묻는다. 지금이면 버전을 올리는 PR(절차: `.claude/rules/build-and-save.md`) -> 사용자가 병합 ->
+  Claude가 `v<version>` 태그를 push한다(사용자가 맡겼다). 릴리스 삭제는 Claude가 못 하니 사용자에게 부탁한다.
