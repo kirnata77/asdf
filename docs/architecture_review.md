@@ -369,7 +369,7 @@ flow -> reactions -> flow
 
 ### W-8 빌드/도구
 
-- `build-apk.yml`은 워크플로 파일이 바뀔 때와 수동 실행에서만 돈다. 게임 코드 변경이 APK 빌드를 깨뜨려도 PR에서는 모른다(known-bugs.md에 기록됨). 릴리스 전에 수동 실행 절차가 필요하다.
+- `build-apk.yml`은 `v*` 태그를 push할 때만 돈다(2026-10-10에 바뀜, 그 전에는 워크플로 파일이 바뀔 때와 수동 실행). 게임 코드 변경이 APK 빌드를 깨뜨려도 PR에서는 모른다(known-bugs.md에 기록됨). 큰 기능이 끝날 때 사용자가 태그를 push한다.
 - `.mcp.json`이 `graft`를 가리키는데 이번 세션처럼 첫 세션에서 연결이 실패한다(MEMORY.md가 이미 인지). 기능 영향은 없다.
 - `package.domain = org.test`는 기본값 그대로다(앱 ID 바꾸면 폰에서 별도 앱이 된다 - known-bugs.md).
 - `gameflow.py:2131`에 함수 안 `import copy`가 하나 있다(맨 위에 이미 `import copy`가 있어 불필요, 추정).

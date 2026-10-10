@@ -69,7 +69,7 @@
 ## 검증 범위 밖
 
 - **화면(game/screens/, main.py)은 테스트가 없다** - kivy가 필요하고 CI에 없음.
-- **APK 빌드**는 `build-apk.yml`에서만 되고, 그 워크플로 파일이 바뀔 때만 자동 실행된다.
+- **APK 빌드**는 `build-apk.yml`에서만 되고, `v*` 태그를 push할 때만 실행된다(2026-10-10부터).
   이 브랜치로는 빌드해 보지 않았다. 게임 코드는 안 바뀌었고, `tools/check.py`가
   `source.dir = .`/`include_exts = py` 때문에 APK에 같이 들어가지만 무해하다
   (`tests/`는 `source.exclude_dirs`로 이미 빠짐). 빼려면 spec 수정 = CI 캐시 무효화.
