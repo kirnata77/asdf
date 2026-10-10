@@ -19,6 +19,7 @@ paths:
 - **버전은 major.minor.patch.** 변경 내역은 `CHANGELOG.md`만 본다(`MEMORY.md`는 세션 단기 기억). 큰 기능 PR이 `## 미릴리스`에 한 줄을 더한다.
   **릴리스 절차:** (1) 큰 기능이 병합되면 사용자에게 지금 릴리스할지 묻는다. (2) 지금이면 한 PR에서 `buildozer.spec`의 `version`을 올리고
   `## 미릴리스`를 `## x.y.z (날짜)`로 바꾼다(테스트가 둘이 맞는지 검사한다). **패치는 같은 마이너 안에서 쌓고, 마이너 릴리스는
-  CHANGELOG를 비우고 새로 시작한다**(테스트가 지난 마이너 제목을 막는다). (3) 사용자가 병합한 뒤 Claude가 병합 커밋에 `v<version>` 태그를 push한다.
-  (4) Actions 실행과 릴리스 페이지를 확인해 사용자에게 알린다. 태그 push가 막히면 사용자가 GitHub 웹(Releases -> Draft a new release ->
-  새 태그)에서 같은 태그를 만들어도 같은 워크플로가 돈다.
+  CHANGELOG를 비우고 새로 시작한다**(테스트가 지난 마이너 제목을 막는다). (3) 사용자가 병합한 뒤 **사용자가** GitHub 웹에서 릴리스를 게시한다:
+  Releases -> Draft a new release -> 태그 `v<version>`(publish 때 새로 만들기), Target `main-branch`(병합 커밋), 설명은 CHANGELOG.md의 해당 부분.
+  Claude는 태그를 못 만든다(이 세션의 git push가 403, GitHub 도구에도 태그 생성이 없음). 게시하면 태그가 생겨 워크플로가 돌고,
+  이미 있는 릴리스에 APK를 붙인다. (4) Claude가 Actions 실행과 릴리스 페이지를 확인해 사용자에게 알린다.

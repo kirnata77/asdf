@@ -90,6 +90,6 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 - **게이트 먼저, 커밋은 그다음.** 원격에 올라간 커밋은 고치지 않는다(강제 push 금지). 절차 전체는 `repo-workflow` 스킬.
 - Claude의 커밋은 `Claude <noreply@anthropic.com>`으로 쓴다: 커밋마다 `git -c user.name=Claude -c user.email=noreply@anthropic.com commit`,
   git config에는 넣지 않는다. PR·이슈·병합은 사용자의 것이다.
-- **APK 빌드는 `v*` 태그 push로만 돈다**(`build-apk.yml`). 사용자는 PC가 없어 릴리스 작업은 Claude가 한다. 큰 기능이 병합될 때마다
-  "지금 릴리스할까, 더 모은 뒤에 할까"를 묻는다. 지금이면 버전을 올리는 PR(절차: `.claude/rules/build-and-save.md`) -> 사용자가 병합 ->
-  Claude가 `v<version>` 태그를 push한다(사용자가 맡겼다). 릴리스 삭제는 Claude가 못 하니 사용자에게 부탁한다.
+- **APK 빌드는 `v*` 태그 push로만 돈다**(`build-apk.yml`). 사용자는 PC가 없고 이 세션의 git은 태그 push를 403으로 막는다. 큰 기능이 병합될 때마다
+  "지금 릴리스할까, 더 모은 뒤에 할까"를 묻는다. 지금이면 Claude가 버전 PR을 열고(절차: `.claude/rules/build-and-save.md`), 사용자가 병합한 뒤
+  GitHub 웹에서 릴리스를 게시한다(태그가 생겨 빌드가 돈다). Claude는 그 실행과 릴리스를 확인한다. 릴리스 삭제는 사용자에게 부탁한다.

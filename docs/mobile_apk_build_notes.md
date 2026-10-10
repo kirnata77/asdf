@@ -9,7 +9,7 @@
 
 - **언제 도나:** `v*` 태그를 push할 때만(2026-10-10부터). **게임 코드 push/PR이나 이 파일의 변경으로는 돌지 않는다.**
   그래서 게임 코드 변경이 빌드를 깨도 PR 단계에서는 모른다 - 큰 기능이 병합될 때마다 Claude가 지금 릴리스할지 사용자에게 묻고, 지금이면
-  버전을 올리는 PR을 병합한 뒤 Claude가 `git tag v<version> && git push origin v<version>`으로 돌린다(사용자는 PC가 없다).
+  Claude가 버전을 올리는 PR을 열고, 병합한 뒤 사용자가 GitHub 웹에서 릴리스를 게시해 태그를 만든다(사용자는 PC가 없고 이 세션은 태그를 push할 수 없다).
   태그가 `v<spec의 version>`이 아니면 첫 단계에서 실패한다. 전체 절차와 CHANGELOG 규칙은 `.claude/rules/build-and-save.md`.
 - **무엇을 하나:** JDK 17 + Python 3.11 + buildozer/cython 설치 -> `yes | buildozer -v android debug`(SDK 라이선스 자동 동의) -> APK 업로드.
 - **산출물:** 워크플로 아티팩트 `dnfmobile-apk`와 태그 이름의 릴리스(`v0.1.1` 등, 본문은 그때의 `CHANGELOG.md`, 같은 태그를 다시 돌리면 APK만 덮어쓴다).
