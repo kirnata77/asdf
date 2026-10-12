@@ -223,7 +223,7 @@
 #     │                     dungeon/battle/party.py, main.py가 가져온다)
 #     ├── saves/           (세이브 파일)
 #     ├── assets/
-#     │   ├── attack/     공격 이펙트 그림 (투명 배경, 아직 화면에서 안 씀)
+#     │   ├── attack/     공격 연출 그림 (투명 배경, 전투 화면이 대상 위에 0.5초 띄운다)
 #     │   │                  asset_attack_slash.webp  참격 (173x134)
 #     │   │                  asset_attack_blunt.webp  타격 (137x112)
 #     │   │                  asset_attack_pierce.webp 관통 (180x62)

@@ -41,6 +41,9 @@ __all__ = [
     "적_HP표시",
     "아군_목록",
     "새_로그_가져오기",
+    "_공격연출_그림",
+    "새_공격연출_가져오기",
+    "공격연출_그림파일",
     "아군_일반공격",
     "아군_스킬사용",
     "도망_막는_상태이상",
@@ -197,6 +200,33 @@ def 새_로그_가져오기(게임상태):
     새로그 = 로그전체[게임상태["전투_로그커서"] :]
     게임상태["전투_로그커서"] = len(로그전체)
     return 새로그
+
+
+# 공격 연출 종류(combat.damage.공격연출_종류) -> game/assets/attack/ 안의 그림 파일
+_공격연출_그림 = {
+    "참격": "asset_attack_slash.webp",
+    "타격": "asset_attack_blunt.webp",
+    "관통": "asset_attack_pierce.webp",
+    "화": "asset_attack_fire.webp",
+    "수": "asset_attack_water.webp",
+    "명": "asset_attack_light.webp",
+    "암": "asset_attack_dark.webp",
+    "실패": "asset_attack_stuck.webp",
+}
+
+
+def 새_공격연출_가져오기(게임상태):
+    """마지막으로 가져간 뒤 쌓인 공격 연출({"대상id", "종류"})을 순서대로 돌려주고 비운다.
+    화면이 대상 그림 위에 잠깐 띄운다."""
+    연출 = 게임상태["전투상태"].setdefault("공격연출", [])
+    목록 = list(연출)
+    연출.clear()
+    return 목록
+
+
+def 공격연출_그림파일(종류):
+    """연출 종류의 그림 파일 이름(game/assets/attack/ 안). 모르는 종류는 타격."""
+    return _공격연출_그림.get(종류, _공격연출_그림["타격"])
 
 
 def 아군_일반공격(게임상태, 대상참가자):
