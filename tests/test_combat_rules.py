@@ -671,9 +671,9 @@ def test_효과_상태이상_내성(전장, monkeypatch):
         }
     ]
     _주사위고정(monkeypatch, 20)
-    assert "내성에 성공" in ss.효과_적용(전투상태, 아군[0], 적[0], 효과)[0]
+    assert "내성 성공!" in ss.효과_적용(전투상태, 아군[0], 적[0], 효과)[0]
     _주사위고정(monkeypatch, 1)
-    assert "부여 (내성 실패)" in ss.효과_적용(전투상태, 아군[0], 적[0], 효과)[0]
+    assert "내성 실패!" in ss.효과_적용(전투상태, 아군[0], 적[0], 효과)[0]
     assert 적[0]["상태이상"][0]["이름"] == "기절"
     assert (
         "자동 부여"
@@ -701,9 +701,9 @@ def test_라이징샷_명중하면_건강내성_실패시_공중에뜸(전장, m
 
     def 내성(보정치, 난이도, **kw):
         난이도들.append(난이도)
-        return 결과
+        return 결과, 10
 
-    monkeypatch.setattr(dice_utils, "내성_성공", 내성)
+    monkeypatch.setattr(dice_utils, "내성_굴림", 내성)
     _주사위고정(monkeypatch, 19)  # 명중(치명타 아님)
     for 결과, 대상, 걸림 in ((True, 적[0], False), (False, 적[1], True)):
         flow.턴_시작_처리(전투상태, 거너)
