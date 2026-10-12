@@ -231,6 +231,7 @@
 #     │   │                  asset_attack_water.webp  수속성 (134x120)
 #     │   │                  asset_attack_light.webp  명속성 (128x128)
 #     │   │                  asset_attack_dark.webp   암속성 (136x127)
+#     │   │                  asset_attack_stuck.webp  공격 실패 글자 "Stuck!!" (967x240)
 #     │   ├── font/       NanumGothic-Diet.ttf (다이어트 폰트 1개, 볼드 없음)
 #     │   ├── character/  캐릭터 SD 이미지 (asset_sd_character_*.webp)
 #     │   ├── dungeon/    던전 타일 이미지 (asset_tile_*.webp)
