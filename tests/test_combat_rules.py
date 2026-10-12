@@ -91,6 +91,18 @@ def test_수식_평가_문법(monkeypatch):
         formula.수식_평가("미지의값", ctx)
 
 
+def test_수식_평균은_주사위를_굴리지_않고_기대값으로(monkeypatch):
+    # 전력전투가 스킬의 기대 피해를 비교할 때 쓴다 - 무작위 수를 쓰지 않아야 전투 순서가 안 바뀐다
+    monkeypatch.setattr(
+        dice_utils.random, "randint", lambda a, b: pytest.fail("굴리면 안 된다")
+    )
+    평 = formula.수식_평가
+    assert 평("2d6+3", {}, 평균=True) == 2 * 3.5 + 3
+    assert 평("(차수+1)d6÷2", {"차수": 2}, 평균=True) == 3 * 3.5 / 2
+    assert 평("보정공격력", {"무기공격력": "1d8", "보정치": 2}, 평균=True) == 4.5 + 2
+    assert 평("0d8+1", {}, 평균=True) == 1
+
+
 def test_무기공격력_굴림(monkeypatch):
     _주사위고정(monkeypatch, 4)
     assert (

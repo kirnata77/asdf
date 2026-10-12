@@ -19,6 +19,7 @@ from kivy.graphics import Color, Rectangle, Ellipse, ScissorPush, ScissorPop
 
 import gameflow
 from game.screens.screens_common import (
+    게임메뉴_열기,
     _캐릭터이미지_경로,
     _에셋_경로,
     뒤로키_버튼,
@@ -666,7 +667,7 @@ class 던전화면(Screen):
         self._대기중오브젝트 = None
 
     def _메뉴_클릭(self, *args):
-        self.메시지라벨.text = "메뉴는 아직 구현되지 않았습니다."
+        게임메뉴_열기(self)
 
     def _파티_클릭(self, *args):
         self.manager.get_screen("파티관리").복귀화면 = "던전"

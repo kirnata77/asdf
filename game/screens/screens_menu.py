@@ -1,5 +1,5 @@
 # =====================
-# 메뉴 화면 - 메인메뉴, 파티 생성, 불러오기/저장 목록, 옵션
+# 메뉴 화면 - 메인메뉴, 파티 생성, 불러오기/저장 목록, 설정
 # =====================
 # main.py가 game/screens/ 여섯 파일의 화면을 ScreenManager에 등록한다.
 
@@ -8,6 +8,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
 from kivy.uix.togglebutton import ToggleButton
+from kivy.uix.checkbox import CheckBox
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.spinner import Spinner
@@ -71,14 +72,14 @@ class 메인메뉴화면(Screen):
         self.불러오기버튼.bind(on_release=self._불러오기)
         버튼틀.add_widget(self.불러오기버튼)
 
-        옵션버튼 = Button(
-            text="옵션",
+        설정버튼 = Button(
+            text="설정",
             font_size=_버튼_폰트크기,
             size_hint_y=None,
             height=_버튼_높이,
         )
-        옵션버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "옵션"))
-        버튼틀.add_widget(옵션버튼)
+        설정버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "설정"))
+        버튼틀.add_widget(설정버튼)
 
         종료버튼 = Button(
             text="게임 종료",
@@ -101,6 +102,7 @@ class 메인메뉴화면(Screen):
         self.불러오기버튼.disabled = not 저장된_슬롯_있음
 
     def _불러오기(self, *args):
+        self.manager.get_screen("불러오기목록").돌아갈화면 = "메인메뉴"
         self.manager.current = "불러오기목록"
 
 
@@ -411,7 +413,7 @@ class _슬롯목록화면(Screen):
                 )  # 길어서 잘리는 줄 끝 말고 앞에 둔다
                 설명 = (
                     f"{요약['슬롯번호']}번 슬롯{표시} - {요약['대표캐릭터명']} 외 "
-                    f"{요약['파티인원수']}명 / {요약['현재마을']} / {요약['저장시각']}"
+                    f"{요약['파티인원수']}명 / {_저장_장소(요약)} / {요약['저장시각']}"
                 )
             줄.add_widget(Label(text=설명, font_size="16sp", halign="left"))
 
@@ -429,6 +431,14 @@ class _슬롯목록화면(Screen):
         raise NotImplementedError
 
 
+def _저장_장소(요약):
+    """슬롯 목록에 보일 저장 장소 - 던전 안에서 저장했으면 던전 이름, 아니면 마을."""
+    파일명 = 요약.get("던전파일명")
+    if 파일명:
+        return f"{gameflow.던전_레지스트리.get(파일명, {}).get('지도명', 파일명)}(던전)"
+    return 요약["현재마을"]
+
+
 class 불러오기목록화면(_슬롯목록화면):
     제목 = "불러오기"
     버튼글자 = "불러오기"
@@ -444,8 +454,10 @@ class 불러오기목록화면(_슬롯목록화면):
         except (FileNotFoundError, gameflow.세이브_손상오류) as 오류:
             self.안내라벨.text = str(오류)
             return
-        self.manager.get_screen("마을").갱신()
-        self.manager.current = "마을"
+        # 던전 안에서 저장한 세이브는 그 던전의 그 위치로 돌아간다
+        화면 = "던전" if 앱.게임상태.get("던전상태") else "마을"
+        self.manager.get_screen(화면).갱신()
+        self.manager.current = 화면
 
 
 class 저장목록화면(_슬롯목록화면):
@@ -463,36 +475,74 @@ class 저장목록화면(_슬롯목록화면):
 
 
 # =====================================================
-# 3. 옵션 (반응 자동 사용 - 설정 저장은 screens_common)
+# 3. 설정 (반응 자동 사용 / 자동전투 / 전투로그 - 설정 저장은 screens_common)
 # =====================================================
 
+# (설정 파일 키, 줄 이름, [(값, 체크박스 글), ...], 값을 컨트롤러에 넣는 함수, 지금 값 읽는 함수)
+_설정_항목 = (
+    (
+        "반응자동",
+        "반응 자동 사용",
+        [(True, "자동 사용"), (False, "매번 묻기")],
+        lambda 값: gameflow.반응_자동_설정(값),
+        lambda: gameflow.반응_자동_여부(),
+    ),
+    (
+        "자동전투방식",
+        "자동전투",
+        [(값, 값) for 값 in gameflow.자동전투_방식_목록],
+        lambda 값: gameflow.자동전투_방식_설정(값),
+        lambda: gameflow.자동전투_방식(),
+    ),
+    (
+        "전투로그방식",
+        "전투로그",
+        [(값, 값) for 값 in gameflow.전투로그_방식_목록],
+        lambda 값: gameflow.전투로그_방식_설정(값),
+        lambda: gameflow.전투로그_방식(),
+    ),
+)
+_설정_설명 = (
+    "반응 자동 사용: 매번 묻기면 반응행동을 쓰는 반응(회피/반격/피해감소 등)마다 창이 뜹니다.\n"
+    "자동전투: 일반공격은 일반공격(마법사 계열은 매직미사일), 전력전투는 스킬을 우선 씁니다.\n"
+    "전투로그: 자세하게는 굴림마다 주사위와 더해진 값의 계산 줄을 함께 보여 줍니다."
+)
 
-class 옵션화면(Screen):
+
+class 설정화면(Screen):
+    """메인메뉴의 [설정]과 게임 중 [메뉴]의 [설정]이 같이 쓴다. 줄마다 오른쪽 체크박스 두 개 중 하나를
+    고른다(같은 줄은 한 묶음). [뒤로]는 연 화면(돌아갈화면, 기본 메인메뉴)으로 돌아간다."""
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        설정 = 설정_불러오기()
+        self.돌아갈화면 = "메인메뉴"
+        설정_불러오기()
+        self.체크박스 = {}  # (설정키, 값) -> CheckBox
         루트 = BoxLayout(orientation="vertical", padding=24, spacing=14)
-        루트.add_widget(
-            Label(
-                text="옵션",
-                font_size="26sp",
-                size_hint=(1, 0.2),
-            )
-        )
-        설정틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.6), spacing=8)
-        self.반응자동버튼 = ToggleButton(
-            size_hint=(1, None),
-            height=dp(56),
-            state="down" if 설정.get("반응자동") else "normal",
-        )
-        self.반응자동버튼.bind(state=self._반응자동_변경)
-        설정틀.add_widget(self.반응자동버튼)
+        루트.add_widget(Label(text="설정", font_size="26sp", size_hint=(1, 0.15)))
+        설정틀 = BoxLayout(orientation="vertical", size_hint=(1, 0.65), spacing=8)
+        for 키, 줄이름, 선택지, 넣기, 읽기 in _설정_항목:
+            줄 = BoxLayout(orientation="horizontal", size_hint=(1, None), height=dp(56))
+            줄.add_widget(Label(text=줄이름, size_hint=(0.34, 1), halign="left"))
+            for 값, 글 in 선택지:
+                체크 = CheckBox(
+                    group=f"설정_{키}", size_hint=(0.1, 1), allow_no_selection=False
+                )
+                체크.active = 읽기() == 값
+                체크.bind(
+                    active=lambda inst, 켜짐, 키=키, 값=값, 넣기=넣기: (
+                        켜짐 and self._고름(키, 값, 넣기)
+                    )
+                )
+                self.체크박스[(키, 값)] = 체크
+                줄.add_widget(체크)
+                줄.add_widget(Label(text=글, size_hint=(0.23, 1), halign="left"))
+            설정틀.add_widget(줄)
         설명 = Label(
-            text="끄면 전투 중 반응행동을 쓰는 반응(회피/반격/피해감소 등)마다 "
-            "사용할지 묻는 창이 뜹니다. 켜면 묻지 않고 자동으로 사용합니다.",
+            text=_설정_설명,
             font_size="13sp",
             size_hint=(1, None),
-            height=dp(64),
+            height=dp(110),
             halign="left",
             valign="top",
         )
@@ -500,18 +550,23 @@ class 옵션화면(Screen):
         설정틀.add_widget(설명)
         설정틀.add_widget(Widget())
         루트.add_widget(설정틀)
-        self._반응자동_변경(self.반응자동버튼, self.반응자동버튼.state)
         뒤로버튼 = Button(text="뒤로", size_hint=(1, 0.2))
         뒤로키_버튼(뒤로버튼)
-        뒤로버튼.bind(
-            on_release=lambda *_: setattr(self.manager, "current", "메인메뉴")
-        )
+        뒤로버튼.bind(on_release=lambda *_: self._뒤로())
         루트.add_widget(뒤로버튼)
         self.add_widget(루트)
 
-    def _반응자동_변경(self, 버튼, 상태):
-        켜짐 = 상태 == "down"
-        버튼.text = f"반응 자동 사용: {'켜짐' if 켜짐 else '꺼짐'}"
-        if 켜짐 != gameflow.반응_자동_여부():
-            gameflow.반응_자동_설정(켜짐)
-            설정_저장("반응자동", 켜짐)
+    def on_pre_enter(self, *args):
+        # 다른 곳(설정 파일 다시 읽기 등)에서 바뀐 값을 체크박스에 다시 맞춘다
+        for 키, _, 선택지, _, 읽기 in _설정_항목:
+            for 값, _ in 선택지:
+                self.체크박스[(키, 값)].active = 읽기() == 값
+
+    def _고름(self, 키, 값, 넣기):
+        넣기(값)
+        설정_저장(키, 값)
+
+    def _뒤로(self):
+        돌아갈 = self.돌아갈화면
+        self.돌아갈화면 = "메인메뉴"
+        self.manager.current = 돌아갈

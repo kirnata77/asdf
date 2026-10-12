@@ -40,6 +40,7 @@ Config.set("graphics", "height", "2340")
 Config.set("graphics", "resizable", "0")
 
 import main  # noqa: E402 - 크래시 로그 훅/폰트 등록 등 앱 초기화를 그대로 쓴다
+from kivy.app import App  # noqa: E402
 from kivy.clock import Clock  # noqa: E402
 from kivy.core.window import Window  # noqa: E402
 from kivy.uix.button import Button  # noqa: E402
@@ -154,6 +155,7 @@ class 스모크앱(main.DnfMobileApp):
         yield from self._단계_던전목록(상태, 매니저)
         yield from self._단계_화면_틀(매니저)
         yield from self._단계_공격연출(상태, 매니저)
+        yield from self._단계_메뉴(상태, 매니저)
 
     def _단계_파티생성(self, 상태, 매니저):
         """파티 구성 화면 - 이름칸(안내/글자 수 제한)과 이름 중복"""
@@ -1597,7 +1599,7 @@ class 스모크앱(main.DnfMobileApp):
             매니저.current = "마을"
 
     def _단계_설정(self, 매니저):
-        """설정 파일이 없거나 깨졌거나 쓸 수 없어도 옵션 화면/설정 저장이 죽지 않는다"""
+        """설정 파일이 없거나 깨졌거나 쓸 수 없어도 설정 화면/설정 저장이 죽지 않는다"""
         폴더 = tempfile.mkdtemp(prefix="ui_smoke_settings_")
         경로 = os.path.join(폴더, "설정.json")
         원래경로 = screens_common._설정_경로
@@ -1625,15 +1627,33 @@ class 스모크앱(main.DnfMobileApp):
             )  # 폴더라 쓸 수 없다 -> 조용히 넘어간다
             screens_common.설정_저장("반응자동", False)
             screens_common._설정_경로 = lambda: 경로
-            매니저.current = "옵션"
+            매니저.current = "설정"
             yield 0.3
             _찍기("settings")
+            # 줄마다 체크박스 두 개 중 하나 - 고르면 컨트롤러 값과 설정 파일에 들어간다
+            설정 = 매니저.get_screen("설정")
+            for 키, 값, 읽기 in (
+                ("자동전투방식", "전력전투", gf.자동전투_방식),
+                ("전투로그방식", "자세하게", gf.전투로그_방식),
+                ("반응자동", True, gf.반응_자동_여부),
+            ):
+                설정.체크박스[(키, 값)].active = True
+                yield 0.1
+                assert 읽기() == 값, (키, 읽기())
+                with open(경로, encoding="utf-8") as f:
+                    assert json.load(f)[키] == 값, 키
+                같은줄 = [c for (k, _), c in 설정.체크박스.items() if k == 키]
+                assert sum(c.active for c in 같은줄) == 1, 키  # 한 줄에 하나만
+            _찍기("settings_checked")
             결과["단계"].append(
-                "설정 파일(없음/깨짐/딕셔너리 아님/쓰기 실패) - 기본값으로 계속"
+                "설정 파일(없음/깨짐/딕셔너리 아님/쓰기 실패) - 기본값으로 계속, "
+                "설정 화면 체크박스(반응 자동/자동전투/전투로그) 하나씩 골라 저장"
             )
         finally:
             screens_common._설정_경로 = 원래경로
             gf.반응_자동_설정(원래반응)
+            gf.자동전투_방식_설정("일반공격")
+            gf.전투로그_방식_설정("간략하게")
             shutil.rmtree(폴더, ignore_errors=True)
             매니저.current = "마을"
 
@@ -1840,7 +1860,7 @@ class 스모크앱(main.DnfMobileApp):
                 assert abs(y - (크기[1] - 보이는높이) / 2) < 1, (이름, 틀.틀.pos)
 
                 # 줄어든 화면에서 손가락으로 누른 곳이 그 버튼에 닿는다
-                매니저.current = "옵션"
+                매니저.current = "설정"
                 yield 0.3
                 _찍기("frame_" + 이름)
                 뒤로 = next(
@@ -1915,11 +1935,11 @@ class 스모크앱(main.DnfMobileApp):
         종류들 = ("참격", "타격", "관통", "화", "수", "명", "암", "실패")
         assert len(그림들) == 1 and 그림들[0].공격연출 in 종류들, 그림들
         assert 칸_위인가(그림들[0], 적), "적 그림 칸 위에 뜬다"
-        # 전투 기록 칸: "공격자의 일반공격!!" / "값 vs AC 값, 결과!" / 결과 줄(gameflow.로그_문장들)
+        # 전투 기록 칸: "공격자의 일반공격!!" / "명중 값 vs AC 값, 결과!" / 결과 줄(gameflow.로그_문장들)
         기록 = 전투.로그라벨.text.strip().split("\n")[-3:]
         assert 기록[0].endswith("의 일반공격!!"), 기록
         assert re.fullmatch(
-            r"-?\d+ vs AC [\d.]+, (성공|실패|치명타|대실패)!", 기록[1]
+            r"명중 -?\d+ vs AC [\d.]+, (성공|실패|치명타|대실패)!", 기록[1]
         ), 기록
         assert 기록[2].endswith(("데미지를 받았다.", "공격을 피했다.", "쓰러졌다!")), (
             기록
@@ -1942,11 +1962,140 @@ class 스모크앱(main.DnfMobileApp):
         assert [w.공격연출 for w in 연출들()] == ["실패"], 연출들()
         yield 0.8
         assert 연출들() == [], "0.5초 뒤 사라진다"
+        # [설정] 전투로그 "자세하게": 명중/AC/피해 계산 줄이 판정 줄 앞뒤에 붙는다
+        gf.전투로그_방식_설정("자세하게")
+        try:
+            gf.전투_시작(상태, ["타우 아미", "타우 아미"], 레벨=6, 차수=2)
+            support.반응_처리(상태)
+            전투상태 = 상태["전투상태"]
+            검사 = next(
+                p
+                for p in 전투상태["참가자"]
+                if (p.get("원본") or {}).get("직업") == "귀검사"
+            )
+            전투상태["현재턴"] = 전투상태["참가자"].index(검사)
+            flow.턴_시작_처리(전투상태, 검사)
+            gf.새_공격연출_가져오기(상태)
+            전투.로그라벨.text = ""
+            전투.갱신(신규=True)
+            yield 0.5
+            적 = next(p for p in 전투상태["참가자"] if p["진영"] == "적" and p["생존"])
+            전투._일반공격_실행(적)
+            for _ in range(20):
+                yield 0.05
+                if "AC 계산: " in 전투.로그라벨.text:
+                    break
+            assert "AC 계산: " in 전투.로그라벨.text, 전투.로그라벨.text[-300:]
+            assert "\n주사위(" in 전투.로그라벨.text, 전투.로그라벨.text[-300:]
+            yield 0.6
+            _찍기("battle_log_detailed")
+        finally:
+            gf.전투로그_방식_설정("간략하게")
         결과["단계"].append(
-            "공격 연출(적/아군 그림 칸 위에 종류 그림, 0.5초 뒤 사라짐)"
+            "공격 연출(적/아군 그림 칸 위에 종류 그림, 0.5초 뒤 사라짐), 자세하게 계산 줄"
         )
         상태["전투상태"] = None
         매니저.current = "마을"
+
+    def _단계_메뉴(self, 상태, 매니저):
+        """마을/던전 [메뉴] 팝업 - 저장하기/불러오기/설정/메인메뉴로(확인 창), 던전 안 저장 -> 같은 위치로"""
+        앱 = App.get_running_app()
+        앱.게임상태 = 상태
+        상태["전투상태"] = None
+        상태["던전상태"] = None
+
+        def 버튼(위젯, 글):
+            return next(
+                w
+                for w in 위젯.walk(restrict=True)
+                if isinstance(w, Button) and w.text == 글
+            )
+
+        def 팝업():
+            return Window.children[0]
+
+        def 메뉴_열기(화면이름):
+            버튼(매니저.get_screen(화면이름), "메뉴").trigger_action(duration=0)
+
+        매니저.get_screen("마을").갱신()
+        매니저.current = "마을"
+        yield 0.3
+        메뉴_열기("마을")
+        yield 0.3
+        글들 = [w.text for w in 팝업().walk(restrict=True) if isinstance(w, Button)]
+        assert 글들 == [
+            "저장하기",
+            "불러오기",
+            "설정",
+            "메인메뉴로 돌아가기",
+            "닫기",
+        ], 글들
+        _찍기("menu_popup")
+        버튼(팝업(), "저장하기").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "저장목록", 매니저.current
+        버튼(매니저.current_screen, "뒤로").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "마을", "저장 목록의 [뒤로]는 메뉴를 연 마을로"
+
+        # 던전에서: 설정 갔다 돌아오기, 저장 -> 불러오기(확인 창) -> 같은 던전 같은 위치
+        gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
+        매니저.get_screen("던전").갱신()
+        매니저.current = "던전"
+        yield 0.3
+        메뉴_열기("던전")
+        yield 0.3
+        버튼(팝업(), "설정").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "설정"
+        버튼(매니저.current_screen, "뒤로").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "던전", "설정의 [뒤로]는 메뉴를 연 던전으로"
+        위치 = tuple(상태["던전상태"]["위치"])
+        메뉴_열기("던전")
+        yield 0.3
+        버튼(팝업(), "저장하기").trigger_action(duration=0)
+        yield 0.3
+        매니저.current_screen._선택(3)
+        yield 0.3
+        요약 = next(s for s in gf.전체_세이브_요약() if s["슬롯번호"] == 3)
+        assert 요약.get("던전파일명") == "dungeon_01A_D01_Lorien", 요약
+        버튼(매니저.current_screen, "뒤로").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "던전"
+        메뉴_열기("던전")
+        yield 0.3
+        버튼(팝업(), "불러오기").trigger_action(duration=0)
+        yield 0.3
+        _찍기("menu_confirm")
+        버튼(팝업(), "예").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "불러오기목록", 매니저.current
+        매니저.current_screen._선택(3)
+        yield 0.3
+        assert 매니저.current == "던전", "던전에서 저장한 세이브는 던전으로"
+        assert tuple(앱.게임상태["던전상태"]["위치"]) == 위치
+        # 메인메뉴로 돌아가기: [아니요]면 그대로, [예]면 메인메뉴
+        메뉴_열기("던전")
+        yield 0.3
+        버튼(팝업(), "메인메뉴로 돌아가기").trigger_action(duration=0)
+        yield 0.3
+        버튼(팝업(), "아니요").trigger_action(duration=0)
+        yield 0.3
+        _팝업_닫기()
+        yield 0.3
+        assert 매니저.current == "던전"
+        메뉴_열기("던전")
+        yield 0.3
+        버튼(팝업(), "메인메뉴로 돌아가기").trigger_action(duration=0)
+        yield 0.3
+        버튼(팝업(), "예").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "메인메뉴", 매니저.current
+        결과["단계"].append(
+            "메뉴 팝업(마을/던전 같음) - 저장/설정 갔다 돌아오기, 던전 안 저장 -> 불러오기(확인 창) "
+            "-> 같은 위치, 메인메뉴로(아니요/예)"
+        )
 
 
 if __name__ == "__main__":
