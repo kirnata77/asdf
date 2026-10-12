@@ -574,7 +574,9 @@ class 던전화면(Screen):
         오른쪽버튼.bind(on_release=lambda *_: self._이동("오른쪽"))
         방향틀.add_widget(오른쪽버튼)
 
-        방향틀.add_widget(Label())
+        소지품버튼 = Button(text="소지품")
+        소지품버튼.bind(on_release=self._소지품_클릭)
+        방향틀.add_widget(소지품버튼)
         아래버튼 = Button(text="▼")
         아래버튼.bind(on_release=lambda *_: self._이동("아래"))
         방향틀.add_widget(아래버튼)
@@ -665,6 +667,10 @@ class 던전화면(Screen):
 
         self.상호작용버튼.disabled = True
         self._대기중오브젝트 = None
+
+    def _소지품_클릭(self, *args):
+        self.manager.get_screen("소지품").복귀화면 = "던전"
+        self.manager.current = "소지품"
 
     def _메뉴_클릭(self, *args):
         게임메뉴_열기(self)

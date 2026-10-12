@@ -44,6 +44,7 @@ from kivy.app import App  # noqa: E402
 from kivy.clock import Clock  # noqa: E402
 from kivy.core.window import Window  # noqa: E402
 from kivy.uix.button import Button  # noqa: E402
+from kivy.uix.label import Label  # noqa: E402
 from kivy.uix.scrollview import ScrollView  # noqa: E402
 
 import gameflow as gf  # noqa: E402
@@ -155,6 +156,7 @@ class 스모크앱(main.DnfMobileApp):
         yield from self._단계_던전목록(상태, 매니저)
         yield from self._단계_화면_틀(매니저)
         yield from self._단계_공격연출(상태, 매니저)
+        yield from self._단계_소지품(상태, 매니저)
         yield from self._단계_메뉴(상태, 매니저)
 
     def _단계_파티생성(self, 상태, 매니저):
@@ -1996,6 +1998,123 @@ class 스모크앱(main.DnfMobileApp):
         )
         상태["전투상태"] = None
         매니저.current = "마을"
+
+    def _단계_소지품(self, 상태, 매니저):
+        """마을 [소지품/창고] 팝업(창고는 못 누름) -> 소지품 화면: 항아리 [사용] -> 결과 팝업,
+        데이터 없는 항아리는 소모 안 함, 음식 [사용] -> 파티원 고르기 -> 회복, [상세보기], 던전 [소지품]"""
+        앱 = App.get_running_app()
+        앱.게임상태 = 상태
+        상태["전투상태"] = None
+        상태["던전상태"] = None
+
+        def 버튼(위젯, 글):
+            return next(
+                w
+                for w in 위젯.walk(restrict=True)
+                if isinstance(w, Button) and w.text == 글
+            )
+
+        def 팝업():
+            return Window.children[0]
+
+        def 팝업_글():
+            return " ".join(
+                _글(w.text) for w in 팝업().walk(restrict=True) if isinstance(w, Label)
+            )
+
+        상태["소지품"]["골드"] = 상태["소지품"].get("골드", 0) + 200
+        gf.상점_구매(상태, "소모품", "항아리", "만진의 항아리", 1)
+        상태["소지품"]["소모품"]["포린의 항아리"] = 1
+        상태["소지품"]["소모품"]["칸나의 수제빵"] = 1
+
+        매니저.get_screen("마을").갱신()
+        매니저.current = "마을"
+        yield 0.3
+        버튼(매니저.current_screen, "소지품/창고").trigger_action(duration=0)
+        yield 0.3
+        assert 버튼(팝업(), "창고 (미구현)").disabled, "창고는 못 누른다"
+        _찍기("inventory_choice")
+        버튼(팝업(), "소지품").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "소지품", 매니저.current
+        화면 = 매니저.current_screen
+        버튼(화면, "소모품").trigger_action(duration=0)
+        yield 0.3
+        버튼(화면, "항아리").trigger_action(duration=0)
+        yield 0.3
+        _찍기("inventory_jars")
+
+        def 행(이름):
+            return next(
+                w.parent
+                for w in 화면._목록틀.walk(restrict=True)
+                if isinstance(w, Label) and _글(w.text) == 이름
+            )
+
+        장비전 = sum(상태["소지품"]["장비"].values())
+        버튼(행("만진의 항아리"), "사용").trigger_action(duration=0)
+        yield 0.3
+        assert "나왔습니다" in 팝업_글(), 팝업_글()
+        _찍기("inventory_jar_result")
+        assert sum(상태["소지품"]["장비"].values()) == 장비전 + 1
+        assert "만진의 항아리" not in 상태["소지품"]["소모품"]
+        _팝업_닫기()
+        yield 0.3
+        버튼(행("포린의 항아리"), "사용").trigger_action(duration=0)
+        yield 0.3
+        assert "데이터 없음" in 팝업_글(), 팝업_글()
+        assert 상태["소지품"]["소모품"]["포린의 항아리"] == 1
+        _팝업_닫기()
+        yield 0.3
+        버튼(행("포린의 항아리"), "상세보기").trigger_action(duration=0)
+        yield 0.3
+        assert "레어 등급 장비" in 팝업_글(), 팝업_글()
+        _팝업_닫기()
+        yield 0.3
+
+        버튼(화면, "음식").trigger_action(duration=0)
+        yield 0.3
+        버튼(행("칸나의 수제빵"), "상세보기").trigger_action(duration=0)
+        yield 0.3
+        assert "HP 최대치의 50%" in 팝업_글(), 팝업_글()
+        _팝업_닫기()
+        yield 0.3
+        귀검사 = 상태["파티"]["파티원"][0]
+        귀검사["현재HP"] = 1
+        버튼(행("칸나의 수제빵"), "사용").trigger_action(duration=0)
+        yield 0.3
+        _찍기("inventory_target")
+        next(
+            w
+            for w in 팝업().walk(restrict=True)
+            if isinstance(w, Button) and w.text.startswith(귀검사["캐릭터명"] + " ")
+        ).trigger_action(duration=0)
+        yield 0.3
+        assert 귀검사["현재HP"] > 1, 귀검사["현재HP"]
+        assert "회복" in 화면.안내라벨.text, 화면.안내라벨.text
+        assert "칸나의 수제빵" not in 상태["소지품"]["소모품"]
+
+        # 나가기 -> 마을, 던전 [소지품] -> 나가기 -> 던전
+        버튼(화면, "◀ 뒤로").trigger_action(duration=0)
+        yield 0.3
+        버튼(화면, "◀ 나가기").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "마을", 매니저.current
+        gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
+        매니저.get_screen("던전").갱신()
+        매니저.current = "던전"
+        yield 0.3
+        버튼(매니저.current_screen, "소지품").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "소지품", 매니저.current
+        버튼(매니저.current_screen, "◀ 나가기").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "던전", 매니저.current
+        상태["던전상태"] = None
+        결과["단계"].append(
+            "소지품 - 마을 [소지품/창고](창고 못 누름), 항아리 [사용] 결과 팝업/데이터 없음은 그대로, "
+            "[상세보기], 음식 [사용] -> 파티원 고르기 -> 회복, 던전 [소지품] -> 나가기 -> 던전"
+        )
 
     def _단계_메뉴(self, 상태, 매니저):
         """마을/던전 [메뉴] 팝업 - 저장하기/불러오기/설정/메인메뉴로(확인 창), 던전 안 저장 -> 같은 위치로"""
