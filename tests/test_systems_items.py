@@ -50,11 +50,11 @@ def test_카탈로그_구조(카탈로그):
     }
     assert {탭: len(v) for 탭, v in 카탈로그["장비"].items()} == {
         "무기": 51,
-        "상의": 10,
-        "하의": 10,
-        "어깨": 5,
-        "벨트": 5,
-        "신발": 10,
+        "상의": 15,
+        "하의": 15,
+        "어깨": 10,
+        "벨트": 10,
+        "신발": 15,
         "목걸이": 3,
         "반지": 3,
         "팔찌": 3,
@@ -1165,3 +1165,45 @@ def test_드랍표_항목이_다른_드랍표를_가리키면_그_표를_굴린�
         [{"드랍표": [{"이름": "커먼장비군", "발동확률": 1}]}], 드랍표_모음, 장비
     )
     assert len(실제) == 56 and abs(sum(w for _, w in 실제) - 1) < 1e-9
+
+
+def test_언커먼_방어구는_재질마다_부위_5개_감점_없는_재질_기준값():
+    from game.data.equipment.eq_02_armor_01_top import 상의목록
+    from game.data.equipment.eq_02_armor_02_bottom import 하의목록
+    from game.data.equipment.eq_02_armor_03_shoulder import 어깨목록
+    from game.data.equipment.eq_02_armor_04_belt import 벨트목록
+    from game.data.equipment.eq_02_armor_05_shoes import 신발목록
+    from game.data.equipment.eq_02_armor_format import 상의_재질별_AC보너스
+
+    접두 = {
+        "천갑": "실키얀",
+        "가죽": "페더레더",
+        "경갑": "세라믹",
+        "중갑": "체인",
+        "판금": "합금",
+    }
+    부위표 = {
+        "상의": 상의목록,
+        "하의": 하의목록,
+        "어깨": 어깨목록,
+        "벨트": 벨트목록,
+        "신발": 신발목록,
+    }
+    for 부위, 목록 in 부위표.items():
+        언커먼 = {k: v for k, v in 목록.items() if v["레어도"] == "언커먼"}
+        assert sorted(언커먼) == sorted(f"{p} {부위}" for p in 접두.values()), 부위
+        for 재질, 접두어 in 접두.items():
+            템 = 언커먼[f"{접두어} {부위}"]
+            assert 템["분류"] == 부위 and 템["재질"] == 재질
+            assert 템["티어"] == 1 and 템["가격"] == 20 and 템["스탯보너스"] == {}
+            if 부위 == "상의":  # 커먼의 "낡아서 -1" 없이 재질 기준 그대로
+                기준 = 상의_재질별_AC보너스[재질]
+                assert 템["AC보너스"] == 기준["AC보너스"]
+                assert 템["민첩상한"] == 기준["민첩상한"]
+                assert 템["속도보너스"] == 기준.get("속도보너스", 0)
+            else:  # 하의/어깨/벨트/신발은 마법 부여가 없으면 능력치 없음
+                assert (템["AC보너스"], 템["민첩상한"], 템["속도보너스"]) == (
+                    0,
+                    None,
+                    0,
+                )
