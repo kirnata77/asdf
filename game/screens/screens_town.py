@@ -60,6 +60,12 @@ from game.screens.screens_common import (
 )
 
 
+def 소지품_열기(화면, 복귀화면):
+    """마을/던전에서 소지품 화면으로 - 나가면 복귀화면으로 돌아간다."""
+    화면.manager.get_screen("소지품").복귀화면 = 복귀화면
+    화면.manager.current = "소지품"
+
+
 class 마을화면(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -146,7 +152,8 @@ class 마을화면(Screen):
         npc버튼 = Button(text="NPC (미구현)", disabled=True)
         버튼그리드.add_widget(npc버튼)
 
-        창고버튼 = Button(text="창고 (미구현)", disabled=True)
+        창고버튼 = Button(text="소지품/창고")
+        창고버튼.bind(on_release=self._소지품창고_클릭)
         버튼그리드.add_widget(창고버튼)
 
         나머지.add_widget(버튼그리드)
@@ -203,6 +210,25 @@ class 마을화면(Screen):
 
     def _모험단_클릭(self, *args):
         self.manager.current = "모험단"
+
+    def _소지품창고_클릭(self, *args):
+        """[소지품] / [창고 (미구현)] 고르기 팝업."""
+        본문 = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(12))
+        팝업 = Popup(
+            title="소지품/창고", content=본문, size_hint=(0.8, None), height=dp(300)
+        )
+
+        def 소지품(*_):
+            팝업.dismiss()
+            소지품_열기(self, "마을")
+
+        소지품버튼 = Button(text="소지품")
+        소지품버튼.bind(on_release=소지품)
+        본문.add_widget(소지품버튼)
+        본문.add_widget(Button(text="창고 (미구현)", disabled=True))
+        본문.add_widget(닫기_버튼(팝업))
+        팝업.open()
+        self._소지품창고_팝업 = 팝업
 
 
 # =====================================================
@@ -405,6 +431,8 @@ _행_글자크기 = "16sp"  # 상점 아이템 줄의 글자 크기(이름/버�
 
 
 class 상점화면(Screen):
+    제목 = "상점"
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.복귀화면 = "마을"
@@ -415,7 +443,7 @@ class 상점화면(Screen):
         머리 = BoxLayout(
             orientation="horizontal", size_hint=(1, None), height=글자_높이("20sp")
         )
-        머리.add_widget(Label(text="상점", font_size="20sp", halign="left"))
+        머리.add_widget(Label(text=self.제목, font_size="20sp", halign="left"))
         self.골드라벨 = Label(text="")
         머리.add_widget(self.골드라벨)
         루트.add_widget(머리)
@@ -531,7 +559,7 @@ class 상점화면(Screen):
 
         # 부위 탭 - 장비는 2줄(윗줄 무기~신발, 아랫줄 악세서리/특수장비)을 한 묶음으로,
         # 밀어서 넘기지 않고 다 보인다. 그 아래 하위 탭(무기: 직업군 -> 종류, 방어구: 재질).
-        탭줄들 = gameflow.상점_탭줄(모드, 대분류)
+        탭줄들 = self._탭줄(모드, 대분류)
         칸수 = max(len(줄) for 줄 in 탭줄들) if 탭줄들 else 1
         그룹 = f"상점부위{id(self)}"
         처음탭 = 탭줄들[0][0] if 탭줄들 and 탭줄들[0] else None
@@ -564,6 +592,9 @@ class 상점화면(Screen):
 
         if 처음탭:
             self._부위_고르기(모드, 대분류, 처음탭)
+
+    def _탭줄(self, 모드, 대분류):
+        return gameflow.상점_탭줄(모드, 대분류)
 
     def _부위_고르기(self, 모드, 대분류, 탭):
         """부위 탭을 누르면 하위 탭을 다시 그리고(고른 것은 [전체]로) 목록을 그린다."""
@@ -901,6 +932,165 @@ class 상점화면(Screen):
         if isinstance(값, (list, tuple)):
             return ", ".join(str(v) for v in 값)
         return str(값)
+
+
+# =====================================================
+# 4-2b. 소지품 화면 (마을 [소지품/창고] -> [소지품], 던전 방향키 왼쪽 아래 [소지품])
+# =====================================================
+# 상점처럼 대분류 -> 탭(-> 하위 탭) -> 목록. 줄마다 [상세보기], 쓸 수 있는 것(항아리/회복포션/
+# 음식/주류)은 [사용]. 항아리는 바로 열고, 나머지는 쓸 파티원을 고른다. 전투 중 아이템은 전투 화면에서.
+
+
+class 소지품화면(상점화면):
+    제목 = "소지품"
+    모드 = "소지품"
+
+    def _메인_그리기(self):
+        self._대분류_그리기(self.모드)
+
+    def _대분류_그리기(self, 모드):
+        self._비우기()
+        상단 = BoxLayout(
+            orientation="horizontal", size_hint=(1, None), height=글자_높이()
+        )
+        나가기버튼 = Button(text="◀ 나가기", size_hint=(0.32, 1))
+        뒤로키_버튼(나가기버튼)
+        나가기버튼.bind(on_release=self._나가기)
+        상단.add_widget(나가기버튼)
+        상단.add_widget(Label(text=모드, size_hint=(0.68, 1)))
+        self.내용틀.add_widget(상단)
+        for 대분류 in gameflow.상점_대분류목록:
+            버튼 = Button(text=대분류, font_size=_버튼_폰트크기)
+            버튼.bind(on_release=lambda *_, d=대분류: self._탭목록_그리기(모드, d))
+            self.내용틀.add_widget(버튼)
+
+    def _탭줄(self, 모드, 대분류):
+        return gameflow.소지품_탭줄(App.get_running_app().게임상태, 대분류)
+
+    def _아이템목록_그리기(self, 모드, 대분류, 탭, 목록틀):
+        목록틀.clear_widgets()
+        self._현재 = (대분류, 탭, 목록틀)
+        게임상태 = App.get_running_app().게임상태
+        필터 = getattr(self, "_필터", None) or {}
+        항목목록 = [
+            항목
+            for 항목 in gameflow.소지품_목록(게임상태, 대분류, 탭)
+            if gameflow.상점_분류_일치(
+                탭, 항목[0], 필터.get("직업군"), 필터.get("분류")
+            )
+        ]
+        if not 항목목록:
+            목록틀.add_widget(
+                Label(text="가진 물건이 없습니다.", size_hint=(1, None), height=dp(40))
+            )
+            return
+        for 아이템, 개수, 종류 in 항목목록:
+            목록틀.add_widget(self._소지품_행(아이템, 개수, 종류))
+
+    def _다시그리기(self):
+        대분류, 탭, 목록틀 = self._현재
+        self._아이템목록_그리기(self.모드, 대분류, 탭, 목록틀)
+
+    def _소지품_행(self, 아이템, 개수, 종류):
+        글자 = _행_글자크기
+        행 = BoxLayout(
+            orientation="horizontal", size_hint=(1, None), height=56, spacing=4
+        )
+        이름라벨 = Label(
+            text=아이템_이름_글(아이템),
+            markup=True,
+            size_hint=(0.44, 1),
+            halign="left",
+            valign="middle",
+            font_size=글자,
+            shorten=True,
+            shorten_from="right",
+        )
+        이름라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
+        행.add_widget(이름라벨)
+        행.add_widget(Label(text=f"x{개수}", size_hint=(0.14, 1), font_size=글자))
+        상세버튼 = Button(text="상세보기", size_hint=(0.22, 1), font_size=글자)
+        상세버튼.bind(on_release=lambda *_: self._상세보기(아이템))
+        행.add_widget(상세버튼)
+        if 종류:
+            사용버튼 = Button(text="사용", size_hint=(0.2, 1), font_size=글자)
+            사용버튼.bind(on_release=lambda *_: self._사용(종류, 아이템))
+            행.add_widget(사용버튼)
+        else:
+            행.add_widget(Widget(size_hint=(0.2, 1)))
+        return 행
+
+    def _상세보기(self, 아이템):
+        줄들 = gameflow.소지품_상세(아이템)
+        if 줄들 is None:
+            self._자세히보기(아이템)
+            return
+        줄들 = 줄들 + [
+            f"가격: {아이템.get('가격', 0)}G (판매가 {gameflow.상점_판매가(아이템)}G)"
+        ]
+        self._알림(아이템["이름"], "\n".join(줄들))
+
+    def _알림(self, 제목, 문구):
+        본문 = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(12))
+        문구라벨 = Label(text=문구, markup=True, halign="center", valign="middle")
+        문구라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
+        본문.add_widget(문구라벨)
+        팝업 = Popup(title=제목, content=본문, size_hint=(0.85, None), height=dp(300))
+        본문.add_widget(닫기_버튼(팝업, size_hint=(1, None), height=dp(52)))
+        팝업.open()
+        return 팝업
+
+    def _사용(self, 종류, 아이템):
+        게임상태 = App.get_running_app().게임상태
+        이름 = 아이템["이름"]
+        if 종류 == "항아리":
+            try:
+                장비 = gameflow.항아리_열기(게임상태, 이름)
+            except ValueError as 오류:
+                self._알림(이름, str(오류))
+                return
+            self._알림(이름, f"{아이템_이름_글(장비)}이(가) 나왔습니다!")
+            self._다시그리기()
+            return
+        self._대상_고르기(종류, 이름)
+
+    def _대상_고르기(self, 종류, 이름):
+        게임상태 = App.get_running_app().게임상태
+        본문 = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(12))
+        팝업 = Popup(title=f"{이름} - 누구에게?", content=본문, size_hint=(0.85, 0.6))
+        for 캐릭터 in 게임상태["파티"]["파티원"]:
+            버튼 = Button(
+                text=f"{캐릭터['캐릭터명']}  HP {캐릭터['현재HP']}/"
+                f"{gameflow.캐릭터_최대HP(게임상태, 캐릭터)}  MP {캐릭터['현재MP']}/"
+                f"{gameflow.캐릭터_최대MP(게임상태, 캐릭터)}"
+            )
+            버튼.bind(
+                on_release=lambda *_, c=캐릭터: self._대상에게_사용(팝업, 종류, 이름, c)
+            )
+            본문.add_widget(버튼)
+        본문.add_widget(닫기_버튼(팝업, size_hint=(1, None), height=dp(52)))
+        팝업.open()
+        self._대상팝업 = 팝업
+
+    def _대상에게_사용(self, 팝업, 종류, 이름, 캐릭터):
+        게임상태 = App.get_running_app().게임상태
+        try:
+            if 종류 == "회복포션":
+                대상, 회복 = gameflow.캐릭터_포션사용(게임상태, 캐릭터, 이름)
+                결과 = f"{대상} {회복} 회복"
+            elif 종류 == "주류":
+                회복, 취기 = gameflow.캐릭터_주류사용(게임상태, 캐릭터, 이름)
+                결과 = gameflow.주류_결과_문구(회복, 취기)
+            else:
+                회복 = gameflow.캐릭터_음식사용(게임상태, 캐릭터, 이름)
+                결과 = ", ".join(f"{k} {v} 회복" for k, v in 회복.items())
+        except ValueError as 오류:
+            self.안내라벨.text = f"{캐릭터['캐릭터명']}: {오류}"
+            팝업.dismiss()
+            return
+        팝업.dismiss()
+        self.안내라벨.text = f"{캐릭터['캐릭터명']} - {이름}: {결과}"
+        self._다시그리기()
 
 
 # =====================================================
