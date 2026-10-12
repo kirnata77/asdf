@@ -21,6 +21,7 @@ from kivy.uix.widget import Widget
 
 import gameflow
 from game.screens.screens_common import (
+    게임메뉴_열기,
     _기본_초상화_코드,
     _버튼_높이,
     _버튼_폰트크기,
@@ -129,11 +130,10 @@ class 마을화면(Screen):
         마을이동버튼.bind(on_release=self._마을이동)
         버튼그리드.add_widget(마을이동버튼)
 
-        저장버튼 = Button(text="저장하기")
-        저장버튼.bind(
-            on_release=lambda *_: setattr(self.manager, "current", "저장목록")
-        )
-        버튼그리드.add_widget(저장버튼)
+        # [메뉴] - 저장하기/불러오기/설정/메인메뉴로 돌아가기(던전과 같은 팝업)
+        메뉴버튼 = Button(text="메뉴")
+        메뉴버튼.bind(on_release=lambda *_: 게임메뉴_열기(self))
+        버튼그리드.add_widget(메뉴버튼)
 
         상점버튼 = Button(text="상점")
         상점버튼.bind(on_release=self._상점_클릭)

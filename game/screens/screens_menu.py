@@ -102,6 +102,7 @@ class 메인메뉴화면(Screen):
         self.불러오기버튼.disabled = not 저장된_슬롯_있음
 
     def _불러오기(self, *args):
+        self.manager.get_screen("불러오기목록").돌아갈화면 = "메인메뉴"
         self.manager.current = "불러오기목록"
 
 

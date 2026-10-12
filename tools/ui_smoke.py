@@ -40,6 +40,7 @@ Config.set("graphics", "height", "2340")
 Config.set("graphics", "resizable", "0")
 
 import main  # noqa: E402 - 크래시 로그 훅/폰트 등록 등 앱 초기화를 그대로 쓴다
+from kivy.app import App  # noqa: E402
 from kivy.clock import Clock  # noqa: E402
 from kivy.core.window import Window  # noqa: E402
 from kivy.uix.button import Button  # noqa: E402
@@ -154,6 +155,7 @@ class 스모크앱(main.DnfMobileApp):
         yield from self._단계_던전목록(상태, 매니저)
         yield from self._단계_화면_틀(매니저)
         yield from self._단계_공격연출(상태, 매니저)
+        yield from self._단계_메뉴(상태, 매니저)
 
     def _단계_파티생성(self, 상태, 매니저):
         """파티 구성 화면 - 이름칸(안내/글자 수 제한)과 이름 중복"""
@@ -1965,6 +1967,106 @@ class 스모크앱(main.DnfMobileApp):
         )
         상태["전투상태"] = None
         매니저.current = "마을"
+
+    def _단계_메뉴(self, 상태, 매니저):
+        """마을/던전 [메뉴] 팝업 - 저장하기/불러오기/설정/메인메뉴로(확인 창), 던전 안 저장 -> 같은 위치로"""
+        앱 = App.get_running_app()
+        앱.게임상태 = 상태
+        상태["전투상태"] = None
+        상태["던전상태"] = None
+
+        def 버튼(위젯, 글):
+            return next(
+                w
+                for w in 위젯.walk(restrict=True)
+                if isinstance(w, Button) and w.text == 글
+            )
+
+        def 팝업():
+            return Window.children[0]
+
+        def 메뉴_열기(화면이름):
+            버튼(매니저.get_screen(화면이름), "메뉴").trigger_action(duration=0)
+
+        매니저.get_screen("마을").갱신()
+        매니저.current = "마을"
+        yield 0.3
+        메뉴_열기("마을")
+        yield 0.3
+        글들 = [w.text for w in 팝업().walk(restrict=True) if isinstance(w, Button)]
+        assert 글들 == [
+            "저장하기",
+            "불러오기",
+            "설정",
+            "메인메뉴로 돌아가기",
+            "닫기",
+        ], 글들
+        _찍기("menu_popup")
+        버튼(팝업(), "저장하기").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "저장목록", 매니저.current
+        버튼(매니저.current_screen, "뒤로").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "마을", "저장 목록의 [뒤로]는 메뉴를 연 마을로"
+
+        # 던전에서: 설정 갔다 돌아오기, 저장 -> 불러오기(확인 창) -> 같은 던전 같은 위치
+        gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
+        매니저.get_screen("던전").갱신()
+        매니저.current = "던전"
+        yield 0.3
+        메뉴_열기("던전")
+        yield 0.3
+        버튼(팝업(), "설정").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "설정"
+        버튼(매니저.current_screen, "뒤로").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "던전", "설정의 [뒤로]는 메뉴를 연 던전으로"
+        위치 = tuple(상태["던전상태"]["위치"])
+        메뉴_열기("던전")
+        yield 0.3
+        버튼(팝업(), "저장하기").trigger_action(duration=0)
+        yield 0.3
+        매니저.current_screen._선택(3)
+        yield 0.3
+        요약 = next(s for s in gf.전체_세이브_요약() if s["슬롯번호"] == 3)
+        assert 요약.get("던전파일명") == "dungeon_01A_D01_Lorien", 요약
+        버튼(매니저.current_screen, "뒤로").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "던전"
+        메뉴_열기("던전")
+        yield 0.3
+        버튼(팝업(), "불러오기").trigger_action(duration=0)
+        yield 0.3
+        _찍기("menu_confirm")
+        버튼(팝업(), "예").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "불러오기목록", 매니저.current
+        매니저.current_screen._선택(3)
+        yield 0.3
+        assert 매니저.current == "던전", "던전에서 저장한 세이브는 던전으로"
+        assert tuple(앱.게임상태["던전상태"]["위치"]) == 위치
+        # 메인메뉴로 돌아가기: [아니요]면 그대로, [예]면 메인메뉴
+        메뉴_열기("던전")
+        yield 0.3
+        버튼(팝업(), "메인메뉴로 돌아가기").trigger_action(duration=0)
+        yield 0.3
+        버튼(팝업(), "아니요").trigger_action(duration=0)
+        yield 0.3
+        _팝업_닫기()
+        yield 0.3
+        assert 매니저.current == "던전"
+        메뉴_열기("던전")
+        yield 0.3
+        버튼(팝업(), "메인메뉴로 돌아가기").trigger_action(duration=0)
+        yield 0.3
+        버튼(팝업(), "예").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "메인메뉴", 매니저.current
+        결과["단계"].append(
+            "메뉴 팝업(마을/던전 같음) - 저장/설정 갔다 돌아오기, 던전 안 저장 -> 불러오기(확인 창) "
+            "-> 같은 위치, 메인메뉴로(아니요/예)"
+        )
 
 
 if __name__ == "__main__":

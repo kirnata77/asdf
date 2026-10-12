@@ -305,6 +305,66 @@ def 닫기_버튼(팝업, **kwargs):
     return 버튼
 
 
+def 확인_팝업(제목, 문구, 확인):
+    """[예]/[아니요] 확인 창 - [예]를 누르면 닫고 확인()을 부른다. [아니요]와 [뒤로] 키는 그냥 닫는다."""
+    본문 = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(12))
+    문구라벨 = Label(text=문구, halign="center", valign="middle")
+    문구라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
+    본문.add_widget(문구라벨)
+    팝업 = Popup(title=제목, content=본문, size_hint=(0.85, None), height=dp(240))
+    버튼줄 = BoxLayout(
+        orientation="horizontal", size_hint=(1, None), height=dp(52), spacing=dp(8)
+    )
+    예 = Button(text="예")
+    예.bind(on_release=lambda *_: (팝업.dismiss(), 확인()))
+    아니요 = 뒤로키_버튼(Button(text="아니요"))
+    아니요.bind(on_release=lambda *_: 팝업.dismiss())
+    버튼줄.add_widget(예)
+    버튼줄.add_widget(아니요)
+    본문.add_widget(버튼줄)
+    팝업.open()
+    return 팝업
+
+
+# 게임 중 [메뉴] - 마을과 던전이 같은 팝업을 쓴다. 저장/불러오기 목록과 설정의 [뒤로]는 연 화면으로 돌아간다.
+_메뉴_진행경고 = "저장하지 않은 진행은 사라집니다.\n계속할까요?"
+
+
+def 게임메뉴_열기(화면):
+    """화면(마을/던전 Screen)에서 [메뉴]를 눌렀을 때의 팝업 - 저장하기/불러오기/설정/메인메뉴로 돌아가기."""
+    매니저 = 화면.manager
+    본문 = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(12))
+    팝업 = Popup(title="메뉴", content=본문, size_hint=(0.8, None), height=dp(420))
+
+    def 이동(화면이름):
+        팝업.dismiss()
+        매니저.get_screen(화면이름).돌아갈화면 = 화면.name
+        매니저.current = 화면이름
+
+    def 메인메뉴로():
+        팝업.dismiss()
+        매니저.current = "메인메뉴"
+
+    for 글, 동작 in (
+        ("저장하기", lambda: 이동("저장목록")),
+        (
+            "불러오기",
+            lambda: 확인_팝업("불러오기", _메뉴_진행경고, lambda: 이동("불러오기목록")),
+        ),
+        ("설정", lambda: 이동("설정")),
+        (
+            "메인메뉴로 돌아가기",
+            lambda: 확인_팝업("메인메뉴로 돌아가기", _메뉴_진행경고, 메인메뉴로),
+        ),
+    ):
+        버튼 = Button(text=글)
+        버튼.bind(on_release=lambda *_, 동작=동작: 동작())
+        본문.add_widget(버튼)
+    본문.add_widget(닫기_버튼(팝업))
+    팝업.open()
+    return 팝업
+
+
 def 스크롤_목록(높이비율, 간격=6):
     """세로로 쌓는 목록틀(내용 높이만큼 늘어남)과 그것을 감싼 ScrollView. (스크롤, 목록틀)을 돌려준다."""
     목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=간격)
