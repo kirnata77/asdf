@@ -130,7 +130,7 @@ class 마을화면(Screen):
         마을이동버튼.bind(on_release=self._마을이동)
         버튼그리드.add_widget(마을이동버튼)
 
-        # [메뉴] - 저장하기/불러오기/설정/메인메뉴로 돌아가기(던전과 같은 팝업)
+        # [메뉴] - 저장하기/불러오기/설정/타이틀로 돌아가기(던전과 같은 팝업)
         메뉴버튼 = Button(text="메뉴")
         메뉴버튼.bind(on_release=lambda *_: 게임메뉴_열기(self))
         버튼그리드.add_widget(메뉴버튼)

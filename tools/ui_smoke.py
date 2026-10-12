@@ -2027,7 +2027,7 @@ class 스모크앱(main.DnfMobileApp):
             "저장하기",
             "불러오기",
             "설정",
-            "메인메뉴로 돌아가기",
+            "타이틀로 돌아가기",
             "닫기",
         ], 글들
         _찍기("menu_popup")
@@ -2075,10 +2075,10 @@ class 스모크앱(main.DnfMobileApp):
         yield 0.3
         assert 매니저.current == "던전", "던전에서 저장한 세이브는 던전으로"
         assert tuple(앱.게임상태["던전상태"]["위치"]) == 위치
-        # 메인메뉴로 돌아가기: [아니요]면 그대로, [예]면 메인메뉴
+        # 타이틀로 돌아가기: [아니요]면 그대로, [예]면 메인메뉴
         메뉴_열기("던전")
         yield 0.3
-        버튼(팝업(), "메인메뉴로 돌아가기").trigger_action(duration=0)
+        버튼(팝업(), "타이틀로 돌아가기").trigger_action(duration=0)
         yield 0.3
         버튼(팝업(), "아니요").trigger_action(duration=0)
         yield 0.3
@@ -2087,14 +2087,14 @@ class 스모크앱(main.DnfMobileApp):
         assert 매니저.current == "던전"
         메뉴_열기("던전")
         yield 0.3
-        버튼(팝업(), "메인메뉴로 돌아가기").trigger_action(duration=0)
+        버튼(팝업(), "타이틀로 돌아가기").trigger_action(duration=0)
         yield 0.3
         버튼(팝업(), "예").trigger_action(duration=0)
         yield 0.3
         assert 매니저.current == "메인메뉴", 매니저.current
         결과["단계"].append(
             "메뉴 팝업(마을/던전 같음) - 저장/설정 갔다 돌아오기, 던전 안 저장 -> 불러오기(확인 창) "
-            "-> 같은 위치, 메인메뉴로(아니요/예)"
+            "-> 같은 위치, 타이틀로(아니요/예)"
         )
 
 
