@@ -1026,6 +1026,22 @@ def test_피격펌블_증가_감소는_나를_공격하는_쪽의_펌블범위�
     assert not damage.명중_판정_계산(전투상태, p, e, "보정명중률")["자동실패"]
 
 
+def test_판금_벨트는_치명타주사위를_1_줄인다_디버프_치명타피해감소를_늘_가진_셈(전장):
+    from game.data.equipment.eq_02_armor_04_belt import 벨트목록
+    from game.system import equipment_system
+
+    _, 전투상태, _, 아군 = 전장
+    합계 = equipment_system.장비_보너스_합산({"벨트": 벨트목록["합금 벨트"]})
+    assert 합계["치명타주사위"] == -1
+    assert equipment_system.장비_보너스_합산({})["치명타주사위"] == 0
+    p = 아군[0]
+    기본 = stats.치명타_주사위수(전투상태, p)
+    p["장비보너스"] = dict(p["장비보너스"], 치명타주사위=-1)
+    assert stats.치명타_주사위수(전투상태, p) == 기본 - 1
+    p["장비보너스"]["치명타주사위"] = -9
+    assert stats.치명타_주사위수(전투상태, p) == 0  # 0 아래로 안 내려감
+
+
 def test_치명타주사위_기본1과_버프_디버프_증감(전장, monkeypatch):
     상태, 전투상태, 적, 아군 = 전장
     p = 아군[0]
