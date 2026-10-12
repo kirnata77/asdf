@@ -512,7 +512,7 @@ def test_gameflow는_손상오류를_그대로_올린다(임시_세이브폴더)
 def test_세이브에는_버전이_들어_있다(임시_세이브폴더):
     _저장(1)
     저장 = json.loads((임시_세이브폴더 / "slot_1.json").read_text(encoding="utf-8"))
-    assert 저장["버전"] == save_system.세이브_버전 == 1
+    assert 저장["버전"] == save_system.세이브_버전 == 2
 
 
 def test_버전_없는_세이브는_0으로_보고_현재_형태로_변환한다(임시_세이브폴더):
@@ -560,24 +560,24 @@ def test_마이그레이션은_저장된_버전보다_높은_것만_순서대로
 ):
     순서 = []
 
-    def 변환2(데이터):
-        순서.append(2)
-        데이터["플레이어"]["표시"] = 데이터["플레이어"].get("표시", "") + "2"
-
     def 변환3(데이터):
         순서.append(3)
-        데이터["플레이어"]["표시"] += "3"
+        데이터["플레이어"]["표시"] = 데이터["플레이어"].get("표시", "") + "3"
 
-    _저장(1)  # 버전 1로 저장
-    monkeypatch.setattr(save_system, "세이브_버전", 3)
+    def 변환4(데이터):
+        순서.append(4)
+        데이터["플레이어"]["표시"] += "4"
+
+    _저장(1)  # 지금 버전(2)으로 저장
+    monkeypatch.setattr(save_system, "세이브_버전", 4)
     monkeypatch.setattr(
         save_system,
         "_마이그레이션",
-        save_system._마이그레이션 + [(2, 변환2), (3, 변환3)],
+        save_system._마이그레이션 + [(3, 변환3), (4, 변환4)],
     )
     플레이어, _ = save_system.게임_불러오기(1)
-    assert 순서 == [2, 3] and 플레이어["표시"] == "23"
-    # 이미 3으로 저장된 세이브는 건너뛴다
+    assert 순서 == [3, 4] and 플레이어["표시"] == "34"
+    # 이미 4로 저장된 세이브는 건너뛴다
     _저장(2)
     순서.clear()
     save_system.게임_불러오기(2)
@@ -1251,3 +1251,25 @@ def test_판금은_중갑보다_기본_AC가_높고_부위마다_해제불가_�
                 for 키 in ("데미지보너스", "명중률보너스", "치명타주사위"):
                     assert 템.get(키, 0) == 패널티.get(키, 0), (템["이름"], 키)
                 assert 템["스탯보너스"] == 패널티.get("스탯보너스", {}), 템["이름"]
+
+
+def test_세이브_던전위치를_저장하고_옛_세이브는_던전위치_없음(임시_세이브폴더):
+    플레이어 = player_system.빈_플레이어()
+    진행도 = {"현재마을": "엘븐가드", "클리어한던전": set(), "클리어한오브젝트": set()}
+    위치 = {"던전파일명": "dungeon_01A_D01_Lorien", "위치": [3, 4], "걸음수": 7}
+    save_system.게임_저장(1, 플레이어, 진행도, 던전위치=위치)
+    읽은플레이어, _ = save_system.게임_불러오기(1)
+    assert 읽은플레이어["던전위치"] == 위치
+    assert save_system.세이브_요약(1)["던전파일명"] == "dungeon_01A_D01_Lorien"
+    save_system.게임_저장(2, 플레이어, 진행도)  # 마을에서 저장
+    assert save_system.게임_불러오기(2)[0]["던전위치"] is None
+    assert "던전파일명" not in save_system.세이브_요약(2)
+    # 버전 1 세이브(던전위치 칸이 없던 때)는 던전위치 없음으로 읽는다
+    _저장(3)
+    경로 = 임시_세이브폴더 / "slot_3.json"
+    옛 = json.loads(경로.read_text(encoding="utf-8"))
+    옛["버전"] = 1
+    del 옛["던전위치"]
+    경로.write_text(json.dumps(옛, ensure_ascii=False), encoding="utf-8")
+    assert save_system.게임_불러오기(3)[0]["던전위치"] is None
+    assert save_system.세이브_버전 == 2

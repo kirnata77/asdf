@@ -412,7 +412,7 @@ class _슬롯목록화면(Screen):
                 )  # 길어서 잘리는 줄 끝 말고 앞에 둔다
                 설명 = (
                     f"{요약['슬롯번호']}번 슬롯{표시} - {요약['대표캐릭터명']} 외 "
-                    f"{요약['파티인원수']}명 / {요약['현재마을']} / {요약['저장시각']}"
+                    f"{요약['파티인원수']}명 / {_저장_장소(요약)} / {요약['저장시각']}"
                 )
             줄.add_widget(Label(text=설명, font_size="16sp", halign="left"))
 
@@ -430,6 +430,14 @@ class _슬롯목록화면(Screen):
         raise NotImplementedError
 
 
+def _저장_장소(요약):
+    """슬롯 목록에 보일 저장 장소 - 던전 안에서 저장했으면 던전 이름, 아니면 마을."""
+    파일명 = 요약.get("던전파일명")
+    if 파일명:
+        return f"{gameflow.던전_레지스트리.get(파일명, {}).get('지도명', 파일명)}(던전)"
+    return 요약["현재마을"]
+
+
 class 불러오기목록화면(_슬롯목록화면):
     제목 = "불러오기"
     버튼글자 = "불러오기"
@@ -445,8 +453,10 @@ class 불러오기목록화면(_슬롯목록화면):
         except (FileNotFoundError, gameflow.세이브_손상오류) as 오류:
             self.안내라벨.text = str(오류)
             return
-        self.manager.get_screen("마을").갱신()
-        self.manager.current = "마을"
+        # 던전 안에서 저장한 세이브는 그 던전의 그 위치로 돌아간다
+        화면 = "던전" if 앱.게임상태.get("던전상태") else "마을"
+        self.manager.get_screen(화면).갱신()
+        self.manager.current = 화면
 
 
 class 저장목록화면(_슬롯목록화면):
