@@ -1597,7 +1597,7 @@ class 스모크앱(main.DnfMobileApp):
             매니저.current = "마을"
 
     def _단계_설정(self, 매니저):
-        """설정 파일이 없거나 깨졌거나 쓸 수 없어도 옵션 화면/설정 저장이 죽지 않는다"""
+        """설정 파일이 없거나 깨졌거나 쓸 수 없어도 설정 화면/설정 저장이 죽지 않는다"""
         폴더 = tempfile.mkdtemp(prefix="ui_smoke_settings_")
         경로 = os.path.join(폴더, "설정.json")
         원래경로 = screens_common._설정_경로
@@ -1625,15 +1625,33 @@ class 스모크앱(main.DnfMobileApp):
             )  # 폴더라 쓸 수 없다 -> 조용히 넘어간다
             screens_common.설정_저장("반응자동", False)
             screens_common._설정_경로 = lambda: 경로
-            매니저.current = "옵션"
+            매니저.current = "설정"
             yield 0.3
             _찍기("settings")
+            # 줄마다 체크박스 두 개 중 하나 - 고르면 컨트롤러 값과 설정 파일에 들어간다
+            설정 = 매니저.get_screen("설정")
+            for 키, 값, 읽기 in (
+                ("자동전투방식", "전력전투", gf.자동전투_방식),
+                ("전투로그방식", "자세하게", gf.전투로그_방식),
+                ("반응자동", True, gf.반응_자동_여부),
+            ):
+                설정.체크박스[(키, 값)].active = True
+                yield 0.1
+                assert 읽기() == 값, (키, 읽기())
+                with open(경로, encoding="utf-8") as f:
+                    assert json.load(f)[키] == 값, 키
+                같은줄 = [c for (k, _), c in 설정.체크박스.items() if k == 키]
+                assert sum(c.active for c in 같은줄) == 1, 키  # 한 줄에 하나만
+            _찍기("settings_checked")
             결과["단계"].append(
-                "설정 파일(없음/깨짐/딕셔너리 아님/쓰기 실패) - 기본값으로 계속"
+                "설정 파일(없음/깨짐/딕셔너리 아님/쓰기 실패) - 기본값으로 계속, "
+                "설정 화면 체크박스(반응 자동/자동전투/전투로그) 하나씩 골라 저장"
             )
         finally:
             screens_common._설정_경로 = 원래경로
             gf.반응_자동_설정(원래반응)
+            gf.자동전투_방식_설정("일반공격")
+            gf.전투로그_방식_설정("간략하게")
             shutil.rmtree(폴더, ignore_errors=True)
             매니저.current = "마을"
 
@@ -1840,7 +1858,7 @@ class 스모크앱(main.DnfMobileApp):
                 assert abs(y - (크기[1] - 보이는높이) / 2) < 1, (이름, 틀.틀.pos)
 
                 # 줄어든 화면에서 손가락으로 누른 곳이 그 버튼에 닿는다
-                매니저.current = "옵션"
+                매니저.current = "설정"
                 yield 0.3
                 _찍기("frame_" + 이름)
                 뒤로 = next(

@@ -124,7 +124,7 @@ from game.screens.screens_menu import (
     파티생성화면,
     불러오기목록화면,
     저장목록화면,
-    옵션화면,
+    설정화면,
 )
 from game.screens.screens_town import (
     마을화면,
@@ -164,7 +164,7 @@ class DnfMobileApp(App):
         매니저.add_widget(파티생성화면(name="파티생성"))
         매니저.add_widget(불러오기목록화면(name="불러오기목록"))
         매니저.add_widget(저장목록화면(name="저장목록"))
-        매니저.add_widget(옵션화면(name="옵션"))
+        매니저.add_widget(설정화면(name="설정"))
         매니저.add_widget(마을화면(name="마을"))
         매니저.add_widget(마을이동목록화면(name="마을이동목록"))
         매니저.add_widget(파티관리화면(name="파티관리"))
