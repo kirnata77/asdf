@@ -6,11 +6,11 @@
 - **진행 중:** 없음. v0.1.1 릴리스 게시됨(2026-10-10). 릴리스 403 원인 확인은 사용자 몫(결과 미확인).
 - **직전 병합:** #75 시나리오 점검 링크, #73 SDK/NDK 캐시(`warm-cache.yml`), #72 릴리스 문서(태그는 사용자가 웹에서), #71 CHANGELOG·0.1.1. 드랍표 1차 정리, 주류 - [game-rules](.memory/roadmap/game-rules.md).
 - 그림: 감옥·웨스트코스트, 파티원 상자·마을 배치(#65), 엘븐가드 숲 마을(#66). 배치 규칙은 game-rules "화면 배치".
-- **직전 작업:** 버프포션 전투 중 사용 + 새 3종, 소환 아이템 고블린 더스트, 풀 시나리오 S9(포션·소환)(#78). 속성강화/내성 합연산·무속성 제외 - [game-rules](.memory/roadmap/game-rules.md).
+- **직전 작업:** 버프포션 전투 중 사용 + 새 3종, 소환 아이템 고블린 더스트, 풀 시나리오 S9(포션·소환)(#78). 속성강화/내성 합연산·무속성 제외(풀 시나리오 S10) - [game-rules](.memory/roadmap/game-rules.md).
 - **다음:** 드랍표 안에 표 지원, 던전 공용 드랍 D01~D10(세트 D03~). 주류 얻을 곳 미정. [피드백](.memory/roadmap/play-feedback-2026-10-07.md).
 - **다음(사용자 결정):** 임시 그림 교체. 레벨 12~20 미정: 13 스킬, 16 각성 특성, 17 스킬 개화 선택지, 18 각성 스킬.
 - **2차수:** 웨스트코스트(T03, D10 보스 클리어로 개방) + 하늘성 D11~D16은 지도 틀만. 몬스터/인카운트/보스 전투몬스터 미정. 풀 시나리오 S7은 계획 상태.
-- 풀 시나리오 S1~S6·S8 구현([계획](.memory/roadmap/scenario-tests.md) 전부 완료). 구조 점검 N0~N7 전부 완료: [architecture_review.md](docs/architecture_review.md) 10절, [refactor.md](.memory/roadmap/refactor.md).
+- 풀 시나리오 S1~S6·S8~S10 구현([계획](.memory/roadmap/scenario-tests.md) 전부 완료). 구조 점검 N0~N7 전부 완료: [architecture_review.md](docs/architecture_review.md) 10절, [refactor.md](.memory/roadmap/refactor.md).
 - 리팩터링 보고서 후속(종족 속성, skill 6모듈, 팝업 도우미, 몬스터 기본값 표 등): [refactoring_report.md](docs/refactoring_report.md) 9절. combat 순환은 안 함 - 이유 거기.
 - 테스트 697개, 커버리지 94.62%(풀 시나리오만 72%)(2026-10-10 측정). 시나리오 공백(숙소·해체·포션·레벨 11~20 등)과 S9/S10 제안: [이슈 #74](https://github.com/kirnata77/asdf/issues/74).
 - CI `ui-smoke`는 PR을 막는다. 병합된 PR의 브랜치는 이름과 상관없이 자동 삭제(`delete-merged-branch.yml`). 기본 브랜치는 2026-10-07에 `main` -> `main-branch`.
