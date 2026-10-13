@@ -4,7 +4,7 @@
 # 도감: 대분류(몬스터/장비/소모품/재료) -> 소분류 탭 -> 목록. 장비는 소지품 화면과 같은 부위 탭과 하위 필터
 # (무기 직업군/종류, 방어구 재질)에 레어도 필터 한 줄이 더 붙는다. 등록하지 않은 항목도 이름은 보이지만
 # 어둡게 보이고 [상세보기]를 누를 수 없다. 아이템 [상세보기]는 소지품 화면 것을 그대로 쓴다.
-# 업적: 왼쪽에 분류(레벨/도감/전투/특수), 오른쪽에 그 분류의 업적과 줄마다 [보상받기], 오른쪽 아래 [보상 전부 받기].
+# 업적: 왼쪽에 분류(레벨/도감/전투/특수), 오른쪽에 그 분류의 업적(이름 한 줄)과 줄마다 [보상받기], 오른쪽 아래 [보상 전부 받기].
 # 달성하지 않았거나 이미 받은 업적의 [보상받기]는 눌리지 않는다. 로직은 전부 gameflow.도감_*/업적_*.
 
 from kivy.app import App
@@ -275,17 +275,19 @@ class 업적화면(Screen):
         self.전부받기버튼.disabled = gameflow.업적_받을_보상_수(게임상태) == 0
 
     def _업적_행(self, 줄):
+        """한 줄 - 업적 이름(달성 전이면 어둡게)과 [보상받기]."""
         행 = BoxLayout(
-            orientation="horizontal", size_hint=(1, None), height=dp(84), spacing=4
+            orientation="horizontal", size_hint=(1, None), height=dp(48), spacing=4
         )
         색 = "ffffff" if 줄["달성"] else _미등록_색
-        글 = (
-            f"[color={색}][b]{escape_markup(줄['이름'])}[/b][/color]\n"
-            f"[size=12sp]{escape_markup(줄['설명'])}[/size]\n"
-            f"[size=12sp]진행 {줄['진행']}/{줄['목표']}  보상 {줄['보상골드']}G[/size]"
-        )
         라벨 = Label(
-            text=글, markup=True, size_hint=(0.66, 1), halign="left", valign="middle"
+            text=f"[color={색}]{escape_markup(줄['이름'])}[/color]",
+            markup=True,
+            size_hint=(0.66, 1),
+            halign="left",
+            valign="middle",
+            shorten=True,
+            shorten_from="right",
         )
         라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
         행.add_widget(라벨)
