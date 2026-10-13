@@ -109,11 +109,10 @@ def 조건_확인(전투상태, 시전자, 대상, 조건, 조건값):
     if 조건 == "적상태":
         if 대상 is None:
             return False
-        return any(항목["이름"] == 조건값 for 항목 in 대상.get("상태이상", []))
+        return status.상태이상_판정(전투상태, 대상, 조건값)
     if 조건 == "아군상태":
-        return any(
-            항목["이름"] == 조건값
-            for 항목 in (시전자.get("상태이상", []) + 시전자.get("버프", []))
+        return status.상태이상_판정(전투상태, 시전자, 조건값) or any(
+            항목["이름"] == 조건값 for 항목 in 시전자.get("버프", [])
         )
     if 조건 == "HP비율이하":
         최대HP = stats.유효_최대HP(전투상태, 시전자)

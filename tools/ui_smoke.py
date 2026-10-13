@@ -823,6 +823,45 @@ class 스모크앱(main.DnfMobileApp):
             "전투 [아이템] 소환 아이템(고블린 더스트 - 보조행동 1, 고블린 소환)"
         )
 
+        # [아이템]의 투척 아이템: 폭탄 - 일반행동 1개, 중심 대상 팝업에서 고르면 양옆까지 맞는다
+        p = 차례("귀검사")
+        난수상태 = random.getstate()  # 뒤 단계의 굴림이 달라지지 않게
+        상태["소지품"]["소모품"]["폭탄"] = 1
+        # 폭탄에 적이 쓰러져 전투가 끝나지 않게 HP를 넉넉히 올렸다가 되돌린다(뒤 단계가 쓴다)
+        적HP = {
+            id(x): x["현재HP"]
+            for x in 전투상태["참가자"]
+            if x["진영"] == "적" and x["생존"]
+        }
+        일반 = p["행동자원"]["일반행동"]
+        전투._아이템_클릭()
+        yield 0.3
+        폭탄버튼 = [b for b in 대상버튼들() if b.text.startswith("폭탄")]
+        assert 폭탄버튼 and not 폭탄버튼[0].disabled, [b.text for b in 대상버튼들()]
+        assert "(일반행동)" in 폭탄버튼[0].text, 폭탄버튼[0].text
+        폭탄버튼[0].trigger_action(duration=0)
+        yield 0.3
+        assert 전투.선택모드 == ("투척", "폭탄"), 전투.선택모드
+        assert "양옆" in 전투.안내라벨.text, 전투.안내라벨.text
+        _찍기("battle_throw_target_popup")
+        for x in 전투상태["참가자"]:
+            if id(x) in 적HP:
+                x["현재HP"] = 999
+        대상버튼들()[0].trigger_action(duration=0)
+        yield 0.5
+        assert p["행동자원"]["일반행동"] == 일반 - 1, p["행동자원"]
+        assert "폭탄" not in 상태["소지품"]["소모품"], 상태["소지품"]["소모품"]
+        assert any(x.get("스킬") == "폭탄" for x in 전투상태["로그"][-3:]), 전투상태[
+            "로그"
+        ][-3:]
+        for x in 전투상태["참가자"]:
+            if id(x) in 적HP:
+                x["현재HP"] = 적HP[id(x)]
+        random.setstate(난수상태)
+        결과["단계"].append(
+            "전투 [아이템] 투척 아이템(폭탄 - 일반행동 1, 중심 대상 팝업, 범위 공격)"
+        )
+
         차례("마법사")
         yield 0.3
         전투._스킬_클릭("썬더콜링", 상태["스킬데이터모음"]["썬더콜링"])
