@@ -270,6 +270,20 @@ def test_몬스터_데이터는_필수_키와_허용값을_지킨다():
     assert not 문제, "\n".join(문제)
 
 
+def test_고블린_분류는_모두_인간형이다():
+    """고블린 종족의 타입은 인간형(사용자 지정 2026-10-13, 그전에는 야수형). 타입은
+    문자열 하나 또는 리스트(예: 샹들리에로 건물형이 붙는 카겔)다."""
+    틀림 = []
+    for 키, 몬스터 in gf.몬스터목록.items():
+        if 몬스터.get("분류") != "고블린":
+            continue
+        타입 = 몬스터.get("타입")
+        타입들 = 타입 if isinstance(타입, list) else [타입]
+        if "인간형" not in 타입들:
+            틀림.append(f"{키}: {타입!r}")
+    assert not 틀림, "\n".join(틀림)
+
+
 def test_용족_몬스터는_그림과_적등급을_가지고_등록된다():
     용족 = {n: d for n, d in gf.몬스터목록.items() if d["분류"] == "용족"}
     assert {n: (d["이미지"], d["적등급"]) for n, d in 용족.items()} == {
