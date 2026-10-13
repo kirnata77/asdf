@@ -6,7 +6,12 @@
 # 맞춰 대신 호출해주는 얇은 어댑터일 뿐이다 - screens_town.py의 상점화면은
 # shop_system.py를 직접 부르지 않고 이 함수들만 쓴다.
 
-from game.system import dismantle_system, equipment_system, shop_system
+from game.system import (
+    collection_system,
+    dismantle_system,
+    equipment_system,
+    shop_system,
+)
 from game.controller.ctl_party import 플레이어뷰
 
 __all__ = [
@@ -58,8 +63,8 @@ def 상점_판매목록(게임상태, 대분류, 탭):
 
 def 상점_구매(게임상태, 대분류, 탭, 이름, 수량, 상점판매목록=None):
     """성공하면 지불한 총 골드를 반환한다. 실패(품절/수량 오류/골드
-    부족)하면 shop_system.구매_처리()와 동일하게 ValueError를 낸다."""
-    return shop_system.구매_처리(
+    부족)하면 shop_system.구매_처리()와 동일하게 ValueError를 낸다. 산 것은 도감에 등록한다."""
+    금액 = shop_system.구매_처리(
         플레이어뷰(게임상태),
         게임상태["상점카탈로그"],
         대분류,
@@ -68,6 +73,10 @@ def 상점_구매(게임상태, 대분류, 탭, 이름, 수량, 상점판매목�
         수량,
         상점판매목록=상점판매목록,
     )
+    collection_system.아이템_등록(
+        게임상태["진행도"], shop_system.소지품_카테고리(대분류, 탭), 이름
+    )
+    return 금액
 
 
 상점_해체_탭목록 = dismantle_system.해체_탭목록()

@@ -106,6 +106,8 @@
     "item_food": "game.data.item.item_food",
     "item_materials": "game.data.item.item_materials",
     "item_quest": "game.data.item.item_quest",
+    # game/data/achievement/
+    "achievement_list": "game.data.achievement.achievement_list",
     # game/data/character/
     "character_format": "game.data.character.character_format",
     "player_format": "game.data.character.player_format",
@@ -176,6 +178,8 @@
     "drink_system": "game.system.drink_system",
     "potion_system": "game.system.potion_system",
     "state_schema": "game.system.state_schema",
+    "collection_system": "game.system.collection_system",
+    "achievement_system": "game.system.achievement_system",
     # game/controller/ (화면 <-> 로직/데이터 컨트롤러 - gameflow.py가 재수출하는 구현, N5)
     "ctl_registry": "game.controller.ctl_registry",
     "ctl_party": "game.controller.ctl_party",
@@ -192,6 +196,8 @@
     "ctl_charview": "game.controller.ctl_charview",
     "ctl_tavern": "game.controller.ctl_tavern",
     "ctl_skills": "game.controller.ctl_skills",
+    "ctl_collection": "game.controller.ctl_collection",
+    "ctl_achievement": "game.controller.ctl_achievement",
     # game/screens/ (Kivy 화면)
     "screens_common": "game.screens.screens_common",
     "screens_menu": "game.screens.screens_menu",
@@ -199,6 +205,7 @@
     "screens_dungeon": "game.screens.screens_dungeon",
     "screens_battle": "game.screens.screens_battle",
     "screens_party": "game.screens.screens_party",
+    "screens_collection": "game.screens.screens_collection",
 }
 
 # =====================
@@ -218,9 +225,9 @@
 # └── game/
 #     ├── data/            (직업/몬스터/맵 등 게임 콘텐츠 데이터)
 #     ├── system/          (전투/스킬 등 로직)
-#     ├── controller/      (화면 <-> 로직/데이터 컨트롤러 15개 모듈 - ctl_battle/shop/party ...)
-#     ├── screens/         (Kivy 화면 6개 - screens_common/menu/town/
-#     │                     dungeon/battle/party.py, main.py가 가져온다)
+#     ├── controller/      (화면 <-> 로직/데이터 컨트롤러 17개 모듈 - ctl_battle/shop/party ...)
+#     ├── screens/         (Kivy 화면 7개 - screens_common/menu/town/
+#     │                     dungeon/battle/party/collection.py, main.py가 가져온다)
 #     ├── saves/           (세이브 파일)
 #     ├── assets/
 #     │   ├── attack/     공격 연출 그림 (투명 배경, 전투 화면이 대상 위에 0.5초 띄운다)

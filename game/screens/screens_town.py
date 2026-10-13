@@ -1,7 +1,7 @@
 # =====================
 # 마을 화면 - 마을, 모험단, 마을 이동 목록, 상점, 주점(모험단 숙소)
 # =====================
-# main.py가 game/screens/ 여섯 파일의 화면을 ScreenManager에 등록한다.
+# main.py가 game/screens/ 일곱 파일의 화면을 ScreenManager에 등록한다.
 
 from kivy.app import App
 from kivy.clock import Clock

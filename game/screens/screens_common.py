@@ -331,10 +331,10 @@ _메뉴_진행경고 = "저장하지 않은 진행은 사라집니다.\n계속�
 
 
 def 게임메뉴_열기(화면):
-    """화면(마을/던전 Screen)에서 [메뉴]를 눌렀을 때의 팝업 - 저장하기/불러오기/설정/타이틀로 돌아가기."""
+    """화면(마을/던전 Screen)에서 [메뉴]를 눌렀을 때의 팝업 - 저장하기/불러오기/도감/업적/설정/타이틀로 돌아가기."""
     매니저 = 화면.manager
     본문 = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(12))
-    팝업 = Popup(title="메뉴", content=본문, size_hint=(0.8, None), height=dp(420))
+    팝업 = Popup(title="메뉴", content=본문, size_hint=(0.8, None), height=dp(540))
 
     def 이동(화면이름):
         팝업.dismiss()
@@ -351,6 +351,8 @@ def 게임메뉴_열기(화면):
             "불러오기",
             lambda: 확인_팝업("불러오기", _메뉴_진행경고, lambda: 이동("불러오기목록")),
         ),
+        ("도감", lambda: 이동("도감")),
+        ("업적", lambda: 이동("업적")),
         ("설정", lambda: 이동("설정")),
         (
             "타이틀로 돌아가기",

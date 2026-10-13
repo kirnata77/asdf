@@ -1,7 +1,7 @@
 # 컨트롤러 - 주점 - 파티원 영입/대기/합류/추방(모험단 숙소, lodge_system.py)
 # (gameflow.py에서 분리 - N5. 화면은 gameflow.py 창구만 부른다. 설명은 gameflow.py 머리말)
 
-from game.system import equipment_system, lodge_system, party_system
+from game.system import collection_system, equipment_system, lodge_system, party_system
 from game.controller.ctl_equip import 장비변경_후처리
 from game.controller.ctl_party import (
     이름_자르기,
@@ -78,6 +78,9 @@ def 파티원_영입(게임상태, 입력이름, 직업):
     게임상태["소지품"]["골드"] -= 영입_비용
     # 시작 장비를 소지품 개수에 넣고(장착품_소지품_동기화), 장비 반영 최대치로 채운다.
     equipment_system.장착품_소지품_동기화(플레이어뷰(게임상태))
+    for 이름 in 캐릭터["장착장비"].values():  # 동료의 시작 장비도 도감에 등록
+        if 이름:
+            collection_system.아이템_등록(게임상태["진행도"], "장비", 이름)
     장비변경_후처리(게임상태)
     캐릭터["현재HP"] = 캐릭터_최대HP(게임상태, 캐릭터)
     캐릭터["현재MP"] = 캐릭터_최대MP(게임상태, 캐릭터)

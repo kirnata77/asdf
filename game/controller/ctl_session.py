@@ -2,7 +2,9 @@
 # (gameflow.py에서 분리 - N5. 화면은 gameflow.py 창구만 부른다. 설명은 gameflow.py 머리말)
 
 from game.system import (
+    achievement_system,
     character_data_system as 캐릭터데이터,
+    collection_system,
     dungeon_system,
     equipment_system,
     party_system,
@@ -86,10 +88,13 @@ def 새_게임_시작(파티구성):
     # town_system.새_진행도()에는 "플레이어레벨" 개념이 없어(캐릭터 레벨과
     # 별개로 던전 보스 클리어로 오르는 값) 여기서 직접 채운다. town_system.py(공용 시스템 파일)는 건드리지 않는다.
     진행도["플레이어레벨"] = 1
+    진행도.update(achievement_system.빈_진행기록())  # 도감/업적 기록
     게임상태 = 새_게임상태(파티, 진행도)
     # 시작 장비도 소지품 "장비" 개수에 넣어 둔다 - 장비 교체 때 원래 끼던
     # 장비가 사라지지 않게(equipment_system.장착품_소지품_동기화).
     equipment_system.장착품_소지품_동기화(플레이어뷰(게임상태))
+    for 이름 in 게임상태["소지품"]["장비"]:  # 시작 장비도 얻은 것 - 도감에 등록
+        collection_system.아이템_등록(진행도, "장비", 이름)
     # 시작 장비의 스탯(건강/주문시전 능력치)까지 반영한 최대치로 시작한다.
     파티_최대치로_회복(게임상태)
     return 게임상태

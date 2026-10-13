@@ -4,6 +4,8 @@
 from game.data.buff.status_effects import 상태이상목록
 from game.data.monster.monster_drop import 드랍표_모음
 from game.system import (
+    achievement_system,
+    collection_system,
     drink_system,
     dungeon_system,
     equipment_system,
@@ -71,6 +73,7 @@ def _전리품_지급(게임상태, 전투상태):
         if 카테고리 is None:
             continue
         player_system.아이템_추가(플레이어, 카테고리, 이름, 개수)
+        collection_system.아이템_등록(게임상태["진행도"], 카테고리, 이름)
         지급.append((이름, 개수))
     return {"골드": 전리품["골드"], "아이템": 지급}
 
@@ -139,9 +142,9 @@ def 전투_보상_받기(게임상태, 칸번호):
     if not 0 <= 칸번호 < len(보상["칸"]) or 보상["칸"][칸번호] is None:
         raise ValueError("빈칸은 고를 수 없습니다.")
     이름 = 보상["칸"][칸번호]
-    player_system.아이템_추가(
-        플레이어뷰(게임상태), _아이템_소지품_카테고리(게임상태, 이름), 이름
-    )
+    카테고리 = _아이템_소지품_카테고리(게임상태, 이름)
+    player_system.아이템_추가(플레이어뷰(게임상태), 카테고리, 이름)
+    collection_system.아이템_등록(게임상태["진행도"], 카테고리, 이름)
     보상["완료"] = True
     보상["받은아이템"] = 이름  # 전투_종료_문구가 전리품 줄에 함께 보여 준다
     return 이름
@@ -206,6 +209,19 @@ def 전투_결과_정리(게임상태):
         # 취기/만취처럼 전투 뒤에도 남는 상태이상만 캐릭터에 되돌려 쓴다
         캐릭터["상태이상"] = drink_system.유지_상태이상(
             참가자["상태이상"], 상태이상목록
+        )
+
+    # 도감/업적: 처치한 적(도망 제외)은 결과와 상관없이 몬스터 도감에 등록하고, 이긴 전투
+    # (적이 모두 도망친 "적도망" 포함)는 보스/일반으로 나눠 센다. 패배/내가 도망친 전투는 세지 않는다.
+    진행도 = 게임상태["진행도"]
+    for 적 in 전투상태["참가자"]:
+        if 적["진영"] == "적" and not 적["생존"] and not 적.get("도망"):
+            이름 = (적.get("원본") or {}).get("몬스터명")
+            if 이름:
+                collection_system.등록(진행도, "몬스터", 이름)
+    if 종료결과 in ("아군승리", "적도망"):
+        achievement_system.전투승리_기록(
+            진행도, 보스=게임상태.get("전투_클리어위치") is not None
         )
 
     게임상태["전투_전리품"] = None

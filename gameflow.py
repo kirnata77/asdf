@@ -56,6 +56,7 @@
 #   ctl_dungeon   던전 이동/상호작용(인카운트)    ctl_potion   회복포션 사용
 #   ctl_rewards   전투 보상/결과 정리             ctl_charview 파티원 화면용 조회(읽기 전용)
 #   ctl_tavern    주점(영입/대기/합류/추방)
+#   ctl_collection 도감(분류/목록/등록 현황)       ctl_achievement 업적(목록/보상 받기)
 
 from game.controller.ctl_registry import *  # noqa: F403
 from game.controller.ctl_party import *  # noqa: F403
@@ -72,3 +73,5 @@ from game.controller.ctl_levelup import *  # noqa: F403
 from game.controller.ctl_charview import *  # noqa: F403
 from game.controller.ctl_tavern import *  # noqa: F403
 from game.controller.ctl_skills import *  # noqa: F403
+from game.controller.ctl_collection import *  # noqa: F403
+from game.controller.ctl_achievement import *  # noqa: F403

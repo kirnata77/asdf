@@ -118,7 +118,7 @@ class _오류처리기(ExceptionHandler):
 
 ExceptionManager.add_handler(_오류처리기())
 
-# 화면은 game/screens/ 아래 6개 파일로 나뉘어 있다.
+# 화면은 game/screens/ 아래 7개 파일로 나뉘어 있다.
 from game.screens.screens_menu import (
     메인메뉴화면,
     파티생성화면,
@@ -137,6 +137,7 @@ from game.screens.screens_town import (
 from game.screens.screens_dungeon import 던전목록화면, 던전화면
 from game.screens.screens_battle import 전투화면
 from game.screens.screens_party import 파티관리화면, 파티원화면
+from game.screens.screens_collection import 도감화면, 업적화면
 from game.screens.screens_common import 뒤로키_처리, 기준화면틀
 import gameflow
 
@@ -177,6 +178,8 @@ class DnfMobileApp(App):
         매니저.add_widget(전투화면(name="전투"))
         매니저.add_widget(모험단화면(name="모험단"))
         매니저.add_widget(주점화면(name="주점"))
+        매니저.add_widget(도감화면(name="도감"))
+        매니저.add_widget(업적화면(name="업적"))
         매니저.current = "메인메뉴"
         self.매니저 = 매니저
         # 핸드폰 [뒤로] 키 - 앱을 최소화하지 않고 취소/닫기/뒤로로 쓴다.

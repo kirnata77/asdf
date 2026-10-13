@@ -46,6 +46,7 @@ from kivy.core.window import Window  # noqa: E402
 from kivy.uix.button import Button  # noqa: E402
 from kivy.uix.label import Label  # noqa: E402
 from kivy.uix.scrollview import ScrollView  # noqa: E402
+from kivy.uix.togglebutton import ToggleButton  # noqa: E402
 
 import gameflow as gf  # noqa: E402
 from game.screens import screens_common, screens_party  # noqa: E402
@@ -157,6 +158,7 @@ class 스모크앱(main.DnfMobileApp):
         yield from self._단계_화면_틀(매니저)
         yield from self._단계_공격연출(상태, 매니저)
         yield from self._단계_소지품(상태, 매니저)
+        yield from self._단계_도감_업적(상태, 매니저)
         yield from self._단계_메뉴(상태, 매니저)
 
     def _단계_파티생성(self, 상태, 매니저):
@@ -2116,6 +2118,152 @@ class 스모크앱(main.DnfMobileApp):
             "[상세보기], 음식 [사용] -> 파티원 고르기 -> 회복, 던전 [소지품] -> 나가기 -> 던전"
         )
 
+    def _단계_도감_업적(self, 상태, 매니저):
+        """[메뉴] -> [도감]: 대분류 등록 수, 몬스터 종족 탭(미등록은 어둡고 [상세보기] 못 누름, 몬스터 상세),
+        장비 무기 탭의 직업군/레어도 필터, 나가기 -> 연 화면. [메뉴] -> [업적]: 분류 4개, 달성 전 [보상받기]는
+        못 누름, [보상받기] -> 골드 +10/받음, [보상 전부 받기]"""
+        앱 = App.get_running_app()
+        앱.게임상태 = 상태
+        상태["전투상태"] = None
+        상태["던전상태"] = None
+
+        def 버튼(위젯, 글):
+            return next(
+                w
+                for w in 위젯.walk(restrict=True)
+                if isinstance(w, Button) and _글(w.text) == 글
+            )
+
+        def 팝업():
+            return Window.children[0]
+
+        def 메뉴_열기():
+            버튼(매니저.get_screen("마을"), "메뉴").trigger_action(duration=0)
+
+        도감 = 상태["진행도"]["도감"]
+        for 이름 in ("고블린", "고블린 투척병"):
+            if 이름 not in 도감["몬스터"]:
+                도감["몬스터"].append(이름)
+        매니저.get_screen("마을").갱신()
+        매니저.current = "마을"
+        yield 0.3
+        메뉴_열기()
+        yield 0.3
+        버튼(팝업(), "도감").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "도감", 매니저.current
+        화면 = 매니저.current_screen
+        assert 화면.골드라벨.text.startswith("등록 "), 화면.골드라벨.text
+        몬스터버튼 = next(
+            w
+            for w in 화면.내용틀.walk(restrict=True)
+            if isinstance(w, Button) and w.text.startswith("몬스터 (")
+        )
+        등록, 전체 = gf.도감_등록현황(상태, "몬스터")
+        assert 몬스터버튼.text == f"몬스터 ({등록}/{전체})", 몬스터버튼.text
+        몬스터버튼.trigger_action(duration=0)
+        yield 0.3
+
+        def 행(이름):
+            return next(
+                w.parent
+                for w in 화면._목록틀.walk(restrict=True)
+                if isinstance(w, Label) and _글(w.text) == 이름
+            )
+
+        assert "미등록" not in _글(
+            " ".join(w.text for w in 행("고블린").children if isinstance(w, Label))
+        )
+        assert not 버튼(행("고블린"), "상세보기").disabled
+        assert 버튼(행("프라그"), "상세보기").disabled, "미등록은 상세보기 못 누름"
+        _찍기("collection_monster")
+        버튼(행("고블린"), "상세보기").trigger_action(duration=0)
+        yield 0.3
+        assert 팝업().title == "고블린"
+        _찍기("collection_monster_detail")
+        _팝업_닫기()
+        yield 0.3
+
+        버튼(화면, "◀ 뒤로").trigger_action(duration=0)
+        yield 0.3
+        next(
+            w
+            for w in 화면.내용틀.walk(restrict=True)
+            if isinstance(w, Button) and w.text.startswith("장비 (")
+        ).trigger_action(duration=0)
+        yield 0.3
+        레어도줄 = [
+            w
+            for w in 화면._하위탭틀.walk(restrict=True)
+            if isinstance(w, ToggleButton) and w.text in ("커먼", "언커먼")
+        ]
+        assert {w.text for w in 레어도줄} == {"커먼", "언커먼"}, "무기 탭에 레어도 필터"
+        next(w for w in 레어도줄 if w.text == "언커먼").trigger_action(duration=0)
+        yield 0.3
+        이름들 = [
+            _글(w.text)
+            for w in 화면._목록틀.walk(restrict=True)
+            if isinstance(w, Label) and w.text and w.size_hint_x == 0.56
+        ]
+        무기 = {a["이름"]: a for a, _ in gf.도감_목록(상태, "장비", "무기")}
+        assert 이름들 and all(무기[n]["레어도"] == "언커먼" for n in 이름들), 이름들
+        _찍기("collection_equipment")
+        버튼(화면, "◀ 뒤로").trigger_action(duration=0)
+        yield 0.3
+        버튼(화면, "◀ 나가기").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "마을", "도감의 나가기는 메뉴를 연 화면으로"
+
+        상태["진행도"]["업적기록"]["일반전투승리"] = max(
+            5, 상태["진행도"]["업적기록"]["일반전투승리"]
+        )
+        상태["진행도"]["받은업적"] = []
+        메뉴_열기()
+        yield 0.3
+        버튼(팝업(), "업적").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "업적", 매니저.current
+        화면 = 매니저.current_screen
+        분류 = [w.text for w in 화면.walk(restrict=True) if isinstance(w, ToggleButton)]
+        assert 분류 == ["레벨업적", "도감업적", "전투업적", "특수업적"], 분류
+        받기버튼 = [
+            w
+            for w in 화면._목록틀.walk(restrict=True)
+            if isinstance(w, Button) and hasattr(w, "업적ID")
+        ]
+        assert len(받기버튼) == 20
+        레벨 = 상태["진행도"]["플레이어레벨"]
+        for w in 받기버튼:
+            달성 = int(w.업적ID.split("_")[1]) <= 레벨
+            assert w.disabled == (not 달성), (w.업적ID, w.disabled)
+        assert not 화면.전부받기버튼.disabled
+        _찍기("achievements")
+        골드 = 상태["소지품"]["골드"]
+        next(w for w in 받기버튼 if w.업적ID == "레벨_1").trigger_action(duration=0)
+        yield 0.3
+        assert 상태["소지품"]["골드"] == 골드 + 10
+        첫줄 = next(
+            w
+            for w in 화면._목록틀.walk(restrict=True)
+            if getattr(w, "업적ID", None) == "레벨_1"
+        )
+        assert 첫줄.text == "받음" and 첫줄.disabled
+        버튼(화면, "전투업적").trigger_action(duration=0)
+        yield 0.3
+        _찍기("achievements_battle")
+        남은 = gf.업적_받을_보상_수(상태)
+        화면.전부받기버튼.trigger_action(duration=0)
+        yield 0.3
+        assert 상태["소지품"]["골드"] == 골드 + 10 + 남은 * 10
+        assert 화면.전부받기버튼.disabled and gf.업적_받을_보상_수(상태) == 0
+        버튼(화면, "◀ 나가기").trigger_action(duration=0)
+        yield 0.3
+        assert 매니저.current == "마을"
+        결과["단계"].append(
+            "도감/업적 - [메뉴] -> [도감] 등록 수, 몬스터(미등록 어둡게/상세보기 못 누름, 상세 팝업), "
+            "무기 레어도 필터, 나가기 -> 마을. [메뉴] -> [업적] 분류 4개, 달성 전 못 누름, 보상받기/전부 받기"
+        )
+
     def _단계_메뉴(self, 상태, 매니저):
         """마을/던전 [메뉴] 팝업 - 저장하기/불러오기/설정/메인메뉴로(확인 창), 던전 안 저장 -> 같은 위치로"""
         앱 = App.get_running_app()
@@ -2145,6 +2293,8 @@ class 스모크앱(main.DnfMobileApp):
         assert 글들 == [
             "저장하기",
             "불러오기",
+            "도감",
+            "업적",
             "설정",
             "타이틀로 돌아가기",
             "닫기",
