@@ -18,7 +18,7 @@ paths:
 - **APK는 `v*` 태그 push로만 빌드된다.** 태그는 `v<spec의 version>`이어야 하고, 다르면 빌드가 첫 단계에서 실패한다.
   릴리스 이름은 태그(`v0.1.1`)이고 릴리스 본문은 그때의 `CHANGELOG.md`다.
 - **버전은 major.minor.patch.** 변경 내역은 `CHANGELOG.md`만 본다(`MEMORY.md`는 세션 단기 기억). 큰 기능 PR이 `## 미릴리스`에 한 줄을 더한다.
-  **릴리스 절차:** (1) 큰 기능이 병합되면 사용자에게 지금 릴리스할지 묻는다. (2) 지금이면 한 PR에서 `buildozer.spec`의 `version`을 올리고
+  **릴리스 절차:** (1) 사용자가 APK를 만들어 달라고 할 때만 시작한다(먼저 묻거나 권하지 않는다). (2) 한 PR에서 `buildozer.spec`의 `version`을 올리고
   `## 미릴리스`를 `## x.y.z (날짜)`로 바꾼다(테스트가 둘이 맞는지 검사한다). **패치는 같은 마이너 안에서 쌓고, 마이너 릴리스는
   CHANGELOG를 비우고 새로 시작한다**(테스트가 지난 마이너 제목을 막는다). (3) 사용자가 병합한 뒤 **사용자가** GitHub 웹에서 릴리스를 게시한다:
   Releases -> Draft a new release -> 태그 `v<version>`(publish 때 새로 만들기), Target `main-branch`(병합 커밋), 설명은 CHANGELOG.md의 해당 부분.
