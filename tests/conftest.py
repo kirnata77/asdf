@@ -6,6 +6,7 @@ import하지 않기 때문이다. game/screens/와 main.py는 여기서 다루�
 
 import json
 import os
+import random
 
 import pytest
 
@@ -19,6 +20,12 @@ def 임시_세이브폴더(tmp_path, monkeypatch):
     """테스트가 실제 game/saves/를 건드리지 않게 세이브 폴더를 바꿔치기한다."""
     monkeypatch.setattr(save_system, "_세이브_폴더", lambda: str(tmp_path))
     return tmp_path
+
+
+@pytest.fixture(autouse=True)
+def 전역_난수_시드():
+    """테스트마다 전역 random을 0으로 시작한다 - 테스트를 하나만 돌려도, 순서를 바꿔도 결과가 같게."""
+    random.seed(0)
 
 
 def _정규화(값):
