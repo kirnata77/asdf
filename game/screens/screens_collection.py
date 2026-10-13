@@ -8,7 +8,8 @@
 # 달성하지 않았거나 이미 받은 업적의 [보상받기]는 눌리지 않는다. 로직은 전부 gameflow.도감_*/업적_*.
 
 from kivy.app import App
-from kivy.metrics import dp
+from kivy.core.text import Label as CoreLabel
+from kivy.metrics import dp, sp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.image import Image
@@ -33,6 +34,13 @@ from game.screens.screens_common import (
 from game.screens.screens_town import 소지품화면
 
 _미등록_색 = "5c6068"  # 등록하지 않은 항목 이름 - 어둡게
+
+
+def _글자폭(글, font_size="15sp"):
+    """기본 버튼 글자 크기로 글이 차지하는 폭(px)."""
+    측정 = CoreLabel(text=글, font_size=sp(float(font_size.rstrip("sp"))))
+    측정.refresh()
+    return 측정.texture.size[0]
 
 
 class 도감화면(소지품화면):
@@ -218,7 +226,14 @@ class 업적화면(Screen):
 
         몸 = BoxLayout(orientation="horizontal", spacing=dp(6))
         # 왼쪽: 분류 버튼(위에서부터 쌓고 남는 칸은 비운다)
-        왼쪽 = BoxLayout(orientation="vertical", size_hint=(0.3, 1), spacing=dp(4))
+        # 왼쪽 폭은 가장 긴 분류 글자에 맞춘다(좌우 여백 dp(12)씩)
+        글자폭 = max(_글자폭(분류) for 분류 in gameflow.업적_분류목록)
+        왼쪽 = BoxLayout(
+            orientation="vertical",
+            size_hint=(None, 1),
+            width=글자폭 + dp(24),
+            spacing=dp(4),
+        )
         self._분류버튼 = {}
         for 분류 in gameflow.업적_분류목록:
             버튼 = ToggleButton(
@@ -236,7 +251,7 @@ class 업적화면(Screen):
         몸.add_widget(왼쪽)
 
         # 오른쪽: 업적 목록 + 오른쪽 아래 [보상 전부 받기]
-        오른쪽 = BoxLayout(orientation="vertical", size_hint=(0.7, 1), spacing=dp(6))
+        오른쪽 = BoxLayout(orientation="vertical", size_hint=(1, 1), spacing=dp(6))
         스크롤, self._목록틀 = 스크롤_목록(1)
         self._목록스크롤 = 스크롤
         오른쪽.add_widget(스크롤)
@@ -275,15 +290,15 @@ class 업적화면(Screen):
         self.전부받기버튼.disabled = gameflow.업적_받을_보상_수(게임상태) == 0
 
     def _업적_행(self, 줄):
-        """한 줄 - 업적 이름(달성 전이면 어둡게)과 [보상받기]."""
+        """한 줄 - 업적 이름(달성 전이면 어둡게)과 [보상받기]. 높이와 버튼 폭은 버튼 글자에 맞춘다."""
         행 = BoxLayout(
-            orientation="horizontal", size_hint=(1, None), height=dp(48), spacing=4
+            orientation="horizontal", size_hint=(1, None), height=글자_높이(), spacing=4
         )
         색 = "ffffff" if 줄["달성"] else _미등록_색
         라벨 = Label(
             text=f"[color={색}]{escape_markup(줄['이름'])}[/color]",
             markup=True,
-            size_hint=(0.66, 1),
+            size_hint=(1, 1),
             halign="left",
             valign="middle",
             shorten=True,
@@ -293,7 +308,8 @@ class 업적화면(Screen):
         행.add_widget(라벨)
         버튼 = Button(
             text="받음" if 줄["받음"] else "보상받기",
-            size_hint=(0.34, 1),
+            size_hint=(None, 1),
+            width=_글자폭("보상받기") + dp(16),
             disabled=줄["받음"] or not 줄["달성"],
         )
         버튼.업적ID = 줄["ID"]
