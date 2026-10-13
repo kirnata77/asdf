@@ -20,6 +20,7 @@ import pytest
 
 import game.data as 데이터패키지
 import gameflow as gf
+from game.data.collection.collection_monster import 도감_출현장소
 from game.data.monster.monster_defaults import 몬스터_기본값
 from game.data.equipment.eq_04_special_11_earring import 귀걸이목록
 from game.data.buff.debuff import 디버프목록
@@ -179,7 +180,6 @@ def test_호출쪽_치환_변수는_실제_데이터에서_쓰인다():
     "타입",
     "칭호",
     "특성",
-    "출현장소",
     "적등급",
     "역할군",
     "근력",
@@ -328,7 +328,7 @@ def test_카겔과_봄_카겔은_사용자가_정한_대로다():
         )
         assert m["타입"] == ["인간형", "건물형"]
         assert m["특성"] == ["종족:고블린", "샹들리에"]
-        assert m["출현장소"] == ["하늘성", "웨스트코스트"]
+        assert 도감_출현장소[이름] == ["하늘성", "웨스트코스트"]
         assert (m["근력"] - 고블린["근력"], m["민첩"] - 고블린["민첩"]) == (근력, 민첩)
         for 칸 in ("건강", "지능", "지혜", "매력"):
             assert m[칸] == 고블린[칸], (이름, 칸)
@@ -352,6 +352,20 @@ def test_카겔과_봄_카겔은_사용자가_정한_대로다():
                 assert 효과 is None
     assert gf.몬스터목록["카겔"]["드랍표"][-1]["이름"] == "카겔군"
     assert gf.몬스터목록["봄 카겔"]["드랍표"][-1]["이름"] == "봄카겔군"
+
+
+def test_도감_출현장소는_몬스터마다_하나씩_있다():
+    """출현장소는 몬스터 데이터가 아니라 도감 자료(collection_monster.py)에 적는다(사용자 지정
+    2026-10-13). 실제 출현은 각 던전 파일이 정하고 도감 글과 항상 같지는 않다."""
+    assert set(도감_출현장소) == set(gf.몬스터목록)
+    for 이름, 장소 in 도감_출현장소.items():
+        assert isinstance(장소, (str, list)) and 장소, 이름
+
+
+def test_몬스터_데이터의_칭호는_모두_None이다():
+    """칭호는 칸만 두고 던전 파일(맵 이벤트/인카운트)이 붙인다(사용자 지정 2026-10-13)."""
+    틀림 = [키 for 키, m in gf.몬스터목록.items() if m["칭호"] is not None]
+    assert not 틀림, 틀림
 
 
 def test_용족_분류는_타입에_용족이_있다():
@@ -392,7 +406,7 @@ def test_용족_몬스터는_그림과_적등급을_가지고_등록된다():
         ], 이름
         assert [몬스터[k] for k in 능력치] == [14, 16, 12, 8, 10, 10], 이름
         assert 몬스터["역할군"] == "딜러", 이름
-        assert 몬스터["칭호"] == "미정", 이름  # 보스 칭호는 던전 맵 이벤트가 붙인다
+        assert 몬스터["칭호"] is None, 이름  # 보스 칭호는 던전 맵 이벤트가 붙인다
         assert 몬스터["크기"] == "소형", 이름
         assert {"이름": "세리말리온군", "발동확률": 1} in 몬스터["드랍표"], 이름
     정의 = gf.전투용_몬스터특성정의

@@ -4,6 +4,7 @@
 # 기록과 목록 규칙은 collection_system.py. 등록은 아이템이 들어오는 곳(ctl_rewards/ctl_potion/
 # ctl_shop/ctl_session/ctl_tavern)이 collection_system을 직접 부른다.
 
+from game.data.collection.collection_monster import 도감_출현장소
 from game.data.monster.monster_drop import 드랍표_모음
 from game.system import collection_system
 from game.controller.ctl_registry import 몬스터목록
@@ -94,10 +95,10 @@ def _글(값):
 
 
 def 도감_몬스터_상세(이름):
-    """몬스터 [상세보기] 줄들 - 종족, 등급, 출현장소."""
+    """몬스터 [상세보기] 줄들 - 종족, 등급, 출현장소(도감 자료 collection_monster.py의 글)."""
     몬스터 = 몬스터목록[이름]
     return [
         f"종족: {몬스터['분류']}",
         f"등급: {_글(몬스터['적등급'])}",
-        f"출현장소: {_글(몬스터['출현장소'])}",
+        f"출현장소: {_글(도감_출현장소.get(이름, '미정'))}",
     ]

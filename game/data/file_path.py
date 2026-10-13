@@ -107,6 +107,8 @@
     "item_food": "game.data.item.item_food",
     "item_materials": "game.data.item.item_materials",
     "item_quest": "game.data.item.item_quest",
+    # game/data/collection/
+    "collection_monster": "game.data.collection.collection_monster",
     # game/data/achievement/
     "achievement_list": "game.data.achievement.achievement_list",
     # game/data/character/
