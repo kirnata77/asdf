@@ -3,6 +3,7 @@
 
 from game.system import (
     achievement_system,
+    character_creation_system,
     character_data_system as 캐릭터데이터,
     collection_system,
     dungeon_system,
@@ -149,6 +150,10 @@ def 게임_불러오기(슬롯번호):
         # 새 공식으로 다시 계산한다 - 현재HP는 새 최대치를 넘지 않게 자른다.
         _최대HP_재계산(캐릭터)
         _직업스타일_성장_재계산(캐릭터)
+        # 레벨 1 스킬이 나중에 추가되면(2026-10-13 공중에뜸 스킬 5종) 옛 캐릭터에게도 준다.
+        character_creation_system.레벨1_스킬_습득(
+            캐릭터, 직업_레지스트리[캐릭터["직업"]]["스킬목록"]
+        )
     equipment_system.장착품_소지품_동기화(플레이어뷰(게임상태))
     _던전위치_복원(게임상태, 플레이어.get("던전위치"))
     return 게임상태

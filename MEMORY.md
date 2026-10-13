@@ -6,7 +6,7 @@
 - **진행 중:** 품질 백로그 P1~P10 - [quality-plan](.memory/roadmap/quality-plan.md)(새 모듈 3개·게이트 상향 승인됨). 근거: [보고서](docs/code_quality_review.md), #94.
 - **릴리스는 사용자가 APK를 요청할 때만**(10-13 지시) - 병합 뒤에 릴리스를 묻지 않는다.
 - **직전 병합:** #79 속성강화/내성 합연산·무속성 제외(S10), #78 버프포션 사용·새 3종·고블린 더스트(S9), #77 아이템 구분 주석, #76 개인 드랍 "미정" 정리 - [game-rules](.memory/roadmap/game-rules.md).
-- 직전: 직업별 특징 주석 10개(`character_format.py`, 10-13). **공격 연출**(10-12): 대상 위 종류 그림 0.5초 - game-rules "공격 연출". 그림 7장 체크무늬 흔적, 실기기 미확인.
+- 직전: 레벨 1 공중에뜸 스킬 5종(game-rules, 옛 세이브는 불러올 때 채움, S5 6->2번째 승리), 직업별 특징 주석(10-13). **공격 연출**(10-12): 대상 위 종류 그림 0.5초 - game-rules "공격 연출". 그림 7장 체크무늬 흔적, 실기기 미확인.
 - 그림(10-13): 고블린 12종·케라하·비노슈 원본 교체, 카겔/봄 카겔 그림 추가, 벙커워커 삭제. 보라 등짐 그림은 프라그 다른 색이라 안 씀. 배치 규칙은 game-rules "화면 배치".
 - 10-13: 키놀·프라그·펜릴 패턴, 루가루 할퀴기 -1. **수치 시뮬레이션은 `scenario.측정_파티_준비/측정_실전`**(조건: game-rules "밸런스 측정 조건"). D06 밸런스 조정 대기.
 - **다음:** 정할 것. 드랍표 안의 표·D03~ 공용 드랍은 이미 #63/#64로 병합됨(점검 Q-4). 주류 얻을 곳 미정. [피드백](.memory/roadmap/play-feedback-2026-10-07.md).
@@ -14,7 +14,7 @@
 - **2차수:** 웨스트코스트(T03, D10 보스 클리어로 개방) + 하늘성 D11~D16은 지도 틀만. 용족 4종(`monster_race_dragon.py`, 10-13)은 데이터만 있고 인카운트/보스 미정. 풀 시나리오 S7은 계획 상태.
 - 풀 시나리오 S1~S6·S8~S12 구현([계획](.memory/roadmap/scenario-tests.md) 전부 완료). 구조 점검 N0~N7 전부 완료: [architecture_review.md](docs/architecture_review.md) 10절, [refactor.md](.memory/roadmap/refactor.md).
 - 리팩터링 보고서 후속(종족 속성, skill 6모듈, 팝업 도우미, 몬스터 기본값 표 등): [refactoring_report.md](docs/refactoring_report.md) 9절. combat 순환은 안 함 - 이유 거기.
-- 테스트 799개, 커버리지 93.80%(게이트 범위)(2026-10-13 측정). 시나리오 공백(숙소·해체·레벨 11~20 등): [이슈 #74](https://github.com/kirnata77/asdf/issues/74) - 제안 S9의 포션은 지금 S9가 다룸, 제안 S10(숙소)은 미착수(새 번호 필요).
+- 테스트 830개, 커버리지 93.99%(게이트 범위)(2026-10-13 측정). 시나리오 공백(숙소·해체·레벨 11~20 등): [이슈 #74](https://github.com/kirnata77/asdf/issues/74) - 제안 S9의 포션은 지금 S9가 다룸, 제안 S10(숙소)은 미착수(새 번호 필요).
 - CI `ui-smoke`는 PR을 막는다. 병합된 PR의 브랜치는 이름과 상관없이 자동 삭제(`delete-merged-branch.yml`). 기본 브랜치는 2026-10-07에 `main` -> `main-branch`.
 - 옛 *Now*의 경위 문단 원문: [보관본](.memory/sessions/2026-10-10-memory-index-archive.md).
 

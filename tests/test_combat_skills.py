@@ -177,8 +177,8 @@ def test_스킬_전수(직업, golden):
     golden(f"combat_skills_{직업}", 결과)
 
 
-def test_스킬은_67개이고_모두_소유직업이_있다():
-    assert len(스킬데이터) == 67 and set(스킬_소유) == set(스킬데이터)
+def test_스킬은_72개이고_모두_소유직업이_있다():
+    assert len(스킬데이터) == 72 and set(스킬_소유) == set(스킬데이터)
 
 
 def test_귀참은_귀신_태그_스킬_수만큼_d8을_더한다():
