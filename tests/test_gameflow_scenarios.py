@@ -422,6 +422,19 @@ def test_승리하면_전리품을_소지품에_넣고_팝업_문구로_보여�
     ]
 
 
+@pytest.mark.parametrize("몬스터, 아이템", [("카겔", "표창"), ("봄 카겔", "폭탄")])
+def test_카겔은_표창_봄_카겔은_폭탄을_30퍼센트로_떨군다(monkeypatch, 몬스터, 아이템):
+    for 굴림, 떨굼 in ((0.29, True), (0.31, False)):
+        상태 = 새게임()
+        _전투_열기(상태, [몬스터])
+        monkeypatch.setattr(loot_system.random, "random", lambda: 굴림)
+        support.강제_승리(상태)
+        gf.전투_결과_정리(상태)
+        얻음 = dict(상태["전투_전리품"]["아이템"])
+        assert (얻음.get(아이템) == 1) is 떨굼, (굴림, 얻음)
+        assert (상태["소지품"]["소모품"].get(아이템, 0) == 1) is 떨굼
+
+
 def test_고블린_투척병은_돌맹이_10퍼센트_짱돌_5퍼센트를_따로_굴린다(monkeypatch):
     상태 = 새게임()
     _전투_열기(상태, ["고블린 투척병"])

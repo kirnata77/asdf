@@ -135,6 +135,6 @@ def test_몬스터_패턴_전수(monkeypatch, 종족, golden):
     golden(f"combat_monsters_{종족}", 결과)
 
 
-def test_몬스터는_33종():
-    assert len(gf.몬스터목록) == 33
-    assert sum(len(v) for v in 종족파일.values()) == 33
+def test_몬스터는_35종():
+    assert len(gf.몬스터목록) == 35
+    assert sum(len(v) for v in 종족파일.values()) == 35
