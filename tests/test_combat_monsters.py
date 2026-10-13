@@ -28,9 +28,19 @@ from tests.test_combat_skills import 정리, 참가자_요약
 
 
 def _고유_패턴(몬스터):
-    """내용이 같은 패턴(몽둥이질 1~5 등)은 한 번만."""
+    """내용이 같은 패턴(몽둥이질 1~5 등)은 한 번만. 조건부행동은 두 갈래를 각각 돈다."""
     본것, 결과 = set(), []
+    펼친것 = []
     for 키, 패턴 in sorted((몬스터.get("패턴") or {}).items()):
+        if 패턴.get("이름") == "조건부행동":
+            펼친것 += [
+                (키, 패턴[갈래])
+                for 갈래 in ("조건미충족시", "조건충족시")
+                if isinstance(패턴.get(갈래), dict)
+            ]
+        else:
+            펼친것.append((키, 패턴))
+    for 키, 패턴 in 펼친것:
         지문 = json.dumps(패턴, ensure_ascii=False, sort_keys=True, default=str)
         if 지문 not in 본것:
             본것.add(지문)
@@ -125,6 +135,6 @@ def test_몬스터_패턴_전수(monkeypatch, 종족, golden):
     golden(f"combat_monsters_{종족}", 결과)
 
 
-def test_몬스터는_29종():
-    assert len(gf.몬스터목록) == 29
-    assert sum(len(v) for v in 종족파일.values()) == 29
+def test_몬스터는_33종():
+    assert len(gf.몬스터목록) == 33
+    assert sum(len(v) for v in 종족파일.values()) == 33
