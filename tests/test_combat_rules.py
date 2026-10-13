@@ -1596,3 +1596,190 @@ def test_알비노_고블린은_넘어짐이_끝나면_모든_적에게_명속�
             assert 받은 > 0, p["이름"]
     기록 = [x for x in 전투상태["로그"] if "'알비노 고블린' 특성" in str(x.get("비고"))]
     assert len([x for x in 기록 if "'넘어짐' 해제" in x["비고"]]) == 4
+
+
+# ------------------------------------------------------------- 펜릴 (사용자 지정 2026-10-13)
+
+
+@pytest.fixture
+def 펜릴전장():
+    """펜릴 1마리 대 4인 파티, 모두 HP 넉넉히."""
+    random.seed(5)
+    상태 = support.새게임(
+        [("", "귀검사"), ("", "격투가"), ("", "거너"), ("", "마법사")]
+    )
+    gf.전투_시작(상태, ["펜릴"], 레벨=4, 차수=1)
+    support.반응_처리(상태)
+    전투상태 = 상태["전투상태"]
+    펜릴 = next(p for p in 전투상태["참가자"] if p["진영"] == "적")
+    아군 = sorted(
+        (p for p in 전투상태["참가자"] if p["진영"] == "아군"),
+        key=lambda p: p["대형위치"],
+    )
+    for p in 전투상태["참가자"]:
+        p["현재HP"] = 999
+    return 전투상태, 펜릴, 아군
+
+
+def _몬스터_한턴(전투상태, 몬스터, monkeypatch, 패턴, 대상=None):
+    """몬스터가 턴을 시작하고(턴 시작 처리) 이 패턴으로 행동한 뒤 턴을 끝낸다."""
+    from game.system import monster_ai
+    from game.system.combat import monster_actions
+
+    monkeypatch.setattr(monster_ai, "행동_선택", lambda p: 패턴)
+    if 대상 is not None:
+        monkeypatch.setattr(monster_ai, "타겟_선택", lambda *a, **k: 대상)
+    전투상태["현재턴"] = 전투상태["참가자"].index(몬스터)
+    flow.턴_시작_처리(전투상태, 몬스터)
+    monster_actions.몬스터_턴_실행(전투상태, 몬스터)
+    flow.턴_종료_처리(전투상태, 몬스터)
+
+
+def _이름들(참가자, 상태이상):
+    return [i for i in 참가자["상태이상"] if i["이름"] == 상태이상]
+
+
+def test_펜릴_패턴과_특성은_사용자가_정한_대로다():
+    펜릴 = gf.몬스터목록["펜릴"]
+    루가루 = gf.몬스터목록["루가루"]["패턴"][1]
+    assert 펜릴["적등급"] == "네임드"
+    assert 펜릴["특성"] == ["종족:루가루", "독샘의 주인"]
+    패턴 = 펜릴["패턴"]
+    for k in range(1, 5):
+        assert {a: b for a, b in 패턴[k].items() if a != "데미지보너스"} == {
+            a: b for a, b in 루가루.items() if a != "데미지보너스"
+        }, k
+        assert 패턴[k]["데미지보너스"] == 루가루["데미지보너스"] - 1
+    for k in (5, 6):
+        달려 = 패턴[k]
+        assert (달려["이름"], 달려["타입"], 달려["명중률"], 달려["데미지"]) == (
+            "달려들기",
+            ["공격패턴", "잡기"],
+            "민첩판정",
+            "1d6+보정치",
+        )
+        추가 = 달려["명중시턴종료공격"]
+        assert (추가["이름"], 추가["명중률"], 추가["데미지"]) == (
+            "물어뜯기",
+            "근력판정",
+            "1d6+보정치",
+        )
+        assert 추가["효과"]["이름"] == "들러붙음"
+    from game.data.buff.status_effects import 상태이상목록
+
+    assert "들러붙음" in 상태이상목록
+
+
+def test_달려들기가_명중하면_턴_끝에_물어뜯고_명중하면_들러붙음_다음_턴_시작에_확정_치명타로_문다(
+    펜릴전장, monkeypatch
+):
+    전투상태, 펜릴, 아군 = 펜릴전장
+    _주사위고정(monkeypatch, 15)  # 명중, 치명타 아님
+    monkeypatch.setattr(
+        dice_utils, "내성_굴림", lambda 보정치, 난이도, **kw: (True, 난이도)
+    )
+    달려들기 = gf.몬스터목록["펜릴"]["패턴"][5]
+    시작 = len(전투상태["로그"])
+    _몬스터_한턴(전투상태, 펜릴, monkeypatch, 달려들기, 대상=아군[2])
+    물기 = [
+        x
+        for x in 전투상태["로그"][시작:]
+        if x.get("패턴") == "물어뜯기" and x.get("공격자") == 펜릴["이름"]
+    ]
+    assert len(물기) == 1 and 물기[0]["대상"] == 아군[2]["이름"]  # 턴 끝, 같은 대상
+    assert len(_이름들(아군[2], "들러붙음")) == 1
+    assert all(not _이름들(p, "들러붙음") for p in 아군 if p is not 아군[2])
+
+    # 다음 펜릴 턴 시작: 들러붙은 대상을 반드시 명중+치명타로 문다(1d4+근력), 들러붙음은 사라진다
+    쉬기 = {"이름": "쉬기", "타입": "무행동"}
+    시작 = len(전투상태["로그"])
+    _몬스터_한턴(전투상태, 펜릴, monkeypatch, 쉬기)
+    물기 = [
+        x
+        for x in 전투상태["로그"][시작:]
+        if x.get("패턴") == "물어뜯기" and x.get("공격자") == 펜릴["이름"]
+    ]
+    assert len(물기) == 1 and 물기[0]["대상"] == 아군[2]["이름"]
+    [타격] = 물기[0]["타격"]
+    assert 타격["판정"]["성공"] and 타격["판정"]["치명타"]
+    assert not _이름들(아군[2], "들러붙음")
+    # 그 다음 턴에는 더 물지 않는다
+    시작 = len(전투상태["로그"])
+    _몬스터_한턴(전투상태, 펜릴, monkeypatch, 쉬기)
+    assert not [x for x in 전투상태["로그"][시작:] if x.get("패턴") == "물어뜯기"]
+
+
+def test_달려들기가_빗나가면_물지_않는다(펜릴전장, monkeypatch):
+    전투상태, 펜릴, 아군 = 펜릴전장
+    _주사위고정(monkeypatch, 1)  # 자동 실패
+    시작 = len(전투상태["로그"])
+    _몬스터_한턴(
+        전투상태, 펜릴, monkeypatch, gf.몬스터목록["펜릴"]["패턴"][6], 대상=아군[0]
+    )
+    assert not [x for x in 전투상태["로그"][시작:] if x.get("패턴") == "물어뜯기"]
+
+
+def test_독샘의_주인_펜릴의_공격이_명중하면_내성_없이_3턴_중독(펜릴전장, monkeypatch):
+    전투상태, 펜릴, 아군 = 펜릴전장
+    _주사위고정(monkeypatch, 15)
+    내성들 = []
+    monkeypatch.setattr(
+        dice_utils,
+        "내성_굴림",
+        lambda 보정치, 난이도, **kw: 내성들.append(난이도) or (True, 난이도),
+    )
+    _몬스터_한턴(
+        전투상태, 펜릴, monkeypatch, gf.몬스터목록["펜릴"]["패턴"][1], 대상=아군[0]
+    )
+    중독 = _이름들(아군[0], "중독")
+    assert len(중독) == 2 and all(
+        i["지속턴"] == 3 for i in 중독
+    )  # 두 번 할퀴어 둘 다 명중
+    assert 내성들 == []  # 내성굴림 없음
+
+
+def _펜릴_때리기(전투상태, 아군, 펜릴, monkeypatch, 굴림):
+    monkeypatch.setattr(traits.random, "random", lambda: 굴림)
+    전투상태["현재턴"] = 전투상태["참가자"].index(아군[0])
+    시작 = len(전투상태["로그"])
+    attacks.일반공격_실행(전투상태, 아군[0], 펜릴)
+    return 전투상태["로그"][시작:]
+
+
+@pytest.mark.parametrize(
+    "굴림, 독구름, 블러드", [(0.1, True, True), (0.3, False, True), (0.6, False, False)]
+)
+def test_독샘의_주인_피격시_20퍼센트_독구름_50퍼센트_포이즌_블러드(
+    펜릴전장, monkeypatch, 굴림, 독구름, 블러드
+):
+    전투상태, 펜릴, 아군 = 펜릴전장
+    _주사위고정(monkeypatch, 15)  # 아군 공격 명중
+    난이도들 = []
+    monkeypatch.setattr(
+        dice_utils,
+        "내성_굴림",
+        lambda 보정치, 난이도, **kw: 난이도들.append(난이도) or (False, 난이도),
+    )
+    monkeypatch.setattr(stats, "유효_방어력", lambda 전, p: 999 if p is 펜릴 else 0)
+    HP전 = 펜릴["현재HP"]
+    로그 = _펜릴_때리기(전투상태, 아군, 펜릴, monkeypatch, 굴림)
+    assert 펜릴["현재HP"] == HP전  # 명중했지만 피해 0 - 그래도 발동한다
+    중독 = {p["이름"]: len(_이름들(p, "중독")) for p in 아군}
+    기대 = {p["이름"]: (1 if 독구름 else 0) for p in 아군}
+    if 블러드:
+        기대[아군[0]["이름"]] += 1
+    assert 중독 == 기대
+    assert all(i["지속턴"] == 3 for p in 아군 for i in _이름들(p, "중독"))
+    assert set(난이도들) <= {12}
+    비고 = " ".join(str(x.get("비고", "")) for x in 로그)
+    assert ("독구름" in 비고) is 독구름 and ("포이즌 블러드" in 비고) is 블러드
+
+
+def test_독샘의_주인은_지속피해로는_발동하지_않는다(펜릴전장, monkeypatch):
+    전투상태, 펜릴, 아군 = 펜릴전장
+    monkeypatch.setattr(traits.random, "random", lambda: 0.0)
+    펜릴["상태이상"].append({"이름": "출혈", "지속턴": 3})
+    시작 = len(전투상태["로그"])
+    flow.턴_종료_처리(전투상태, 펜릴)
+    비고 = " ".join(str(x.get("비고", "")) for x in 전투상태["로그"][시작:])
+    assert "독구름" not in 비고 and "포이즌 블러드" not in 비고
