@@ -192,6 +192,7 @@
     "ctl_shop": "game.controller.ctl_shop",
     "ctl_equip": "game.controller.ctl_equip",
     "ctl_battle": "game.controller.ctl_battle",
+    "ctl_battle_log": "game.controller.ctl_battle_log",
     "ctl_dungeon": "game.controller.ctl_dungeon",
     "ctl_potion": "game.controller.ctl_potion",
     "ctl_rewards": "game.controller.ctl_rewards",
@@ -228,7 +229,7 @@
 # └── game/
 #     ├── data/            (직업/몬스터/맵 등 게임 콘텐츠 데이터)
 #     ├── system/          (전투/스킬 등 로직)
-#     ├── controller/      (화면 <-> 로직/데이터 컨트롤러 17개 모듈 - ctl_battle/shop/party ...)
+#     ├── controller/      (화면 <-> 로직/데이터 컨트롤러 18개 모듈 - ctl_battle/shop/party ...)
 #     ├── screens/         (Kivy 화면 7개 - screens_common/menu/town/
 #     │                     dungeon/battle/party/collection.py, main.py가 가져온다)
 #     ├── saves/           (세이브 파일)
