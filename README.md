@@ -54,6 +54,7 @@ APK는 GitHub Actions의 "Build APK" 워크플로(수동 실행)가 만든다. �
 | [`CLAUDE.md`](CLAUDE.md), [`.claude/`](.claude/) | 규칙(완료 기준, 가드레일), 주제별 규칙, 스킬 |
 | [`docs/architecture_review.md`](docs/architecture_review.md) | 구조/아키텍처 점검, 다음 로드맵 |
 | [`docs/refactoring_report.md`](docs/refactoring_report.md) | 점검 항목의 리팩터링 전/후 비교(병합 후 재측정) |
+| [`docs/code_quality_review.md`](docs/code_quality_review.md) | 코드 품질·아키텍처 재점검(2026-10-13, 10-06 대비 변화와 백로그) |
 | [`docs/scenarios.md`](docs/scenarios.md) | 풀 시나리오 장부 |
 | [`docs/mobile_apk_build_notes.md`](docs/mobile_apk_build_notes.md) | APK 빌드 노트 |
 | [`.memory/`](.memory/README.md) | 작업 기억(진행 상황, 알려진 문제, 경위) |
