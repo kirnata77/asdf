@@ -265,6 +265,19 @@ def test_몬스터_데이터는_필수_키와_허용값을_지킨다():
     assert not 문제, "\n".join(문제)
 
 
+def test_용족_몬스터는_그림과_적등급을_가지고_등록된다():
+    용족 = {n: d for n, d in gf.몬스터목록.items() if d["분류"] == "용족"}
+    assert {n: (d["이미지"], d["적등급"]) for n, d in 용족.items()} == {
+        "세리말리온": ("asset_monster_serimalion.webp", "일반"),
+        "루스 세리말리온": ("asset_monster_louis_serimalion.webp", "일반"),
+        "하스 세리말리온": ("asset_monster_haas_serimalion.webp", "엘리트"),
+        "불숨의 샐리온": ("asset_monster_firebreath_selion.webp", "네임드"),
+    }
+    for 이름, 몬스터 in 용족.items():
+        assert "종족:용족" in 몬스터["특성"], 이름
+        assert 몬스터["칭호"] == "미정", 이름  # 보스 칭호는 던전 맵 이벤트가 붙인다
+
+
 def test_몬스터_특성_이름은_정의가_있다():
     정의 = gf.전투용_몬스터특성정의
     없는 = collections.defaultdict(set)

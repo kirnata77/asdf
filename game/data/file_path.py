@@ -74,6 +74,7 @@
     "monster_race_lugaru": "game.data.monster.monster_race_lugaru",
     "monster_race_human": "game.data.monster.monster_race_human",
     "monster_race_zombie": "game.data.monster.monster_race_zombie",
+    "monster_race_dragon": "game.data.monster.monster_race_dragon",
     "monster_format": "game.data.monster.monster_format",
     "monster_ability": "game.data.monster.monster_ability",
     "monster_title": "game.data.monster.monster_title",

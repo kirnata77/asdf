@@ -32,6 +32,7 @@ from game.data.dungeon.dungeon_02A_D16_middleocean_deep import 맵정보 as _미
 from game.data.job_level.job_level_000x_style import 전투스타일
 from game.data.monster.monster_ability import 특성목록 as _몬스터특성
 from game.data.monster.monster_defaults import 몬스터_기본값
+from game.data.monster.monster_race_dragon import 몬스터목록 as _용족몬스터
 from game.data.monster.monster_race_goblin import 몬스터목록 as _고블린몬스터
 from game.data.monster.monster_race_human import 몬스터목록 as _인간몬스터
 from game.data.monster.monster_race_lugaru import 몬스터목록 as _루가루몬스터
@@ -67,6 +68,7 @@ _몬스터파일목록 = [
     ("monster_race_lugaru", _루가루몬스터),
     ("monster_race_human", _인간몬스터),
     ("monster_race_zombie", _좀비몬스터),
+    ("monster_race_dragon", _용족몬스터),
 ]
 
 
