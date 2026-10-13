@@ -9,6 +9,7 @@ from game.data.item.item_food import 음식_데이터
 from game.data.item.item_potion import 포션_데이터
 from game.system import (
     character_data_system as 캐릭터데이터,
+    collection_system,
     drink_system,
     equipment_system,
     loot_system,
@@ -513,6 +514,7 @@ def 항아리_열기(게임상태, 이름):
         raise ValueError("데이터 없음")
     potion_system.소지품_차감_카테고리(게임상태["소지품"], "소모품", 이름)
     player_system.아이템_추가(플레이어뷰(게임상태), "장비", 장비이름)
+    collection_system.아이템_등록(게임상태["진행도"], "장비", 장비이름)
     return next(탭[장비이름] for 탭 in 장비카탈로그.values() if 장비이름 in 탭)
 
 

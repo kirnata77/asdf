@@ -43,10 +43,10 @@ import os
 import shutil
 from datetime import datetime
 
-from game.system import player_system, state_schema
+from game.system import achievement_system, player_system, state_schema
 
 최대세이브슬롯 = 3
-세이브_버전 = 2  # 2: "던전위치"(던전 안에서 저장, 2026-10-12)
+세이브_버전 = 3  # 2: "던전위치"(던전 안에서 저장, 2026-10-12), 3: 도감/업적(2026-10-13)
 
 
 class 세이브_손상오류(Exception):
@@ -184,8 +184,16 @@ def _마이그레이션_1_2(저장데이터):
     저장데이터.setdefault("던전위치", None)
 
 
+def _마이그레이션_2_3(저장데이터):
+    """도감/업적 도입 - 그전 세이브는 빈 도감, 전투 승리 0회, 받은 보상 없음으로 시작한다.
+    (레벨/세리아 구출 업적은 이미 있는 진행도 값을 읽으므로 불러오자마자 달성으로 보인다.)"""
+    진행도 = 저장데이터["진행도"]
+    for 키, 값 in achievement_system.빈_진행기록().items():
+        진행도.setdefault(키, 값)
+
+
 # (새 버전, 이전 버전 세이브를 그 버전으로 바꾸는 함수) - 버전 순서대로
-_마이그레이션 = [(1, _마이그레이션_0_1), (2, _마이그레이션_1_2)]
+_마이그레이션 = [(1, _마이그레이션_0_1), (2, _마이그레이션_1_2), (3, _마이그레이션_2_3)]
 
 
 def _마이그레이션_적용(저장데이터, 슬롯번호):
