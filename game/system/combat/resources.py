@@ -70,7 +70,8 @@ def 몬스터_버프_부여(전투상태, 대상, 이름, 지속턴):
     """skill_system.이름있는효과_부여의 최소판(combat 패키지는
     skill_system을 부르지 않는다). buff.py/debuff.py의 "중첩":True는
     인스턴스를 새로 추가, skill_effects.py 기술효과(소환:비명초 등)의
-    "중첩":True는 기존 인스턴스 중첩+1, 그 외는 지속턴만 갱신한다.
+    "중첩":True는 기존 인스턴스 중첩+1, 그 외는 지속턴만 갱신한다. 기술효과라도
+    "중첩방식":"인스턴스"면(소환:연쇄 번개) 걸 때마다 새 인스턴스를 더해 각자 지속턴이 준다.
     정의에 없는 이름도 이름만으로 등록한다.
 
     이름이 버프/디버프/기술효과 정의에는 없고 status_effects.py 상태이상이면
@@ -85,9 +86,12 @@ def 몬스터_버프_부여(전투상태, 대상, 이름, 지속턴):
     if 지속턴 is None and 정의 is not None and isinstance(정의.get("지속턴"), int):
         지속턴 = 정의["지속턴"]
     중첩형 = bool(정의 and 정의.get("중첩"))
+    인스턴스형 = 중첩형 and (
+        출처 in ("버프", "디버프") or 정의.get("중첩방식") == "인스턴스"
+    )
 
     기존 = next((i for i in 대상[목록이름] if i.get("이름") == 이름), None)
-    if 기존 is not None and not (중첩형 and 출처 in ("버프", "디버프")):
+    if 기존 is not None and not 인스턴스형:
         if 중첩형:
             기존["중첩"] = 기존.get("중첩", 1) + 1
         if 지속턴 is not None:
