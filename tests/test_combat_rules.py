@@ -1748,7 +1748,11 @@ def test_알비노_고블린은_넘어짐이_끝나면_모든_적에게_명속�
     )
     HP전 = {p["이름"]: p["현재HP"] for p in 아군}
     키놀["상태이상"].append({"이름": "넘어짐", "지속턴": 1})
+    전투상태["공격연출"].clear()
     flow.턴_시작_처리(전투상태, 키놀)  # 지속턴 만료 -> 해제시 발동
+    # 명중 굴림은 없어도 연출은 뜬다 - 내성으로 피하면 실패(사용자 지정 2026-10-14)
+    연출 = {e["대상id"]: e["종류"] for e in 전투상태["공격연출"]}
+    assert 연출 == {p["id"]: "실패" if p["이름"] in 성공 else "마법:명" for p in 아군}
     for p in 아군:
         받은 = HP전[p["이름"]] - p["현재HP"]
         if p["이름"] in 성공:
@@ -2146,7 +2150,13 @@ def test_포효는_매력내성_성공시_데미지_절반_대포효는_기절�
     monkeypatch.setattr(monster_ai, "행동_선택", lambda p: 패턴)
     monkeypatch.setattr(monster_ai, "타겟_선택", lambda *a, **k: 아군[0])
     HP전 = {p["이름"]: p["현재HP"] for p in 아군}
+    전투상태["공격연출"].clear()
     결과 = monster_actions.몬스터_턴_실행(전투상태, 샤우타)
+    # 내성에 성공해도 절반을 맞으므로 모두 연출이 뜬다(사용자 지정 2026-10-14)
+    assert sorted(e["대상id"] for e in 전투상태["공격연출"]) == sorted(
+        p["id"] for p in 아군
+    )
+    assert {e["종류"] for e in 전투상태["공격연출"]} == {"마법:무"}
 
     원래피해 = stats.몬스터_수식값(
         전투상태, 샤우타, 패턴["실패시데미지"]
@@ -2941,3 +2951,69 @@ def test_갇힌_아군의_감옥_그림은_뒤와_앞이고_부서지면_없다(
     monkeypatch.setattr(stats, "피해_굴림", lambda *a, **k: 999)
     attacks.일반공격_실행(전투상태, 아군[1], 감옥)
     assert gf.감옥_그림(상태, 아군[0]) == (None, None)
+
+
+# ------------------------------------- 명중 굴림이 없는 공격의 연출 (사용자 지정 2026-10-14)
+
+
+def _전장(몬스터들):
+    random.seed(5)
+    상태 = support.새게임(
+        [("", "귀검사"), ("", "격투가"), ("", "거너"), ("", "마법사")]
+    )
+    gf.전투_시작(상태, 몬스터들, 레벨=2, 차수=1)
+    support.반응_처리(상태)
+    전투상태 = 상태["전투상태"]
+    for p in 전투상태["참가자"]:
+        p["현재HP"] = 999
+    적 = [p for p in 전투상태["참가자"] if p["진영"] == "적"]
+    아군 = [p for p in 전투상태["참가자"] if p["진영"] == "아군"]
+    전투상태["공격연출"].clear()
+    return 전투상태, 적, 아군
+
+
+def test_냉기방출은_내성_결과와_관계없이_모든_적에게_연출(monkeypatch):
+    전투상태, [굴], 아군 = _전장(["굴 구위시"])
+    결과 = iter([True, False, True, False])  # 성공해도 절반을 맞는다
+    monkeypatch.setattr(
+        dice_utils, "내성_굴림", lambda 보정치, 난이도, **kw: (next(결과), 난이도)
+    )
+    traits.특성_턴종료시_발동(전투상태, 굴)
+    assert sorted(e["대상id"] for e in 전투상태["공격연출"]) == sorted(
+        p["id"] for p in 아군
+    )
+    assert {e["종류"] for e in 전투상태["공격연출"]} == {"마법:수"}
+
+
+def test_기상_충격파는_모든_적에게_타격_연출(monkeypatch):
+    전투상태, [굴], 아군 = _전장(["굴 구위시"])
+    monkeypatch.setattr(
+        dice_utils, "내성_굴림", lambda 보정치, 난이도, **kw: (True, 난이도)
+    )
+    굴["상태이상"].append({"이름": "넘어짐", "지속턴": 1})
+    flow.턴_시작_처리(전투상태, 굴)  # 지속턴 만료 -> 해제시 발동
+    assert sorted(e["대상id"] for e in 전투상태["공격연출"]) == sorted(
+        p["id"] for p in 아군
+    )
+    assert {e["종류"] for e in 전투상태["공격연출"]} == {"타격:무"}
+
+
+def test_자폭명령은_폭사한_수만큼_맞은_대상에게_연출(monkeypatch):
+    from game.system import monster_ai
+    from game.system.combat import monster_actions
+
+    전투상태, 적, 아군 = _전장(["고블린 십장", "고블린", "고블린"])
+    십장 = next(p for p in 적 if p["원본"]["몬스터명"] == "고블린 십장")
+    패턴 = next(
+        p
+        for p in gf.몬스터목록["고블린 십장"]["패턴"].values()
+        if p.get("타입") == "자폭패턴"
+    )
+    monkeypatch.setattr(monster_ai, "행동_선택", lambda p: 패턴)
+    결과 = monster_actions.몬스터_턴_실행(전투상태, 십장)
+    아군id = {p["id"] for p in 아군}
+    assert 결과["폭사수"] == 2
+    assert len(전투상태["공격연출"]) == 2
+    assert all(
+        e["대상id"] in 아군id and e["종류"] == "타격:무" for e in 전투상태["공격연출"]
+    )
