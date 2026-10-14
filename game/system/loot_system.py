@@ -54,6 +54,11 @@ def _골드_수식(식, 몬스터원본):
     return max(0, int(값))
 
 
+def _미정인가(값):
+    """아직 정하지 않은 데이터 값인가 - None 또는 "미정"(앞뒤 공백 무시). 대체 동작은 game-rules "미정 처리"."""
+    return 값 is None or (isinstance(값, str) and 값.strip() == "미정")
+
+
 def 골드_굴림(획득골드, 몬스터원본=None):
     """ "1~10" -> 1~10 균등, 정수 -> 그 값, "레벨×100" 같은 수식 -> 몬스터원본의
     레벨/차수로 평가, "미정"/None/해석 불가 -> 0."""
@@ -63,7 +68,7 @@ def 골드_굴림(획득골드, 몬스터원본=None):
         return max(0, 획득골드)
     if not isinstance(획득골드, str):
         return 0
-    if 획득골드.strip() == "미정":
+    if _미정인가(획득골드):
         return 0
     조각 = 획득골드.split("~")
     try:
@@ -140,7 +145,7 @@ def _항목_아이템(항목, 장비카탈로그):
     """드랍표 항목 하나에서 아이템 이름 하나를 정한다(없으면 None)."""
     if "아이템이름" in 항목:
         이름 = 항목["아이템이름"]
-        return None if 이름 in (None, "미정") else 이름
+        return None if _미정인가(이름) else 이름
     조건 = 항목.get("아이템조건")
     if isinstance(조건, dict):
         후보 = _조건_후보(조건, 장비카탈로그)
@@ -257,7 +262,7 @@ def _표_후보(드랍표, 차수, 드랍표_모음, 장비카탈로그, 깊이=
             continue
         if "아이템이름" in 항목:
             이름 = 항목["아이템이름"]
-            if 이름 not in (None, "미정"):
+            if not _미정인가(이름):
                 후보.append((이름, float(가중치)))
             continue
         조건 = 항목.get("아이템조건")
