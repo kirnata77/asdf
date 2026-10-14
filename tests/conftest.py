@@ -10,6 +10,7 @@ import random
 
 import pytest
 
+from game.controller import ctl_battle
 from game.system import save_system
 from game.system.combat import core
 
@@ -21,6 +22,13 @@ def 임시_세이브폴더(tmp_path, monkeypatch):
     """테스트가 실제 game/saves/를 건드리지 않게 세이브 폴더를 바꿔치기한다."""
     monkeypatch.setattr(save_system, "_세이브_폴더", lambda: str(tmp_path))
     return tmp_path
+
+
+@pytest.fixture(autouse=True)
+def 기기_설정_기본값():
+    """테스트마다 [설정]의 세 값(반응 자동/자동전투/전투로그 방식)을 기본값으로 시작한다."""
+    ctl_battle._설정.clear()
+    ctl_battle._설정.update(ctl_battle._설정_기본값)
 
 
 @pytest.fixture(autouse=True)

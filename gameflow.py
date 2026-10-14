@@ -53,6 +53,7 @@
 #   ctl_town      마을 이동/휴식                  ctl_shop     상점 구매/판매/해체
 #   ctl_equip     장비 교체                       ctl_levelup  파티관리 레벨업(퍽/전직/스킬강화)
 #   ctl_battle    전투 시작/조회/행동/턴 넘기기   ctl_skills   스킬 습득
+#                 + [설정] 값과 기기 설정 파일(settings_system)
 #   ctl_battle_log 전투 로그 dict -> 화면 문장(로그_문장들)
 #   ctl_autobattle [자동전투] 한 턴, 전력전투 스킬 고르기(ctl_battle 다음)
 #   ctl_dungeon   던전 이동/상호작용(인카운트)    ctl_potion   회복포션 사용
