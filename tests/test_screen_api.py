@@ -394,6 +394,7 @@ def test_로그_쓰러짐과_내성과_반응회피_문장():
     assert sum(z.endswith("쓰러졌다!") for z in 줄) == 1
     # 내성 굴림 공격: DC vs 굴린 값
     포효 = {
+        "종류": "타격",
         "공격자": "타우 비스트",
         "패턴": "포효",
         "난이도": 9,
@@ -412,6 +413,7 @@ def test_로그_쓰러짐과_내성과_반응회피_문장():
     ]
     # 반응으로 피한 공격: 굴림은 성공, 결과는 반응 이름으로 피함(크라우치는 격투가 계열 퍽)
     회피 = {
+        "종류": "타격",
         "공격자": "고블린",
         "대상": "스트라이커",
         "패턴": "몽둥이질",
@@ -436,6 +438,7 @@ def test_로그_쓰러짐과_내성과_반응회피_문장():
     assert (
         gf.로그_문장들(
             {
+                "종류": "버프",
                 "공격자": "엘리멘탈마스터",
                 "스킬": "채찍질",
                 "대상": ["거너"],
@@ -478,17 +481,17 @@ def 전력전투():
 
 def _한_차례(상태, 이름):
     """그 아군 차례로 맞추고 [자동전투]를 한 번 - 그 사이 그 아군이 남긴 로그(턴 넘기기는 막는다)."""
-    from game.controller import ctl_battle
+    from game.controller import ctl_autobattle
 
     p = _차례(상태, 이름)
     전투상태 = 상태["전투상태"]
     시작 = len(전투상태["로그"])
-    원래 = ctl_battle.턴_넘기기
-    ctl_battle.턴_넘기기 = lambda s: None
+    원래 = ctl_autobattle.턴_넘기기
+    ctl_autobattle.턴_넘기기 = lambda s: None
     try:
         gf.자동전투_한_턴(상태)
     finally:
-        ctl_battle.턴_넘기기 = 원래
+        ctl_autobattle.턴_넘기기 = 원래
     return p, [r for r in 전투상태["로그"][시작:] if r.get("공격자") == p["이름"]]
 
 

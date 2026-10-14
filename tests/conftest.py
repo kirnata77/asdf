@@ -11,6 +11,7 @@ import random
 import pytest
 
 from game.system import save_system
+from game.system.combat import core
 
 GOLDEN_DIR = os.path.join(os.path.dirname(__file__), "golden")
 
@@ -26,6 +27,18 @@ def 임시_세이브폴더(tmp_path, monkeypatch):
 def 전역_난수_시드():
     """테스트마다 전역 random을 0으로 시작한다 - 테스트를 하나만 돌려도, 순서를 바꿔도 결과가 같게."""
     random.seed(0)
+
+
+@pytest.fixture(autouse=True)
+def 전투_로그_종류_검사(monkeypatch):
+    """모든 테스트에서 엔진이 쌓는 로그 항목의 "종류"가 core.로그_종류 중 하나인지 본다(품질 계획 P4)."""
+    원래 = core.로그
+
+    def 검사(전투상태, 항목, *, 종류):
+        assert 종류 in core.로그_종류, f"모르는 로그 종류 {종류!r}: {항목}"
+        return 원래(전투상태, 항목, 종류=종류)
+
+    monkeypatch.setattr(core, "로그", 검사)
 
 
 def _정규화(값):

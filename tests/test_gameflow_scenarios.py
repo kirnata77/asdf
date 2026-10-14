@@ -10,7 +10,7 @@ import random
 import pytest
 
 import gameflow as gf
-from game.controller import ctl_battle
+from game.controller import ctl_autobattle, ctl_battle
 from game.system import drink_system, loot_system
 from game.data.item.item_food import 음식_데이터
 from game.data.monster.monster_drop import 드랍표_모음
@@ -849,11 +849,11 @@ def test_자동전투는_일반행동을_다_쓰고_턴을_넘긴다(monkeypatch
 
     monkeypatch.setattr(random, "choice", 기록선택)
     넘김 = []
-    # 자동전투_한_턴이 부르는 턴_넘기기를 가로챈다 - 구현 모듈(ctl_battle)의 이름을 바꿔야 한다
+    # 자동전투_한_턴이 부르는 턴_넘기기를 가로챈다 - 구현 모듈(ctl_autobattle)이 가져온 이름을 바꿔야 한다
     # (gf는 재수출 창구라 gf의 이름을 바꿔도 컨트롤러 안의 호출은 그대로다)
-    원래넘기기 = ctl_battle.턴_넘기기
+    원래넘기기 = ctl_autobattle.턴_넘기기
     monkeypatch.setattr(
-        ctl_battle, "턴_넘기기", lambda s: 넘김.append(1) or 원래넘기기(s)
+        ctl_autobattle, "턴_넘기기", lambda s: 넘김.append(1) or 원래넘기기(s)
     )
 
     gf.자동전투_한_턴(상태)
@@ -876,12 +876,12 @@ def _마법사_자동전투_로그(상태, 마법사):
     전투상태 = 상태["전투상태"]
     넘김 = []
     시작 = len(전투상태["로그"])
-    원래넘기기 = ctl_battle.턴_넘기기
-    ctl_battle.턴_넘기기 = lambda s: 넘김.append(1)
+    원래넘기기 = ctl_autobattle.턴_넘기기
+    ctl_autobattle.턴_넘기기 = lambda s: 넘김.append(1)
     try:
         gf.자동전투_한_턴(상태)
     finally:
-        ctl_battle.턴_넘기기 = 원래넘기기
+        ctl_autobattle.턴_넘기기 = 원래넘기기
     return [
         기록 for 기록 in 전투상태["로그"][시작:] if 기록.get("공격자") == 마법사["이름"]
     ]
@@ -959,7 +959,7 @@ def test_자동전투는_승패가_나면_바로_멈춘다(monkeypatch):
     고블린["현재HP"] = 1
     monkeypatch.setattr(dice_utils.random, "randint", lambda a, b: b)  # 명중
     넘김 = []
-    monkeypatch.setattr(ctl_battle, "턴_넘기기", lambda s: 넘김.append(1))
+    monkeypatch.setattr(ctl_autobattle, "턴_넘기기", lambda s: 넘김.append(1))
     gf.자동전투_한_턴(상태)
     assert 상태["전투상태"]["종료"] == "아군승리" and 넘김 == []
     gf.자동전투_한_턴(상태)  # 끝난 전투에서는 아무것도 하지 않는다
@@ -1820,6 +1820,7 @@ def test_전투_중_포션은_보조행동으로_자신에게만():
         "행동": f"초보자용 HP 포션 사용 - HP {회복} 회복",
         "아이템": "초보자용 HP 포션",
         "결과": f"HP {회복} 회복",
+        "종류": "아이템",
     }
     참가자["행동자원"]["보조행동"] = 0
     참가자["현재HP"] = 1
@@ -1862,6 +1863,7 @@ def test_전투_중_버프포션은_보조행동으로_자신에게_버프를_�
         "행동": "오거파워 플라스크 사용 - 근력증가 5중첩 10턴",
         "아이템": "오거파워 플라스크",
         "결과": "근력증가 5중첩 10턴",
+        "종류": "아이템",
     }
 
     # 같은 포션을 다시 마시면 중첩되지 않고 지속턴만 돌아간다
@@ -1925,6 +1927,7 @@ def test_고블린_더스트는_보조행동으로_고블린을_소환하고_쓸
         "행동": "고블린 더스트 사용 - 고블린 소환(2마리)",
         "아이템": "고블린 더스트",
         "결과": "고블린 소환(2마리)",
+        "종류": "아이템",
     }
 
     # 사용자 턴이 끝나면 고블린 두 마리가 따로 행동한다(몽둥이질/두번때리기)

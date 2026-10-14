@@ -18,6 +18,7 @@ paths:
 | `test_combat_skills.py` | 스킬 전수(기본/준비됨) | 골든 |
 | `test_combat_monsters.py` | 몬스터 고유 패턴 전수 + 보스 칭호 | 골든 |
 | `test_combat_effects.py` | 상태이상/버프/디버프 전수, 반응특성 전투 | 골든 |
+| `test_battle_log.py` | 골든 로그의 화면 문장 기준(`battle_log_sentences`), 로그 `"종류"` 규칙(conftest가 모든 테스트에서 검사) | 골든 + 규칙 |
 | `test_screen_api.py` | 화면용 gameflow 창구, 화면 -> system/controller 직접 호출 금지 | 값 + 규칙 |
 | `test_controller_structure.py` | 창구에 구현 금지, 컨트롤러 `__all__` 완전성/이름 겹침/순환 금지, 창구가 쓰이는 이름을 다 내보냄 | 규칙 |
 | `test_formula_parity.py` | 수식 평가기가 옛 eval 구현과 같은 값을 내는지(데이터 수식 전부 + 무작위 식), 안전 평가기의 거부 규칙 | 기준 구현과 비교 |
