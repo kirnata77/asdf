@@ -237,13 +237,9 @@
 #     ├── saves/           (세이브 파일)
 #     ├── assets/
 #     │   ├── attack/     공격 연출 그림 (투명 배경, 전투 화면이 대상 위에 0.5초 띄운다)
-#     │   │                  asset_attack_slash.webp  참격 (173x134)
-#     │   │                  asset_attack_blunt.webp  타격 (137x112)
-#     │   │                  asset_attack_pierce.webp 관통 (180x62)
-#     │   │                  asset_attack_fire.webp   화속성 (116x99)
-#     │   │                  asset_attack_water.webp  수속성 (134x120)
-#     │   │                  asset_attack_light.webp  명속성 (128x128)
-#     │   │                  asset_attack_dark.webp   암속성 (136x127)
+#     │   │                  asset_attack_{모양}_{색}.webp  20장 (2026-10-14 교체)
+#     │   │                    모양: slash 참격 / blunt 타격 / pierce 관통 / magic 마법(역장도)
+#     │   │                    색  : none 무속성 / fire 화 / water 수 / light 명 / dark 암
 #     │   │                  asset_attack_stuck.webp  공격 실패 글자 "Stuck!!" (967x240)
 #     │   ├── font/       NanumGothic-Diet.ttf (다이어트 폰트 1개, 볼드 없음)
 #     │   ├── character/  캐릭터 SD 이미지 (asset_sd_character_*.webp)

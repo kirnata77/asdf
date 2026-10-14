@@ -806,3 +806,70 @@ def test_드랍표의_아이템과_표_참조는_실제로_있고_순환하지_�
         f"{이름}: 드랍표가 순환한다" for 이름 in 가리킴 if 순환(이름, 이름, {이름})
     ]
     assert not 문제, "\n".join(문제)
+
+
+# 공격 연출 모양(사용자 지정 2026-10-14) - combat.damage.공격연출_종류 / stats.타격_공격속성
+_공격속성_값 = {"참격", "타격", "관통", "역장", "마법"}
+
+
+def _데미지_딕셔너리들(값, 경로=()):
+    if isinstance(값, dict):
+        if "데미지" in 값:
+            yield 경로, 값
+        for 키, 하위 in 값.items():
+            yield from _데미지_딕셔너리들(하위, 경로 + (키,))
+    elif isinstance(값, (list, tuple)):
+        for 번호, 하위 in enumerate(값):
+            yield from _데미지_딕셔너리들(하위, 경로 + (번호,))
+
+
+def _연출이_없는_피해(경로, 항목):
+    """연출 모양이 필요 없는 피해: 무기 주사위(무기의 공격속성을 따른다), 본 피해에 더하는
+    속성추가피해, 명중 굴림이 없는 피해(내성 피해 특성 효과, 자폭패턴 - 지금은 연출이 안 뜬다)."""
+    식 = str(항목["데미지"])
+    return (
+        항목["데미지"] in (None, 0, "0")
+        or "보정공격력" in 식
+        or "무기공격력" in 식
+        or "속성추가피해" in 경로
+        or ("내성" in 항목 and "명중률" not in 항목)
+        or 항목.get("타입") == "자폭패턴"
+    )
+
+
+def test_명중_굴림이_있는_공격은_모두_공격속성을_적는다():
+    """무기 주사위를 쓰지 않는 공격(스킬/몬스터 패턴/소환수 행동/투척 아이템/특성 공격)은
+    "공격속성"이 있어야 연출 모양이 정해진다. 자리는 "데미지" 바로 다음."""
+    빠짐, 틀린값, 자리 = [], [], []
+    for 모듈 in _데이터_모듈들():
+        for 이름, 값 in vars(모듈).items():
+            if 이름.startswith("_"):
+                continue
+            for 경로, 항목 in _데미지_딕셔너리들(값, (모듈.__name__, 이름)):
+                if "공격속성" in 항목:
+                    if 항목["공격속성"] not in _공격속성_값:
+                        틀린값.append((경로, 항목["공격속성"]))
+                    키들 = list(항목)
+                    if 키들.index("공격속성") != 키들.index("데미지") + 1:
+                        자리.append(경로)
+                elif not _연출이_없는_피해(경로, 항목):
+                    빠짐.append(경로)
+    assert not 빠짐, 빠짐
+    assert not 틀린값, 틀린값
+    assert not 자리, 자리
+
+
+def test_무기는_모두_공격속성을_적는다():
+    무기들 = [
+        항목
+        for 모듈 in _데이터_모듈들()
+        if 모듈.__name__.split(".")[-1].startswith("eq_01_weapon_0")
+        for 값 in vars(모듈).values()
+        if isinstance(값, dict)
+        for 항목 in 값.values()
+        if isinstance(항목, dict) and "무기능력치" in 항목
+    ]
+    assert len(무기들) >= 50
+    assert all(항목.get("공격속성") in _공격속성_값 for 항목 in 무기들), [
+        (항목.get("이름"), 항목.get("공격속성")) for 항목 in 무기들
+    ]
