@@ -2022,6 +2022,30 @@ class 스모크앱(main.DnfMobileApp):
             if isinstance(w, main.Label)
         ]
         assert not any(감옥["이름"] in t for t in 적칸글), 적칸글  # 적 그림 칸에는 없다
+        # 갇힌 귀검사 그림 칸: 얼음감옥(뒤) -> 캐릭터 -> 얼음감옥(앞) 순으로 겹친다(뒤가 먼저 그려진다)
+        틀 = next(
+            w
+            for w in 전투._그림칸[귀검사["id"]].walk(restrict=True)
+            if w.__class__.__name__ == "FloatLayout"
+        )
+        겹침 = [getattr(w, "감옥그림", "캐릭터") for w in reversed(틀.children)]
+        assert 겹침 == [
+            "asset_monster_ice_prison_back.webp",
+            "캐릭터",
+            "asset_monster_ice_prison_front.webp",
+        ], 겹침
+        뒤, 캐릭터, 앞 = reversed(틀.children)
+        assert 뒤.y == 틀.y and 앞.y == 틀.y and 캐릭터.y == 틀.y  # 같은 바닥
+        assert 뒤.width <= 틀.width + 1 and 앞.width <= 틀.width + 1
+        다른칸 = [
+            w
+            for k, 칸 in 전투._그림칸.items()
+            if k != 귀검사["id"]
+            for w in 칸.walk(restrict=True)
+            if hasattr(w, "감옥그림")
+        ]
+        assert not 다른칸, "갇히지 않은 아군 칸에는 감옥 그림이 없다"
+        _찍기("battle_prison_images")
         전투._일반공격_클릭()
         yield 0.3
         글들 = [b.text for b in _대상버튼들()]
@@ -2045,7 +2069,29 @@ class 스모크앱(main.DnfMobileApp):
             for x in 전투상태["로그"]
         ), "팝업에서 고른 감옥을 공격한다"
         assert 감옥["현재HP"] <= 감옥HP
-        결과["단계"].append("얼음감옥: 적 칸에는 없고 대상 팝업에 나오며 골라서 공격")
+        # 운석은 뒤 그림만 - 크루세이더(프리스트)에게 건다
+        프리스트 = next(
+            p
+            for p in 전투상태["참가자"]
+            if (p.get("원본") or {}).get("직업") == "프리스트"
+        )
+        운석폭발 = gf.몬스터목록["화염의 비노슈"]["패턴"][5]
+        monster_actions.감옥_걸기(
+            전투상태, 케라하, 프리스트, 운석폭발, "'운석폭발' 패턴"
+        )
+        전투.갱신()
+        yield 0.5
+        틀 = next(
+            w
+            for w in 전투._그림칸[프리스트["id"]].walk(restrict=True)
+            if w.__class__.__name__ == "FloatLayout"
+        )
+        겹침 = [getattr(w, "감옥그림", "캐릭터") for w in reversed(틀.children)]
+        assert 겹침 == ["asset_monster_meteor_prison.webp", "캐릭터"], 겹침
+        _찍기("battle_prison_meteor")
+        결과["단계"].append(
+            "얼음감옥: 갇힌 아군 칸에 뒤/앞 그림, 적 칸에는 없고 대상 팝업에 나오며 골라서 공격. 운석은 뒤 그림만"
+        )
 
     def _단계_공격연출(self, 상태, 매니저):
         """공격하면 대상 그림 칸 위에 공격 종류 그림이 떴다가 0.5초 뒤 사라진다(아군/적 모두)"""

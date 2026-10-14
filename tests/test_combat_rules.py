@@ -2874,3 +2874,36 @@ def test_감옥이_끝나는_턴에도_아이스_그라운드를_쓰고_부서�
     시작 = len(전투상태["로그"])
     _갇힌_사람_턴(전투상태, 아군[0])
     assert not _아이스그라운드(전투상태, 시작, 감옥)
+
+
+# ---------------------------------- 감옥 그림 (사용자 지정 2026-10-14)
+
+
+@pytest.mark.parametrize(
+    "이름, 기대",
+    [
+        (
+            "결빙의 케라하",
+            (
+                "asset_monster_ice_prison_back.webp",
+                "asset_monster_ice_prison_front.webp",
+            ),
+        ),
+        ("화염의 비노슈", ("asset_monster_meteor_prison.webp", None)),
+    ],
+)
+def test_갇힌_아군의_감옥_그림은_뒤와_앞이고_부서지면_없다(monkeypatch, 이름, 기대):
+    import os
+    from game.system.combat import attacks
+
+    전투상태, 마녀, 아군, 감옥 = _가두기(monkeypatch, 이름, 0)
+    상태 = {"전투상태": 전투상태}
+    assert gf.감옥_그림(상태, 아군[0]) == 기대
+    assert gf.감옥_그림(상태, 아군[1]) == (None, None)
+    for 파일 in 기대:
+        if 파일:
+            assert os.path.isfile(os.path.join("game", "assets", "monster", 파일)), 파일
+    _주사위고정(monkeypatch, 10)
+    monkeypatch.setattr(stats, "피해_굴림", lambda *a, **k: 999)
+    attacks.일반공격_실행(전투상태, 아군[1], 감옥)
+    assert gf.감옥_그림(상태, 아군[0]) == (None, None)

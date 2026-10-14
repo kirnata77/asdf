@@ -307,6 +307,16 @@ def _아군그림_맞추기(틀, 이미지):
     이미지.pos = (틀.center_x - 이미지.width / 2, 틀.y)
 
 
+def _감옥그림_맞추기(틀, 이미지):
+    """감옥 그림(얼음감옥/운석)은 칸에 꽉 맞춘 크기로 칸 바닥 가운데에 붙인다(캐릭터와 같은 바닥)."""
+    tw, th = 이미지.texture_size
+    if not tw or not th:
+        return
+    맞춤 = min(틀.width / tw, 틀.height / th)
+    이미지.size = (tw * 맞춤, th * 맞춤)
+    이미지.pos = (틀.center_x - 이미지.width / 2, 틀.y)
+
+
 class 전투화면(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -679,18 +689,40 @@ class 전투화면(Screen):
             # 지도용 "플레이어 초상화"와는 별개다. 칸에 꽉 맞춘 크기의
             # _아군그림_배율로 줄여 칸 바닥 가운데에 붙인다.
             틀 = FloatLayout()
+            # 감옥(얼음감옥/운석)에 갇혔으면 감옥 그림을 캐릭터 뒤(뒤)와 위(앞)에 겹친다 - 사용자 지정 2026-10-14
+            감옥뒤, 감옥앞 = gameflow.감옥_그림(게임상태, 아군)
+            감옥그림들 = []
+
+            def 감옥그림(파일):
+                그림 = Image(
+                    allow_stretch=True,
+                    size_hint=(None, None),
+                    source=_에셋_경로("monster", 파일),
+                )
+                그림.감옥그림 = 파일  # 스모크가 겹친 순서를 확인한다
+                감옥그림들.append(그림)
+                틀.add_widget(그림)
+
+            if 감옥뒤:
+                감옥그림(감옥뒤)
             이미지 = Image(
                 allow_stretch=True,
                 size_hint=(None, None),
                 source=_캐릭터이미지_경로(gameflow.초상화_코드(아군["원본"])),
             )
             틀.add_widget(이미지)
+            if 감옥앞:
+                감옥그림(감옥앞)
 
-            def 맞추기(*_, 틀=틀, 이미지=이미지):
+            def 맞추기(*_, 틀=틀, 이미지=이미지, 감옥그림들=감옥그림들):
                 _아군그림_맞추기(틀, 이미지)
+                for 그림 in 감옥그림들:
+                    _감옥그림_맞추기(틀, 그림)
 
             틀.bind(pos=맞추기, size=맞추기)
             이미지.bind(texture_size=맞추기)
+            for 그림 in 감옥그림들:
+                그림.bind(texture_size=맞추기)
             그래픽박스.add_widget(틀)
             self.아군그래픽행.add_widget(그래픽박스)
             self._그림칸[아군["id"]] = 그래픽박스
