@@ -5,7 +5,6 @@
 # main.py가 game/screens/ 여섯 파일의 화면을 ScreenManager에 등록한다.
 
 import os
-import json
 
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
@@ -179,8 +178,9 @@ _입력_높이 = dp(52)
 _입력_폰트크기 = 36
 
 # -----------------------------------------------------
-# 기기 설정 파일 - 세이브와 별개인 앱 설정. 지금은 "반응자동"
-# (반응 자동 사용) 하나. 앱 데이터 폴더의 설정.json에 저장한다.
+# 기기 설정 파일 - 세이브와 별개인 앱 설정(반응 자동/자동전투/전투로그 방식).
+# 앱 데이터 폴더의 설정.json. 화면은 경로만 정하고 읽기/쓰기는 gameflow 창구
+# (ctl_battle -> settings_system)가 한다.
 # -----------------------------------------------------
 
 
@@ -192,33 +192,14 @@ def _설정_경로():
     return os.path.join(폴더, "설정.json")
 
 
-def _설정_읽기():
-    """설정 파일을 딕셔너리로 읽는다. 없거나(OSError) 깨졌거나(ValueError - JSON 오류,
-    잘못된 인코딩) 딕셔너리가 아니면 빈 설정으로 시작한다."""
-    try:
-        with open(_설정_경로(), encoding="utf-8") as 파일:
-            설정 = json.load(파일)
-    except (OSError, ValueError):
-        return {}
-    return 설정 if isinstance(설정, dict) else {}
-
-
 def 설정_불러오기():
-    설정 = _설정_읽기()
-    gameflow.반응_자동_설정(설정.get("반응자동", False))
-    gameflow.자동전투_방식_설정(설정.get("자동전투방식"))  # 없거나 모르는 값이면 기본값
-    gameflow.전투로그_방식_설정(설정.get("전투로그방식"))
-    return 설정
+    return gameflow.설정_파일_불러오기(_설정_경로())
 
 
 def 설정_저장(키, 값):
-    설정 = _설정_읽기()
-    설정[키] = 값
-    try:
-        with open(_설정_경로(), "w", encoding="utf-8") as 파일:
-            json.dump(설정, 파일, ensure_ascii=False)
-    except OSError:
-        pass  # 저장 못 해도 이번 실행에는 이미 반영돼 있다
+    gameflow.설정_파일_저장(
+        _설정_경로(), 키, 값
+    )  # 못 써도 이번 실행에는 이미 반영돼 있다
 
 
 # 파티 화면 디자인: 파티원마다 넓은 카드 한 장 - 왼쪽 초상화,

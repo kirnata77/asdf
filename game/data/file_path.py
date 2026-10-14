@@ -147,6 +147,7 @@
     "party_system": "game.system.party_system",
     "player_system": "game.system.player_system",
     "save_system": "game.system.save_system",
+    "settings_system": "game.system.settings_system",
     "shop_system": "game.system.shop_system",
     "loot_system": "game.system.loot_system",
     "quest_system": "game.system.quest_system",
