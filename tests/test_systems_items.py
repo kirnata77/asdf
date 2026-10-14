@@ -1303,3 +1303,19 @@ def test_설정_쓰기는_읽기와_왕복하고_한글을_그대로_쓴다(tmp_
 
 def test_설정_쓰기는_쓸_수_없으면_False(tmp_path):
     assert settings_system.설정_쓰기(str(tmp_path), {"반응자동": True}) is False
+
+
+def test_설정_쓰기는_도중에_실패해도_옛_파일을_지키고_임시_파일을_남기지_않는다(
+    tmp_path, monkeypatch
+):
+    경로 = tmp_path / "설정.json"
+    settings_system.설정_쓰기(str(경로), {"반응자동": True})
+
+    def 쓰다_끊김(설정, 파일, **_):
+        파일.write('{"반')
+        raise OSError("디스크 가득")
+
+    monkeypatch.setattr(settings_system.json, "dump", 쓰다_끊김)
+    assert settings_system.설정_쓰기(str(경로), {"반응자동": False}) is False
+    assert settings_system.설정_읽기(str(경로)) == {"반응자동": True}
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["설정.json"]
