@@ -2048,3 +2048,55 @@ def test_포효는_매력내성_성공시_데미지_절반_대포효는_기절�
         기절 = any(s["이름"] == "기절" for s in p.get("상태이상", []))
         assert 기절 is (번호 == 6 and k in (0, 2)), p["이름"]
     assert len(기절굴림) == (4 if 번호 == 6 else 0)
+
+
+# ------------------------------------------- 몬스터 공격 데미지의 능력치 보정치 (사용자 지정 2026-10-14)
+
+
+@pytest.mark.parametrize("식", ["1d4+근력보정치", "1d4+보정치"])
+def test_몬스터_공격_데미지의_근력보정치는_버프_디버프를_반영한다(monkeypatch, 식):
+    """ "근력보정치"가 몬스터 원본이 아니라 버프/디버프가 반영된 근력으로 계산된다 -
+    근력판정의 "보정치"와 같은 값이어야 한다(그전에는 원본 근력이라 디버프를 무시했다)."""
+    from game.system import monster_ai
+    from game.system.combat import monster_actions
+
+    random.seed(1)
+    상태 = support.새게임([("", "귀검사")])
+    gf.전투_시작(상태, ["타우 아미"], 레벨=2, 차수=1)
+    support.반응_처리(상태)
+    전투상태 = 상태["전투상태"]
+    아미 = next(p for p in 전투상태["참가자"] if p["진영"] == "적")
+    대상 = next(p for p in 전투상태["참가자"] if p["진영"] == "아군")
+    대상["현재HP"] = 999
+    원래보정 = (아미["원본"]["근력"] - 10) // 2
+    아미.setdefault("디버프", []).append({"이름": "근력감소", "지속턴": 3, "중첩": 4})
+    보정 = stats.유효_능력치_보정치(전투상태, 아미, "근력")
+    assert 보정 == 원래보정 - 2  # 근력 -4
+
+    패턴 = {
+        "이름": "시험 공격",
+        "타입": "공격패턴",
+        "타겟": "적단일",
+        "속성": "무속성",
+        "데미지": 식,
+        "데미지보너스": 0,
+        "명중률": "근력판정",
+        "명중보너스": 0,
+        "공격횟수": 1,
+        "각공격명중굴림": False,
+        "효과": None,
+        "조건부효과": None,
+    }
+    monkeypatch.setattr(
+        damage, "명중_판정", lambda *a, **k: {"성공": True, "치명타": False}
+    )
+    monkeypatch.setattr(monster_ai, "행동_선택", lambda p: 패턴)
+    monkeypatch.setattr(monster_ai, "타겟_선택", lambda *a, **k: 대상)
+    _주사위고정(monkeypatch, 4)  # 1d4 = 4
+    결과 = monster_actions.몬스터_턴_실행(전투상태, 아미)
+
+    원래피해 = 4 + 보정 + monster_actions.몬스터_데미지보너스(전투상태, 아미)
+    기대 = damage.최종피해_계산(
+        원래피해, stats.유효_방어력(전투상태, 대상), stats.유효_보호률(전투상태, 대상)
+    )
+    assert 999 - 대상["현재HP"] == 기대, 결과
