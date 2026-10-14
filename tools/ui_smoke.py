@@ -2116,10 +2116,19 @@ class 스모크앱(main.DnfMobileApp):
             return [w for w in 전투.children if hasattr(w, "공격연출")]
 
         def 칸_위인가(그림, 참가자):
+            """칸 가로 가운데, 대상 크기 그림의 세로 가운데(칸 바닥 아래로는 안 감 - 사용자 지정 10-14)."""
             칸 = 전투._그림칸[참가자["id"]]
             cx, cy = 그림.to_window(*그림.center)
+            gy = 그림.to_window(*그림.pos)[1]
             x, y = 칸.to_window(*칸.pos)
-            return x <= cx <= x + 칸.width and y <= cy <= y + 칸.height
+            배율 = gf.공격연출_크기배율(상태, 참가자["id"])
+            기대 = y + gf.공격연출_바닥(칸.height, 그림.height, 배율)
+            return (
+                x <= cx <= x + 칸.width
+                and y <= cy <= y + 칸.height
+                and abs(gy - 기대) < 1
+                and abs(cx - (x + 칸.width / 2)) < 1
+            )
 
         assert 연출들() == [], [w.공격연출 for w in 연출들()]
         적 = next(p for p in 전투상태["참가자"] if p["진영"] == "적" and p["생존"])
@@ -2159,6 +2168,17 @@ class 스모크앱(main.DnfMobileApp):
         _찍기("battle_attack_effect_ally")
         전투._공격연출_하나({"대상id": 귀검사["id"], "종류": "실패"})
         assert [w.공격연출 for w in 연출들()] == ["실패"], 연출들()
+        # 크기(소형/중형/대형)마다 높이가 다르다 - 아군도 버프로 크기가 바뀔 수 있다(사용자 지정 10-14)
+        원본 = 귀검사["원본"]
+        높이 = {}
+        for 크기 in ("소형", "중형", "대형"):
+            귀검사["원본"] = dict(원본, 크기=크기)
+            전투._공격연출_하나({"대상id": 귀검사["id"], "종류": "타격:무"})
+            그림 = 연출들()[0]
+            assert 칸_위인가(그림, 귀검사), 크기
+            높이[크기] = 그림.y
+        귀검사["원본"] = 원본
+        assert 높이["소형"] <= 높이["중형"] < 높이["대형"], 높이
         yield 0.8
         assert 연출들() == [], "0.5초 뒤 사라진다"
         # [설정] 전투로그 "자세하게": 명중/AC/피해 계산 줄이 판정 줄 앞뒤에 붙는다

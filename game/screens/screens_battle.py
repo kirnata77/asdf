@@ -455,7 +455,9 @@ class 전투화면(Screen):
             )
 
     def _공격연출_하나(self, 연출):
-        """대상의 그림 칸 가운데에 종류 그림을 칸에 맞춰 띄우고 _연출_시간 뒤 지운다.
+        """대상의 그림 칸 가로 가운데, 대상 크기(소형/중형/대형) 그림의 세로 가운데에 종류 그림을
+        칸에 맞춰 띄우고(칸 바닥 아래로는 안 감 - gameflow.공격연출_바닥) _연출_시간 뒤 지운다
+        (사용자 지정 2026-10-14 - 그전에는 칸 가운데).
         그 사이 칸이 다시 만들어졌으면(갱신) 띄우지 않는다."""
         칸 = self._그림칸.get(연출["대상id"])
         경로 = _에셋_경로("attack", gameflow.공격연출_그림파일(연출["종류"]))
@@ -465,14 +467,18 @@ class 전투화면(Screen):
         tw, th = 텍스처.size
         맞춤 = min(칸.width * _연출_칸비율[0] / tw, 칸.height * _연출_칸비율[1] / th)
         w, h = tw * 맞춤, th * 맞춤
-        x, y = self.to_widget(*칸.to_window(칸.center_x, 칸.center_y), relative=True)
+        x, y = self.to_widget(*칸.to_window(칸.center_x, 칸.y), relative=True)
+        배율 = gameflow.공격연출_크기배율(
+            App.get_running_app().게임상태, 연출["대상id"]
+        )
+        y += gameflow.공격연출_바닥(칸.height, h, 배율)
         self._연출_지우기(연출["대상id"])
         그림 = Image(
             texture=텍스처,
             allow_stretch=True,
             size_hint=(None, None),
             size=(w, h),
-            pos=(x - w / 2, y - h / 2),
+            pos=(x - w / 2, y),
         )
         그림.공격연출 = 연출["종류"]  # 화면 스모크가 띄운 종류를 확인한다
         self.add_widget(그림)
