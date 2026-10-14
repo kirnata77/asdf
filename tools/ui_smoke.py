@@ -207,6 +207,7 @@ class 스모크앱(main.DnfMobileApp):
         yield from self._단계_던전목록(상태, 매니저)
         yield from self._단계_화면_틀(매니저)
         yield from self._단계_공격연출(상태, 매니저)
+        yield from self._단계_감옥_대상팝업(상태, 매니저)
         yield from self._단계_소지품(상태, 매니저)
         yield from self._단계_도감_업적(상태, 매니저)
         yield from self._단계_메뉴(상태, 매니저)
@@ -1991,6 +1992,60 @@ class 스모크앱(main.DnfMobileApp):
         yield 0.5
         assert abs(틀.배율 - 1) < 1e-6, 틀.배율
         매니저.current = "마을"
+
+    def _단계_감옥_대상팝업(self, 상태, 매니저):
+        """케라하의 얼음감옥(사용자 지정 2026-10-14): 감옥은 적 그림 칸에는 없고 대상 고르기 팝업에만
+        나온다. 다른 아군이 팝업에서 감옥을 골라 때릴 수 있다."""
+        from game.system.combat import monster_actions
+
+        gf.전투_시작(상태, ["결빙의 케라하"], 레벨=4, 차수=1)
+        support.반응_처리(상태)
+        전투상태 = 상태["전투상태"]
+        케라하 = next(p for p in 전투상태["참가자"] if p["진영"] == "적")
+        귀검사 = next(
+            p
+            for p in 전투상태["참가자"]
+            if (p.get("원본") or {}).get("직업") == "귀검사"
+        )
+        얼음감옥 = gf.몬스터목록["결빙의 케라하"]["패턴"][5]
+        monster_actions.감옥_걸기(전투상태, 케라하, 귀검사, 얼음감옥, "'얼음감옥' 패턴")
+        감옥 = next(p for p in 전투상태["참가자"] if p.get("감옥"))
+        p = _차례(전투상태, "거너")
+        전투 = 매니저.get_screen("전투")
+        전투.갱신(신규=True)
+        매니저.current = "전투"
+        yield 0.5
+        _팝업_닫기()
+        적칸글 = [
+            w.text
+            for w in 전투.적상태틀.walk(restrict=True)
+            if isinstance(w, main.Label)
+        ]
+        assert not any(감옥["이름"] in t for t in 적칸글), 적칸글  # 적 그림 칸에는 없다
+        전투._일반공격_클릭()
+        yield 0.3
+        글들 = [b.text for b in _대상버튼들()]
+        assert f"{감옥['이름']}\n{gf.적_HP표시(상태, 감옥)}" in 글들, 글들
+        assert 글들[-1] == "취소", 글들
+        _찍기("battle_prison_popup")
+        감옥HP = 감옥["현재HP"]
+        버튼 = next(b for b in _대상버튼들() if b.text.startswith(감옥["이름"]))
+        버튼.trigger_action(duration=0)
+        for _ in range(20):
+            yield 0.05
+            if _팝업수() == 0 and any(
+                isinstance(x, dict) and x.get("대상") == 감옥["이름"]
+                for x in 전투상태["로그"]
+            ):
+                break
+        assert any(
+            isinstance(x, dict)
+            and x.get("공격자") == p["이름"]
+            and x.get("대상") == 감옥["이름"]
+            for x in 전투상태["로그"]
+        ), "팝업에서 고른 감옥을 공격한다"
+        assert 감옥["현재HP"] <= 감옥HP
+        결과["단계"].append("얼음감옥: 적 칸에는 없고 대상 팝업에 나오며 골라서 공격")
 
     def _단계_공격연출(self, 상태, 매니저):
         """공격하면 대상 그림 칸 위에 공격 종류 그림이 떴다가 0.5초 뒤 사라진다(아군/적 모두)"""
