@@ -513,7 +513,7 @@ def test_gameflow는_손상오류를_그대로_올린다(임시_세이브폴더)
 def test_세이브에는_버전이_들어_있다(임시_세이브폴더):
     _저장(1)
     저장 = json.loads((임시_세이브폴더 / "slot_1.json").read_text(encoding="utf-8"))
-    assert 저장["버전"] == save_system.세이브_버전 == 3
+    assert 저장["버전"] == save_system.세이브_버전 == 4
 
 
 def test_버전_없는_세이브는_0으로_보고_현재_형태로_변환한다(임시_세이브폴더):
@@ -1275,3 +1275,21 @@ def test_세이브_던전위치를_저장하고_옛_세이브는_던전위치_�
     경로.write_text(json.dumps(옛, ensure_ascii=False), encoding="utf-8")
     assert save_system.게임_불러오기(3)[0]["던전위치"] is None
     assert save_system.세이브_버전 >= 2  # 던전위치는 버전 2에서 생겼다
+
+
+def test_버전3_세이브의_도감은_바뀐_몬스터_이름으로_읽는다(임시_세이브폴더):
+    """ "타우 어썰터" -> "타우 어설터"(사용자 지정 2026-10-14). 둘 다 있으면 하나만 남긴다."""
+    _저장(1)
+    경로 = 임시_세이브폴더 / "slot_1.json"
+    옛 = json.loads(경로.read_text(encoding="utf-8"))
+    옛["버전"] = 3
+    옛["진행도"]["도감"] = {"몬스터": ["타우 아미", "타우 어썰터", "고블린"]}
+    경로.write_text(json.dumps(옛, ensure_ascii=False), encoding="utf-8")
+    assert save_system.게임_불러오기(1)[1]["도감"]["몬스터"] == [
+        "타우 아미",
+        "타우 어설터",
+        "고블린",
+    ]
+    옛["진행도"]["도감"] = {"몬스터": ["타우 어설터", "타우 어썰터"]}
+    경로.write_text(json.dumps(옛, ensure_ascii=False), encoding="utf-8")
+    assert save_system.게임_불러오기(1)[1]["도감"]["몬스터"] == ["타우 어설터"]
