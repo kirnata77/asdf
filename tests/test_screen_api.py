@@ -481,17 +481,17 @@ def 전력전투():
 
 def _한_차례(상태, 이름):
     """그 아군 차례로 맞추고 [자동전투]를 한 번 - 그 사이 그 아군이 남긴 로그(턴 넘기기는 막는다)."""
-    from game.controller import ctl_battle
+    from game.controller import ctl_autobattle
 
     p = _차례(상태, 이름)
     전투상태 = 상태["전투상태"]
     시작 = len(전투상태["로그"])
-    원래 = ctl_battle.턴_넘기기
-    ctl_battle.턴_넘기기 = lambda s: None
+    원래 = ctl_autobattle.턴_넘기기
+    ctl_autobattle.턴_넘기기 = lambda s: None
     try:
         gf.자동전투_한_턴(상태)
     finally:
-        ctl_battle.턴_넘기기 = 원래
+        ctl_autobattle.턴_넘기기 = 원래
     return p, [r for r in 전투상태["로그"][시작:] if r.get("공격자") == p["이름"]]
 
 

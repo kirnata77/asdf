@@ -54,6 +54,7 @@
 #   ctl_equip     장비 교체                       ctl_levelup  파티관리 레벨업(퍽/전직/스킬강화)
 #   ctl_battle    전투 시작/조회/행동/턴 넘기기   ctl_skills   스킬 습득
 #   ctl_battle_log 전투 로그 dict -> 화면 문장(로그_문장들)
+#   ctl_autobattle [자동전투] 한 턴, 전력전투 스킬 고르기(ctl_battle 다음)
 #   ctl_dungeon   던전 이동/상호작용(인카운트)    ctl_potion   회복포션 사용
 #   ctl_rewards   전투 보상/결과 정리             ctl_charview 파티원 화면용 조회(읽기 전용)
 #   ctl_tavern    주점(영입/대기/합류/추방)
@@ -68,6 +69,7 @@ from game.controller.ctl_shop import *  # noqa: F403
 from game.controller.ctl_equip import *  # noqa: F403
 from game.controller.ctl_battle import *  # noqa: F403
 from game.controller.ctl_battle_log import *  # noqa: F403
+from game.controller.ctl_autobattle import *  # noqa: F403
 from game.controller.ctl_dungeon import *  # noqa: F403
 from game.controller.ctl_potion import *  # noqa: F403
 from game.controller.ctl_rewards import *  # noqa: F403
