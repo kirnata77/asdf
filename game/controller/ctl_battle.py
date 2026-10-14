@@ -54,7 +54,8 @@ __all__ = [
     "적_HP표시",
     "아군_목록",
     "새_로그_가져오기",
-    "_공격연출_그림",
+    "_연출_모양_파일",
+    "_연출_색_파일",
     "새_공격연출_가져오기",
     "공격연출_그림파일",
     "아군_일반공격",
@@ -279,17 +280,9 @@ def 새_로그_가져오기(게임상태):
     return 새로그
 
 
-# 공격 연출 종류(combat.damage.공격연출_종류) -> game/assets/attack/ 안의 그림 파일
-_공격연출_그림 = {
-    "참격": "asset_attack_slash.webp",
-    "타격": "asset_attack_blunt.webp",
-    "관통": "asset_attack_pierce.webp",
-    "화": "asset_attack_fire.webp",
-    "수": "asset_attack_water.webp",
-    "명": "asset_attack_light.webp",
-    "암": "asset_attack_dark.webp",
-    "실패": "asset_attack_stuck.webp",
-}
+# 공격 연출 종류(combat.damage.공격연출_종류, "모양:색") -> game/assets/attack/ 안의 그림 파일
+_연출_모양_파일 = {"참격": "slash", "타격": "blunt", "관통": "pierce", "마법": "magic"}
+_연출_색_파일 = {"무": "none", "화": "fire", "수": "water", "명": "light", "암": "dark"}
 
 
 def 새_공격연출_가져오기(게임상태):
@@ -302,8 +295,14 @@ def 새_공격연출_가져오기(게임상태):
 
 
 def 공격연출_그림파일(종류):
-    """연출 종류의 그림 파일 이름(game/assets/attack/ 안). 모르는 종류는 타격."""
-    return _공격연출_그림.get(종류, _공격연출_그림["타격"])
+    """연출 종류의 그림 파일 이름(game/assets/attack/ 안). 모르는 모양/색은 타격/무."""
+    if 종류 == "실패":
+        return "asset_attack_stuck.webp"
+    모양, _, 색 = 종류.partition(":")
+    return (
+        f"asset_attack_{_연출_모양_파일.get(모양, 'blunt')}"
+        f"_{_연출_색_파일.get(색, 'none')}.webp"
+    )
 
 
 def 아군_일반공격(게임상태, 대상참가자):
