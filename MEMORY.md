@@ -3,7 +3,7 @@
 **색인이지 기록이 아니다.** 낡는 순간 거짓이 되는 것만 여기 둔다. **40줄/6KB 이하, 한 줄 200자 이하**(게이트가 검사).
 
 ## Now - 2026-10-14
-- **진행 중:** 품질 백로그 - P1~P5·P7·P9·P10(#106~#114)·P8(10-14, `claude/quality-p8-settings`) 끝남, 남은 것 P6. [quality-plan](.memory/roadmap/quality-plan.md), [보고서](docs/code_quality_review.md).
+- **품질 백로그 P1~P10 전부 끝남**(#106~#117, P6은 `claude/quality-p6-smoke-split`). [quality-plan](.memory/roadmap/quality-plan.md), [보고서](docs/code_quality_review.md).
 - **릴리스는 사용자가 APK를 요청할 때만**(10-13 지시) - 병합 뒤에 릴리스를 묻지 않는다.
 - **직전 병합:** #79 속성강화/내성 합연산·무속성 제외(S10), #78 버프포션 사용·새 3종·고블린 더스트(S9), #77 아이템 구분 주석, #76 개인 드랍 "미정" 정리 - [game-rules](.memory/roadmap/game-rules.md).
 - 직전: 레벨 1 공중에뜸 스킬 5종·단죄의 십자가 2회(game-rules, 옛 세이브는 불러올 때 채움, S5 6->2번째 승리), 직업별 특징 주석(10-13). **공격 연출**(10-12): 대상 위 종류 그림 0.5초 - game-rules "공격 연출". 그림 7장 체크무늬 흔적, 실기기 미확인.

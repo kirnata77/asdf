@@ -114,6 +114,56 @@ def _팝업_닫기():
             위젯.dismiss(animation=False)
 
 
+def _뒤로키():
+    """핸드폰 [뒤로] 키(27): 맨 위 팝업의 취소/닫기 -> 화면의 뒤로/나가기 순"""
+    Window.dispatch("on_keyboard", 27, 0, None, [])
+
+
+def _팝업수():
+    return sum(hasattr(w, "dismiss") for w in Window.children)
+
+
+def _대상버튼들():
+    """떠 있는 팝업 하나(대상/아이템/행동 선택)의 버튼들"""
+    assert _팝업수() == 1, _팝업수()
+    return [w for w in Window.children[0].walk(restrict=True) if isinstance(w, Button)]
+
+
+def _차례(전투상태, 이름):
+    """그 참가자의 턴으로 맞춘다. 이름 없이 만든 캐릭터는 전직명이 되므로 1차 직업으로도 찾는다"""
+    p = next(
+        x
+        for x in 전투상태["참가자"]
+        if 이름 in (x["이름"], (x.get("원본") or {}).get("직업"))
+    )
+    전투상태["현재턴"] = 전투상태["참가자"].index(p)
+    flow.턴_시작_처리(전투상태, p)
+    return p
+
+
+def _팝업글():
+    """떠 있는 팝업들의 글(마크업 뺀 것)"""
+    return [
+        _글(w.text)
+        for 팝업 in list(Window.children)[:-1]
+        for w in 팝업.walk(restrict=True)
+        if hasattr(w, "text")
+    ]
+
+
+def _팝업_버튼(글):
+    return next(
+        w
+        for 팝업 in list(Window.children)[:-1]
+        for w in 팝업.walk(restrict=True)
+        if getattr(w, "text", None) == 글
+    )
+
+
+def _확인_누르기():
+    _팝업_버튼("확인").dispatch("on_release")
+
+
 class 스모크앱(main.DnfMobileApp):
     def _세이브_폴더_준비(self):
         pass  # 이 스모크는 세이브를 임시 폴더로 바꿔서 쓴다(실제 앱 데이터 폴더를 건드리지 않는다)
@@ -205,6 +255,11 @@ class 스모크앱(main.DnfMobileApp):
 
     def _단계_상점(self, 상태, 매니저):
         """상점 - 구매/판매 목록과 해체(일괄해체 확인 팝업)"""
+        yield from self._단계_상점_구매판매(상태, 매니저)
+        yield from self._단계_상점_해체(상태, 매니저)
+
+    def _단계_상점_구매판매(self, 상태, 매니저):
+        """상점 구매 - 레어도 색, 장비 탭 2줄, 무기 직업군/종류 탭, 방어구 재질 탭, 판매 목록"""
         매니저.current = "상점"
         상점 = 매니저.get_screen("상점")
         상점._대분류_그리기("구매")
@@ -314,6 +369,9 @@ class 스모크앱(main.DnfMobileApp):
         _찍기("shop_sell")
         결과["단계"].append("상점 구매/판매 목록")
 
+    def _단계_상점_해체(self, 상태, 매니저):
+        """상점 해체 - 장비 -> 소울/큐브 조각, [전체] 탭, 일괄해체 확인 팝업"""
+        상점 = 매니저.get_screen("상점")
         # 해체: 메인에 [해체], 장비 목록에서 해체하면 소울/큐브 조각이 재료로
         상점._메인_그리기()
         assert any(
@@ -530,6 +588,17 @@ class 스모크앱(main.DnfMobileApp):
 
     def _단계_장비_포션_뒤로키_전투팝업(self, 상태, 매니저):
         """장비 교체/파티원 포션/뒤로 키, 전투 화면 팝업(스킬/대상/포션/행동 선택/도망)"""
+        무기 = yield from self._단계_장비교체(상태, 매니저)
+        yield from self._단계_파티원_포션_주류(상태, 매니저)
+        yield from self._단계_뒤로키(상태, 매니저, 무기)
+        전투 = yield from self._단계_전투_스킬_대상팝업(상태, 매니저)
+        yield from self._단계_전투_아이템(상태, 전투)
+        yield from self._단계_전투_반복지정_행동선택(상태, 전투)
+        yield from self._단계_전투_도망_만취(상태, 전투)
+        return 전투  # 다음 단계(전투 종료/자동전투)가 이어서 쓴다
+
+    def _단계_장비교체(self, 상태, 매니저):
+        """장비 교체 팝업(무기/상의) 분류 탭 + 상세보기. 뒤로 키 단계가 쓸 무기를 돌려준다"""
         # 장비 교체 팝업: 칸마다 이름 + 간단요약(무기 공격력/AC) + [상세보기]
         for 슬롯 in ("무기", "상의"):
             for 이름 in list(상태["상점카탈로그"]["장비"][슬롯])[:3]:
@@ -581,7 +650,11 @@ class 스모크앱(main.DnfMobileApp):
         _팝업_닫기()
         결과["단계"].append("장비 교체 팝업(무기/상의) + 상세보기")
         yield 0.3
+        return 무기
 
+    def _단계_파티원_포션_주류(self, 상태, 매니저):
+        """파티원 화면 [포션 사용] 팝업 - 회복포션과 주류(취기)"""
+        귀검사 = 상태["파티"]["파티원"][0]
         # 파티원 화면 [포션 사용]: 목록(가득 찬 MP 포션은 사유와 함께 비활성) -> 마시면 HP가 오른다
         상태["소지품"]["포션"] = {"초보자용 HP 포션": 2, "초보자용 MP 포션": 1}
         귀검사["현재HP"] = 1
@@ -635,65 +708,52 @@ class 스모크앱(main.DnfMobileApp):
         결과["단계"].append("파티원 주류 사용(취기 1, 스탯창 [취기 1] 표시)")
         yield 0.3
 
+    def _단계_뒤로키(self, 상태, 매니저, 무기):
+        """핸드폰 [뒤로] 키 - 팝업 겹침/파티원/파티관리/마을/상점/메인메뉴"""
+        귀검사 = 상태["파티"]["파티원"][0]
         # 핸드폰 [뒤로] 키(27): 맨 위 팝업의 취소/닫기 -> 화면의 뒤로/나가기 순
-        def 뒤로():
-            Window.dispatch("on_keyboard", 27, 0, None, [])
-
-        def 팝업수():
-            return sum(hasattr(w, "dismiss") for w in Window.children)
-
         screens_party._장비교체_팝업(귀검사, "무기", lambda: None)
         screens_party._아이템_상세_팝업(무기)
         yield 0.5
-        assert 팝업수() == 2, 팝업수()
-        뒤로()
+        assert _팝업수() == 2, _팝업수()
+        _뒤로키()
         yield 0.5
-        assert 팝업수() == 1, "상세보기만 닫혀야 한다"
-        뒤로()
+        assert _팝업수() == 1, "상세보기만 닫혀야 한다"
+        _뒤로키()
         yield 0.5
-        assert 팝업수() == 0 and 매니저.current == "파티원", 매니저.current
+        assert _팝업수() == 0 and 매니저.current == "파티원", 매니저.current
         매니저.get_screen("파티원").복귀화면 = "파티관리"
         매니저.get_screen("파티관리").복귀화면 = "마을"
-        뒤로()
+        _뒤로키()
         assert 매니저.current == "파티관리", 매니저.current
-        뒤로()
+        _뒤로키()
         assert 매니저.current == "마을", 매니저.current
-        뒤로()
+        _뒤로키()
         assert 매니저.current == "마을", "마을에서는 아무 일도 없어야 한다"
         상점 = 매니저.get_screen("상점")
         상점.복귀화면 = "마을"
         매니저.current = "상점"
         상점._대분류_그리기("구매")
-        뒤로()
+        _뒤로키()
         글들 = [w.text for w in 상점.내용틀.walk(restrict=True) if hasattr(w, "text")]
         assert "나가기" in 글들 and 매니저.current == "상점", 글들
-        뒤로()
+        _뒤로키()
         assert 매니저.current == "마을", 매니저.current
         매니저.current = "메인메뉴"
-        뒤로()
+        _뒤로키()
         assert 매니저.current == "메인메뉴", 매니저.current
         결과["단계"].append("뒤로 키(팝업 겹침/파티원/파티관리/마을/상점/메인메뉴)")
 
+    def _단계_전투_스킬_대상팝업(self, 상태, 매니저):
+        """전투 시작 -> 직업별 스킬 팝업/실제 타겟, 일반공격 대상 팝업. 전투 화면을 돌려준다"""
         gf.전투_시작(상태, ["타우 아미", "고블린", "고블린"], 레벨=6, 차수=2)
         support.반응_처리(상태)
         전투 = 매니저.get_screen("전투")
         전투.갱신(신규=True)
         매니저.current = "전투"
         전투상태 = 상태["전투상태"]
-
-        def 차례(이름):
-            # 이름 없이 만든 캐릭터는 전직명이 되므로 1차 직업으로도 찾는다
-            p = next(
-                x
-                for x in 전투상태["참가자"]
-                if 이름 in (x["이름"], (x.get("원본") or {}).get("직업"))
-            )
-            전투상태["현재턴"] = 전투상태["참가자"].index(p)
-            flow.턴_시작_처리(전투상태, p)
-            return p
-
         for 이름 in ("마법사", "거너", "귀검사", "프리스트"):
-            p = 차례(이름)
+            p = _차례(전투상태, 이름)
             _팝업_닫기()
             전투._스킬_버튼_클릭(p)
             for 스킬 in p["원본"]["보유스킬"]:
@@ -707,19 +767,11 @@ class 스모크앱(main.DnfMobileApp):
         _팝업_닫기()
 
         # 적 대상은 이름 목록 팝업에서 고른다 - 살아 있는 적 버튼 + 맨 아래 [취소]
-        def 대상버튼들():
-            assert 팝업수() == 1, 팝업수()
-            return [
-                w
-                for w in Window.children[0].walk(restrict=True)
-                if isinstance(w, Button)
-            ]
-
         적 = [x for x in 전투상태["참가자"] if x["진영"] == "적" and x["생존"]]
-        차례("귀검사")
+        _차례(전투상태, "귀검사")
         전투._일반공격_클릭()
         yield 0.3
-        글들 = [b.text for b in 대상버튼들()]
+        글들 = [b.text for b in _대상버튼들()]
         assert len(글들) == len(적) + 1 and 글들[-1] == "취소", 글들
         # 버튼마다 "이름\nHP 현재/최대", 상단 적 칸에도 같은 HP 줄
         assert 글들[:-1] == [f"{p['이름']}\n{gf.적_HP표시(상태, p)}" for p in 적], 글들
@@ -733,27 +785,31 @@ class 스모크앱(main.DnfMobileApp):
         # 팝업 폭은 기준 화면의 0.7(전에는 0.35) - 긴 이름이 버튼 안에 들어간다
         assert abs(Window.children[0].width - 0.7 * Window.width) < 2
         _찍기("battle_target_popup")
-        뒤로()
+        _뒤로키()
         yield 0.3
-        assert 팝업수() == 0 and 전투.선택모드 is None, (
+        assert _팝업수() == 0 and 전투.선택모드 is None, (
             "취소(뒤로 키)면 행동 없이 닫힌다"
         )
         로그수 = len(전투상태["로그"])
         전투._일반공격_클릭()
         yield 0.3
-        대상버튼들()[0].trigger_action(duration=0)
+        _대상버튼들()[0].trigger_action(duration=0)
         yield 0.5
-        assert 팝업수() == 0 and len(전투상태["로그"]) > 로그수, "고르면 바로 공격한다"
+        assert _팝업수() == 0 and len(전투상태["로그"]) > 로그수, "고르면 바로 공격한다"
         결과["단계"].append("일반공격 대상 팝업(적 목록 + 취소/뒤로 키, 고르면 공격)")
+        return 전투
 
+    def _단계_전투_아이템(self, 상태, 전투):
+        """전투 [아이템] - 회복포션/주류/버프포션/소환 아이템/투척 아이템"""
+        전투상태 = 상태["전투상태"]
         # [아이템]: 회복포션 팝업 -> 보조행동 1개로 자신만 회복, 로그에 남는다
-        p = 차례("귀검사")
+        p = _차례(전투상태, "귀검사")
         p["현재HP"] = 1
         보조 = p["행동자원"]["보조행동"]
         전투._아이템_클릭()
         yield 0.3
-        포션버튼 = [b for b in 대상버튼들() if b.text.startswith("초보자용 HP 포션")]
-        assert 포션버튼 and not 포션버튼[0].disabled, [b.text for b in 대상버튼들()]
+        포션버튼 = [b for b in _대상버튼들() if b.text.startswith("초보자용 HP 포션")]
+        assert 포션버튼 and not 포션버튼[0].disabled, [b.text for b in _대상버튼들()]
         _찍기("battle_potion_popup")
         포션버튼[0].trigger_action(duration=0)
         yield 0.5
@@ -763,12 +819,12 @@ class 스모크앱(main.DnfMobileApp):
 
         # [아이템]의 주류: 보조행동 1개, 취기가 쌓이고 아군 칸에 (취기 1)이 보인다
         난수상태 = random.getstate()
-        p = 차례("귀검사")
+        p = _차례(전투상태, "귀검사")
         상태["소지품"]["소모품"]["맥주"] = 1
         전투._아이템_클릭()
         yield 0.3
-        맥주버튼 = [b for b in 대상버튼들() if b.text.startswith("맥주")]
-        assert 맥주버튼 and not 맥주버튼[0].disabled, [b.text for b in 대상버튼들()]
+        맥주버튼 = [b for b in _대상버튼들() if b.text.startswith("맥주")]
+        assert 맥주버튼 and not 맥주버튼[0].disabled, [b.text for b in _대상버튼들()]
         맥주버튼[0].trigger_action(duration=0)
         yield 0.5
         assert p["상태이상"] == [{"이름": "취기", "중첩": 1}], p["상태이상"]
@@ -783,14 +839,14 @@ class 스모크앱(main.DnfMobileApp):
         결과["단계"].append("전투 [아이템] 주류(보조행동 1, 취기 1, 아군 칸 표시)")
 
         # [아이템]의 버프포션: 가속 포션은 보조행동 1개로 마신 턴에 바로 일반행동 +1
-        p = 차례("귀검사")
+        p = _차례(전투상태, "귀검사")
         상태["소지품"].setdefault("포션", {})["가속 포션"] = 1
         보조 = p["행동자원"]["보조행동"]
         일반 = p["행동자원"]["일반행동"]
         전투._아이템_클릭()
         yield 0.3
-        가속버튼 = [b for b in 대상버튼들() if b.text.startswith("가속 포션")]
-        assert 가속버튼 and not 가속버튼[0].disabled, [b.text for b in 대상버튼들()]
+        가속버튼 = [b for b in _대상버튼들() if b.text.startswith("가속 포션")]
+        assert 가속버튼 and not 가속버튼[0].disabled, [b.text for b in _대상버튼들()]
         _찍기("battle_buff_potion_popup")
         가속버튼[0].trigger_action(duration=0)
         yield 0.5
@@ -804,13 +860,15 @@ class 스모크앱(main.DnfMobileApp):
         )
 
         # [아이템]의 소환 아이템: 고블린 더스트 - 보조행동 1개, 고블린 소환, 턴이 끝나면 고블린이 공격
-        p = 차례("귀검사")
+        p = _차례(전투상태, "귀검사")
         상태["소지품"]["소모품"]["고블린 더스트"] = 1
         보조 = p["행동자원"]["보조행동"]
         전투._아이템_클릭()
         yield 0.3
-        더스트버튼 = [b for b in 대상버튼들() if b.text.startswith("고블린 더스트")]
-        assert 더스트버튼 and not 더스트버튼[0].disabled, [b.text for b in 대상버튼들()]
+        더스트버튼 = [b for b in _대상버튼들() if b.text.startswith("고블린 더스트")]
+        assert 더스트버튼 and not 더스트버튼[0].disabled, [
+            b.text for b in _대상버튼들()
+        ]
         _찍기("battle_summon_item_popup")
         더스트버튼[0].trigger_action(duration=0)
         yield 0.5
@@ -824,7 +882,7 @@ class 스모크앱(main.DnfMobileApp):
         )
 
         # [아이템]의 투척 아이템: 폭탄 - 일반행동 1개, 중심 대상 팝업에서 고르면 양옆까지 맞는다
-        p = 차례("귀검사")
+        p = _차례(전투상태, "귀검사")
         난수상태 = random.getstate()  # 뒤 단계의 굴림이 달라지지 않게
         상태["소지품"]["소모품"]["폭탄"] = 1
         # 폭탄에 적이 쓰러져 전투가 끝나지 않게 HP를 넉넉히 올렸다가 되돌린다(뒤 단계가 쓴다)
@@ -836,8 +894,8 @@ class 스모크앱(main.DnfMobileApp):
         일반 = p["행동자원"]["일반행동"]
         전투._아이템_클릭()
         yield 0.3
-        폭탄버튼 = [b for b in 대상버튼들() if b.text.startswith("폭탄")]
-        assert 폭탄버튼 and not 폭탄버튼[0].disabled, [b.text for b in 대상버튼들()]
+        폭탄버튼 = [b for b in _대상버튼들() if b.text.startswith("폭탄")]
+        assert 폭탄버튼 and not 폭탄버튼[0].disabled, [b.text for b in _대상버튼들()]
         assert "(일반행동)" in 폭탄버튼[0].text, 폭탄버튼[0].text
         폭탄버튼[0].trigger_action(duration=0)
         yield 0.3
@@ -847,7 +905,7 @@ class 스모크앱(main.DnfMobileApp):
         for x in 전투상태["참가자"]:
             if id(x) in 적HP:
                 x["현재HP"] = 999
-        대상버튼들()[0].trigger_action(duration=0)
+        _대상버튼들()[0].trigger_action(duration=0)
         yield 0.5
         assert p["행동자원"]["일반행동"] == 일반 - 1, p["행동자원"]
         assert "폭탄" not in 상태["소지품"]["소모품"], 상태["소지품"]["소모품"]
@@ -862,7 +920,10 @@ class 스모크앱(main.DnfMobileApp):
             "전투 [아이템] 투척 아이템(폭탄 - 일반행동 1, 중심 대상 팝업, 범위 공격)"
         )
 
-        차례("마법사")
+    def _단계_전투_반복지정_행동선택(self, 상태, 전투):
+        """썬더콜링 반복지정(은신 대상 거부), 메모라이즈 하급마법 행동 선택 팝업"""
+        전투상태 = 상태["전투상태"]
+        _차례(전투상태, "마법사")
         yield 0.3
         전투._스킬_클릭("썬더콜링", 상태["스킬데이터모음"]["썬더콜링"])
         assert 전투.선택모드[0] == "반복지정", 전투.선택모드
@@ -870,11 +931,11 @@ class 스모크앱(main.DnfMobileApp):
         skill_system.상태이상_부여(전투상태, 적[1], "은신", 3, None)
         yield 0.3
         _찍기("battle_target_popup_repeat")
-        대상버튼들()[1].trigger_action(duration=0)
+        _대상버튼들()[1].trigger_action(duration=0)
         assert "지정할 수 없는" in 전투.안내라벨.text, 전투.안내라벨.text
         while 전투.선택모드 and 전투.선택모드[0] == "반복지정":
-            대상버튼들()[0].trigger_action(duration=0)
-        assert 팝업수() == 0, 팝업수()
+            _대상버튼들()[0].trigger_action(duration=0)
+        assert _팝업수() == 0, _팝업수()
         결과["단계"].append(
             "썬더콜링 반복지정 - 대상 팝업을 다시 열며 선택(은신 대상 거부 포함)"
         )
@@ -882,7 +943,7 @@ class 스모크앱(main.DnfMobileApp):
         _찍기("battle_after_thundercalling")
 
         # 메모라이즈: 하급마법을 일반행동/보조행동 중 골라 쓴다 - 행동 선택 팝업
-        p = 차례("마법사")
+        p = _차례(전투상태, "마법사")
         하급 = next(
             n
             for n, d in 상태["스킬데이터모음"].items()
@@ -894,14 +955,14 @@ class 스모크앱(main.DnfMobileApp):
         p["현재MP"] = 999
         전투._스킬_클릭(하급, 상태["스킬데이터모음"][하급])
         yield 0.3
-        글들 = [b.text for b in 대상버튼들()]
+        글들 = [b.text for b in _대상버튼들()]
         assert 글들 == ["일반행동 (남은 1)", "보조행동 (남은 1)", "취소"], 글들
         _찍기("battle_action_choice_popup")
-        대상버튼들()[1].trigger_action(duration=0)  # 보조행동
+        _대상버튼들()[1].trigger_action(duration=0)  # 보조행동
         yield 0.3
-        대상버튼들()[0].trigger_action(duration=0)  # 첫 번째 적
+        _대상버튼들()[0].trigger_action(duration=0)  # 첫 번째 적
         yield 0.5
-        assert 팝업수() == 0, 팝업수()
+        assert _팝업수() == 0, _팝업수()
         assert (p["행동자원"]["일반행동"], p["행동자원"]["보조행동"]) == (1, 0)
         # 수단이 하나뿐이면 팝업 없이 바로 대상 선택으로 간다
         전투._스킬_클릭(하급, 상태["스킬데이터모음"][하급])
@@ -913,8 +974,11 @@ class 스모크앱(main.DnfMobileApp):
             "행동 선택 팝업(메모라이즈 하급마법 - 일반행동/보조행동, 하나면 생략)"
         )
 
+    def _단계_전투_도망_만취(self, 상태, 전투):
+        """도망 불가(구속) 팝업, 도망 실패 -> 턴 종료, 만취 아군 차례 자동 진행"""
+        전투상태 = 상태["전투상태"]
         # 도망: 파티 중 한 명이라도 구속이면 [도망]이 판정 없이 막힘 팝업을 띄운다
-        현재 = 차례("귀검사")
+        현재 = _차례(전투상태, "귀검사")
         거너 = next(
             x for x in 전투상태["참가자"] if (x.get("원본") or {}).get("직업") == "거너"
         )
@@ -933,9 +997,9 @@ class 스모크앱(main.DnfMobileApp):
         ), 글들
         assert "확인" in 글들, 글들
         _찍기("battle_flee_blocked")
-        뒤로()
+        _뒤로키()
         yield 0.6  # 닫힘 애니메이션까지
-        assert 팝업수() == 0, "확인(뒤로 키)으로 닫혀야 한다"
+        assert _팝업수() == 0, "확인(뒤로 키)으로 닫혀야 한다"
         assert (
             len(전투상태["로그"]) == 로그수
             and 전투상태["참가자"][전투상태["현재턴"]] is 현재
@@ -966,7 +1030,7 @@ class 스모크앱(main.DnfMobileApp):
         결과["단계"].append("도망 실패 -> 현재 캐릭터 턴 종료")
 
         # 만취 아군의 차례는 조종하지 않고 화면이 자동으로 넘긴다(만취 행동 로그)
-        p = 차례("귀검사")
+        p = _차례(전투상태, "귀검사")
         p["상태이상"] = [{"이름": "만취"}]
         로그수 = len(전투상태["로그"])
         전투.갱신()
@@ -983,38 +1047,20 @@ class 스모크앱(main.DnfMobileApp):
         ), 전투상태["로그"][로그수:]
         p["상태이상"] = []
         결과["단계"].append("만취 아군 차례 자동 진행(조종 불가, 만취 행동 로그)")
-        return 전투  # 다음 단계(전투 종료/자동전투)가 이어서 쓴다
 
     def _단계_전투종료_자동전투_주점(self, 상태, 매니저, 전투):
         """전투 종료/보상, 자동전투, 몬스터 크기, 황금 고블린 도망, 주점"""
+        yield from self._단계_전투종료_보상(상태, 매니저, 전투)
+        yield from self._단계_자동전투(상태, 매니저, 전투)
+        yield from self._단계_몬스터_크기(상태, 매니저, 전투)
+        yield from self._단계_황금고블린_도망(상태, 매니저, 전투)
+        yield from self._단계_주점(매니저)
+
+    def _단계_전투종료_보상(self, 상태, 매니저, 전투):
+        """전투 종료 팝업(승리 전리품/없음, 도망, 패배) + 전투 보상 선택/포기"""
         _찍기("battle_after_flee_fail")
 
         # 전투 종료 팝업: 승리(전리품) -> 던전, 도망 -> 던전, 패배 -> 마을
-        def 팝업글():
-            return [
-                _글(w.text)
-                for 팝업 in list(Window.children)[:-1]
-                for w in 팝업.walk(restrict=True)
-                if hasattr(w, "text")
-            ]
-
-        def 팝업_버튼(글):
-            return next(
-                w
-                for 팝업 in list(Window.children)[:-1]
-                for w in 팝업.walk(restrict=True)
-                if getattr(w, "text", None) == 글
-            )
-
-        def 확인_누르기():
-            버튼 = next(
-                w
-                for 팝업 in list(Window.children)[:-1]
-                for w in 팝업.walk(restrict=True)
-                if getattr(w, "text", None) == "확인"
-            )
-            버튼.dispatch("on_release")
-
         _팝업_닫기()
         gf.던전_진입(상태, "dungeon_01A_D01_Lorien")
         for 몬스터들, 끝내기, 첫줄, 전리품줄, 도착, 사진 in (
@@ -1071,7 +1117,7 @@ class 스모크앱(main.DnfMobileApp):
             yield 0.5
             글 = next(
                 t
-                for t in 팝업글()
+                for t in _팝업글()
                 if t.split("\n")[0] in ("전투 승리!", "도망쳤다!", "전투 패배!")
             )
             줄들 = 글.split("\n")
@@ -1089,16 +1135,16 @@ class 스모크앱(main.DnfMobileApp):
             if 첫줄 == "전투 승리!":
                 # [확인]은 전투 보상을 받거나 포기하기 전까지 잠겨 있다
                 assert (
-                    팝업_버튼("확인").disabled and not 팝업_버튼("전투 보상").disabled
+                    _팝업_버튼("확인").disabled and not _팝업_버튼("전투 보상").disabled
                 )
                 칸 = gf.전투_보상_칸(상태)
                 if all(칸) and 칸[0] != 칸[1]:
                     # 첫 칸 아이템은 소지품에 하나 넣어 둔다 - "보유 1" 줄이 그려지는지 보려고
                     장비칸 = 상태["소지품"]["장비"]
                     장비칸[칸[0]] = 장비칸.get(칸[0], 0) + 1
-                팝업_버튼("전투 보상").dispatch("on_release")
+                _팝업_버튼("전투 보상").dispatch("on_release")
                 yield 0.5
-                assert 팝업_버튼("선택").disabled  # 박스를 누르기 전
+                assert _팝업_버튼("선택").disabled  # 박스를 누르기 전
                 if 전리품줄 is True:  # 고블린들 - 후보가 있다
                     assert all(칸), 칸
                     보유 = 상태["소지품"]["장비"].get(칸[1], 0)
@@ -1139,14 +1185,14 @@ class 스모크앱(main.DnfMobileApp):
                         )
                         for w in 묶음.children:
                             assert w.texture_size[0] <= w.width, (w.text, w.width)
-                    포기 = 팝업_버튼("포기하기(10골드)")
+                    포기 = _팝업_버튼("포기하기(10골드)")
                     assert 포기.width > 박스_.parent.width * 0.6, 포기.width
                     _찍기("battle_reward")
-                    팝업_버튼("선택").dispatch("on_release")
+                    _팝업_버튼("선택").dispatch("on_release")
                     yield 0.3
                     assert 상태["소지품"]["장비"][칸[1]] == 보유 + 1
                     # 받은 아이템이 전투 종료 팝업의 전리품 줄에 더해진다
-                    새글 = _글(next(t for t in 팝업글() if t.startswith("전투 승리!")))
+                    새글 = _글(next(t for t in _팝업글() if t.startswith("전투 승리!")))
                     assert 새글 == "\n".join(
                         gf.전투_종료_문구(상태, "아군승리")
                     ) and any(줄.startswith(칸[1]) for 줄 in 새글.split("\n")[2:]), 새글
@@ -1155,14 +1201,14 @@ class 스모크앱(main.DnfMobileApp):
                     assert 칸 == [None, None, None], 칸
                     _찍기("battle_reward_empty")
                     골드 = 상태["소지품"]["골드"]
-                    팝업_버튼("포기하기(10골드)").dispatch("on_release")
+                    _팝업_버튼("포기하기(10골드)").dispatch("on_release")
                     yield 0.3
                     assert 상태["소지품"]["골드"] == 골드 + 10
                 assert not gf.전투_보상_대기중(상태)
                 assert (
-                    not 팝업_버튼("확인").disabled and 팝업_버튼("전투 보상").disabled
+                    not _팝업_버튼("확인").disabled and _팝업_버튼("전투 보상").disabled
                 )
-            확인_누르기()
+            _확인_누르기()
             yield 0.5
             assert 매니저.current == 도착, 매니저.current
             if 도착 == "마을":
@@ -1170,6 +1216,9 @@ class 스모크앱(main.DnfMobileApp):
         결과["단계"].append(
             "전투 종료 팝업(승리 전리품/없음, 도망, 패배) + 전투 보상 선택/포기"
         )
+
+    def _단계_자동전투(self, 상태, 매니저, 전투):
+        """자동전투 켜기 -> 버튼 잠금 -> 중지, 다시 켜면 전투 끝까지"""
 
         # 자동전투: 켜면 [자동전투 중지]로 바뀌고 다른 행동 버튼은 잠긴다. 중지하면 풀린다.
         def 버튼(글):
@@ -1217,6 +1266,8 @@ class 스모크앱(main.DnfMobileApp):
             _팝업_닫기()
         결과["단계"].append("자동전투로 전투 끝까지 진행 -> 결과 팝업")
 
+    def _단계_몬스터_크기(self, 상태, 매니저, 전투):
+        """몬스터 크기 배율/발바닥 맞춤/그리는 순서, 아군 그림 크기"""
         # 몬스터 크기: 소형 1/2 / 중형 3/4 / 대형 1배(칸 전체), 칸 바닥(발바닥) 맞춤, 대형이 뒤(먼저 그림)
         from kivy.graphics import Rectangle
 
@@ -1261,6 +1312,8 @@ class 스모크앱(main.DnfMobileApp):
             "몬스터 크기 배율(소 1/2, 중 3/4, 대 1) + 발바닥 맞춤 + 대형이 뒤, 아군 그림 2/3 바닥 맞춤"
         )
 
+    def _단계_황금고블린_도망(self, 상태, 매니저, 전투):
+        """황금 고블린 도망 -> (도망) 표시, 그림 없음, 적이 도망쳤다! -> 던전"""
         # 황금 고블린(도망턴 5): 자기 턴이 5번 끝나면 도망 -> 이름표 "(도망)", 그림 없음,
         # 적이 모두 도망쳤으면 "적이 도망쳤다!" 팝업 -> [확인] -> 던전
         _팝업_닫기()
@@ -1280,10 +1333,10 @@ class 스모크앱(main.DnfMobileApp):
         ]
         assert any("(도망)" in t for t in 이름표), 이름표
         assert all(경로 is None for _, 경로, _ in 전투._적그림목록)
-        글 = next(t for t in 팝업글() if t.startswith("적이 도망쳤다!"))
+        글 = next(t for t in _팝업글() if t.startswith("적이 도망쳤다!"))
         assert 글 == "적이 도망쳤다!", 글
         _찍기("battle_enemy_fled")
-        확인_누르기()
+        _확인_누르기()
         yield 0.5
         assert 매니저.current == "던전", 매니저.current
         _팝업_닫기()
@@ -1295,6 +1348,8 @@ class 스모크앱(main.DnfMobileApp):
             "황금 고블린 도망 -> (도망) 표시, 그림 없음, 적이 도망쳤다! -> 던전"
         )
 
+    def _단계_주점(self, 매니저):
+        """주점 - 영입(숙소로)/대기/합류/추방 확인 팝업"""
         # 주점: 영입(파티가 꽉 차 있으면 숙소로) -> 대기 -> 합류 -> 추방(확인 팝업)
         _팝업_닫기()
         매니저.current = "마을"
