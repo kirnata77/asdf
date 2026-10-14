@@ -17,6 +17,7 @@ from game.system import (
     player_system,
     potion_system as 포션시스템,
     save_system,
+    settings_system,
     shop_system as 상점,
 )
 
@@ -1275,3 +1276,46 @@ def test_세이브_던전위치를_저장하고_옛_세이브는_던전위치_�
     경로.write_text(json.dumps(옛, ensure_ascii=False), encoding="utf-8")
     assert save_system.게임_불러오기(3)[0]["던전위치"] is None
     assert save_system.세이브_버전 >= 2  # 던전위치는 버전 2에서 생겼다
+
+
+# 기기 설정 파일(설정.json) - 세이브와 별개인 앱 설정. 경로는 화면이 넘긴다(품질 계획 P8).
+
+
+@pytest.mark.parametrize(
+    "내용",
+    [None, '{"반응자'.encode(), b"[1, 2]", b"\xff"],
+    ids=["없음", "끊긴JSON", "딕셔너리아님", "깨진글자"],
+)
+def test_설정_읽기는_없거나_깨졌거나_딕셔너리가_아니면_빈_설정(tmp_path, 내용):
+    경로 = tmp_path / "설정.json"
+    if 내용 is not None:
+        경로.write_bytes(내용)
+    assert settings_system.설정_읽기(str(경로)) == {}
+
+
+def test_설정_쓰기는_읽기와_왕복하고_한글을_그대로_쓴다(tmp_path):
+    경로 = str(tmp_path / "설정.json")
+    설정 = {"반응자동": True, "자동전투방식": "전력전투"}
+    assert settings_system.설정_쓰기(경로, 설정) is True
+    assert settings_system.설정_읽기(경로) == 설정
+    assert "전력전투" in open(경로, encoding="utf-8").read()
+
+
+def test_설정_쓰기는_쓸_수_없으면_False(tmp_path):
+    assert settings_system.설정_쓰기(str(tmp_path), {"반응자동": True}) is False
+
+
+def test_설정_쓰기는_도중에_실패해도_옛_파일을_지키고_임시_파일을_남기지_않는다(
+    tmp_path, monkeypatch
+):
+    경로 = tmp_path / "설정.json"
+    settings_system.설정_쓰기(str(경로), {"반응자동": True})
+
+    def 쓰다_끊김(설정, 파일, **_):
+        파일.write('{"반')
+        raise OSError("디스크 가득")
+
+    monkeypatch.setattr(settings_system.json, "dump", 쓰다_끊김)
+    assert settings_system.설정_쓰기(str(경로), {"반응자동": False}) is False
+    assert settings_system.설정_읽기(str(경로)) == {"반응자동": True}
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["설정.json"]

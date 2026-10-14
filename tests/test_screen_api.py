@@ -5,6 +5,7 @@
 우회하지 않는지 정적으로 검사한다. 화면 실행 확인은 tools/ui_smoke.py(kivy+Xvfb).
 """
 
+import json
 import os
 import random
 import re
@@ -466,6 +467,36 @@ def test_설정_자동전투_방식과_전투로그_방식은_두_값_중_하나
     finally:
         gf.자동전투_방식_설정(원래[0])
         gf.전투로그_방식_설정(원래[1])
+
+
+def test_설정_파일_불러오기는_세_값을_컨트롤러에_넣고_읽은_설정을_돌려준다(tmp_path):
+    경로 = str(tmp_path / "설정.json")
+    assert gf.설정_파일_불러오기(경로) == {}  # 파일 없음 - 기본값 그대로
+    assert (gf.반응_자동_여부(), gf.자동전투_방식(), gf.전투로그_방식()) == (
+        False,
+        "일반공격",
+        "간략하게",
+    )
+    설정 = {"반응자동": True, "자동전투방식": "전력전투", "전투로그방식": "자세하게"}
+    with open(경로, "w", encoding="utf-8") as f:
+        json.dump(설정, f, ensure_ascii=False)
+    assert gf.설정_파일_불러오기(경로) == 설정
+    assert (gf.반응_자동_여부(), gf.자동전투_방식(), gf.전투로그_방식()) == (
+        True,
+        "전력전투",
+        "자세하게",
+    )
+
+
+def test_설정_파일_저장은_다른_키를_남기고_한_키만_바꾼다(tmp_path):
+    경로 = str(tmp_path / "설정.json")
+    assert gf.설정_파일_저장(경로, "반응자동", True) is True
+    assert gf.설정_파일_저장(경로, "전투로그방식", "자세하게") is True
+    with open(경로, encoding="utf-8") as f:
+        assert json.load(f) == {"반응자동": True, "전투로그방식": "자세하게"}
+    assert (
+        gf.설정_파일_저장(str(tmp_path), "반응자동", False) is False
+    )  # 폴더라 못 쓴다
 
 
 # ------------------------------------------------------------ 자동전투 - 전력전투
