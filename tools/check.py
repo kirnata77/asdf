@@ -20,8 +20,8 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# 리팩터링 준비(2026-09-29) 시점 94%. 떨어뜨리지 말고, 올리면 이 값도 올린다.
-COVERAGE_FLOOR = 90
+# 2026-10-14 측정 94.57%(품질 계획 P7에서 90 -> 92). 떨어뜨리지 말고, 올리면 이 값도 올린다.
+COVERAGE_FLOOR = 92
 
 PYTEST = [sys.executable, "-m", "pytest"]
 if importlib.util.find_spec("pytest_cov") is not None:
