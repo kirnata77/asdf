@@ -350,7 +350,9 @@ def test_로그_몬스터_두번때리기는_굴림마다_한_쌍(monkeypatch):
     monster_actions.몬스터_턴_실행(전투상태, 고블린)
     줄 = _문장(상태)
     assert 줄[0] == f"{고블린['이름']}의 두번때리기!!", 줄
-    assert sum(" vs AC " in z for z in 줄) == 2, 줄
+    # 몬스터는 한 턴에 차수(이 전투는 2)만큼 행동한다 - 두번때리기마다 명중 굴림 한 쌍
+    assert 줄.count(f"{고블린['이름']}의 두번때리기!!") == 2, 줄
+    assert sum(" vs AC " in z for z in 줄) == 2 * 2, 줄
 
 
 def test_로그_공격이_아닌_스킬과_아이템은_시전_사용_문장과_결과(monkeypatch):
