@@ -72,10 +72,11 @@ def 타겟_확장(전투상태, 시전자, 타겟종류, 중심대상=None):
 
     적생존 = [p for p in 참가자들 if p["진영"] == "적" and p["생존"]]
 
+    # 감옥(사용자 지정 2026-10-14): 갇힌 사람이 지정한 대상 몫은 그 감옥이 받고, 아군의 전체 공격은 감옥에도 맞는다
     if 타겟종류 == "적단일":
-        return [중심대상]
+        return [status.감옥_대상(전투상태, 시전자, 중심대상)]
     if 타겟종류 == "적전체":
-        return 적생존
+        return 적생존 + [p for p in 참가자들 if p.get("감옥") and p["생존"]]
     if 타겟종류 == "적랜덤":
         return [random.choice(적생존)] if 적생존 else []
     if 타겟종류 == "적3체":
@@ -91,7 +92,8 @@ def 타겟_확장(전투상태, 시전자, 타겟종류, 중심대상=None):
             return [중심대상]
         idx = 적전체.index(중심대상)
         후보 = 적전체[max(0, idx - 1) : idx + 2]
-        return [p for p in 후보 if p["생존"]]
+        감옥 = status.감옥_대상(전투상태, 시전자, 중심대상)
+        return [감옥 if p is 중심대상 else p for p in 후보 if p["생존"]]
     if 타겟종류 in ("적랜덤반복", "적반복지정"):
         return 적생존
 

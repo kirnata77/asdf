@@ -8,6 +8,7 @@ from game.system.combat import (
     reactions,
     resources,
     stats,
+    status,
     traits,
 )
 
@@ -25,6 +26,7 @@ def 일반공격_실행(전투상태, 공격자, 대상):
     무기데이터 = 공격자["장비데이터"].get("무기")
     if 무기데이터 is None:
         raise ValueError(f"'{공격자['이름']}'은(는) 무기를 장착하지 않았다.")
+    대상 = status.감옥_대상(전투상태, 공격자, 대상)  # 갇힌 사람의 공격은 감옥이 받는다
 
     _, 장전속성변환, 장전추가피해, 장전추가피해속성 = 장전소모_처리(전투상태, 공격자)
     속성 = stats.공격_속성(공격자, "보정공격력", None, 장전속성변환)
