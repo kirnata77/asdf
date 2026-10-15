@@ -255,9 +255,10 @@ class 스모크앱(main.DnfMobileApp):
         결과["단계"].append("파티 구성 이름 중복 -> 시작 안 함")
 
     def _단계_상점(self, 상태, 매니저):
-        """상점 - 구매/판매 목록과 해체(일괄해체 확인 팝업)"""
+        """상점 - 구매/판매 목록, [전문직업] 장비해체(일괄해체 확인 팝업)와 봉인해제/봉인변환"""
         yield from self._단계_상점_구매판매(상태, 매니저)
         yield from self._단계_상점_해체(상태, 매니저)
+        yield from self._단계_봉인(상태, 매니저)
 
     def _단계_상점_구매판매(self, 상태, 매니저):
         """상점 구매 - 레어도 색, 장비 탭 2줄, 무기 직업군/종류 탭, 방어구 재질 탭, 판매 목록"""
@@ -371,13 +372,35 @@ class 스모크앱(main.DnfMobileApp):
         결과["단계"].append("상점 구매/판매 목록")
 
     def _단계_상점_해체(self, 상태, 매니저):
-        """상점 해체 - 장비 -> 소울/큐브 조각, [전체] 탭, 일괄해체 확인 팝업"""
-        상점 = 매니저.get_screen("상점")
-        # 해체: 메인에 [해체], 장비 목록에서 해체하면 소울/큐브 조각이 재료로
-        상점._메인_그리기()
-        assert any(
-            getattr(w, "text", "") == "해체" for w in 상점.내용틀.walk(restrict=True)
-        ), "상점에 해체 버튼 없음"
+        """[전문직업] 장비해체(상점에서 옮김) - 장비 -> 소울/큐브 조각, [전체] 탭, 일괄해체 확인 팝업"""
+        매니저.get_screen("상점")._메인_그리기()
+        assert not any(
+            getattr(w, "text", "") == "해체"
+            for w in 매니저.get_screen("상점").내용틀.walk(restrict=True)
+        ), "상점에는 해체가 없다(전문직업으로 옮김)"
+        매니저.current = "전문직업"
+        yield 0.3
+        상점 = 매니저.get_screen("전문직업")
+        메뉴글 = [
+            (w.text, w.disabled)
+            for w in 상점.내용틀.walk(restrict=True)
+            if isinstance(w, Button)
+        ]
+        assert 메뉴글[:5] == [
+            ("장비강화 (미구현)", True),
+            ("장비해체", False),
+            ("마법부여 (미구현)", True),
+            ("봉인해제", False),
+            ("봉인변환", False),
+        ], 메뉴글
+        _찍기("profession_menu")
+        # 장비해체: 장비 목록에서 해체하면 소울/큐브 조각이 재료로
+        next(
+            w
+            for w in 상점.내용틀.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "장비해체"
+        ).dispatch("on_release")
+        yield 0.3
         상태["소지품"]["장비"]["찢어진 천갑 상의"] = (
             상태["소지품"]["장비"].get("찢어진 천갑 상의", 0) + 1
         )
@@ -436,7 +459,66 @@ class 스모크앱(main.DnfMobileApp):
         assert not gf.상점_일괄해체_대상(상태, "커먼", "전체")
         _찍기("shop_dismantle_batch_after")
         결과["단계"].append(
-            "상점 해체(장비 -> 소울 + 큐브 조각, [전체] 탭, 일괄해체 커먼/전체 확인 팝업)"
+            "전문직업 메뉴 5개(장비강화/마법부여 미구현), 상점에 해체 없음, "
+            "장비해체(장비 -> 소울 + 큐브 조각, [전체] 탭, 일괄해체 커먼/전체 확인 팝업)"
+        )
+
+    def _단계_봉인(self, 상태, 매니저):
+        """[전문직업] 봉인해제(소지품 + 장착 중) -> 마법의 장비, 봉인변환 -> 다른 능력, 돈/소울 부족"""
+        화면 = 매니저.get_screen("전문직업")
+        소지품 = 상태["소지품"]
+        귀검사 = 상태["파티"]["파티원"][0]
+        소지품["장비"]["마법으로 봉인된 소검"] = 2
+        gf.장비_교체(상태, 귀검사, "무기", "마법으로 봉인된 소검")
+        소지품["골드"] = 1000
+        소지품["재료"]["레어 소울"] = 3
+
+        def 실행버튼들(글):
+            return [
+                w
+                for w in 화면._목록틀.walk(restrict=True)
+                if isinstance(w, Button) and w.text == 글
+            ]
+
+        화면._메인_그리기()
+        next(
+            w
+            for w in 화면.내용틀.walk(restrict=True)
+            if isinstance(w, Button) and w.text == "봉인해제"
+        ).dispatch("on_release")
+        yield 0.3
+        assert len(실행버튼들("봉인해제")) == 2  # 착용 1줄 + 소지품 1줄
+        _찍기("profession_unseal_list")
+        실행버튼들("봉인해제")[0].dispatch("on_release")  # 착용 중인 것
+        yield 0.3
+        새무기 = 귀검사["장착장비"]["무기"]
+        assert 새무기.startswith("마법의 ") and 새무기.endswith(" 소검"), 새무기
+        assert 새무기 in 화면.안내라벨.text, 화면.안내라벨.text
+        assert (소지품["골드"], 소지품["재료"]["레어 소울"]) == (900, 2)
+        _찍기("profession_unseal_done")
+
+        # 봉인변환: 착용 중인 마법의 무기 -> 다른 능력
+        화면._봉인_그리기("봉인변환")
+        yield 0.3
+        _찍기("profession_convert_list")
+        실행버튼들("봉인변환")[0].dispatch("on_release")
+        yield 0.3
+        assert 귀검사["장착장비"]["무기"] not in (새무기, "마법으로 봉인된 소검")
+        assert 귀검사["장착장비"]["무기"].endswith(" 소검")
+        _찍기("profession_convert_done")
+
+        # 레어 소울이 모자라면 바뀌지 않고 안내
+        소지품["재료"].pop("레어 소울", None)
+        화면._봉인_그리기("봉인해제")
+        yield 0.3
+        실행버튼들("봉인해제")[0].dispatch("on_release")
+        yield 0.3
+        assert "레어 소울" in 화면.안내라벨.text, 화면.안내라벨.text
+        assert 소지품["장비"]["마법으로 봉인된 소검"] == 1
+        화면._나가기()
+        yield 0.3
+        결과["단계"].append(
+            "봉인해제(착용 중인 무기 -> 마법의 무기, 100G/레어 소울), 봉인변환(다른 능력), 소울 부족 안내"
         )
 
     def _단계_파티관리_팝업(self, 상태, 매니저):
@@ -1567,12 +1649,16 @@ class 스모크앱(main.DnfMobileApp):
         """상점/장비 교체 목록 스크롤(끌어서 내림)"""
         # 목록 스크롤: 상점 구매/판매/해체[전체], 장비 교체 팝업(소지품) - 항목이 많을 때
         카탈로그 = 상태["상점카탈로그"]["장비"]
-        for 이름 in 카탈로그["무기"]:
-            if 카탈로그["무기"][이름].get("레어도") != "치트":
+        # 봉인을 푼 마법의 장비(1천여 종)는 넣지 않는다 - 목록이 지나치게 길어진다
+        for 이름, 데이터 in 카탈로그["무기"].items():
+            if 데이터.get("레어도") != "치트" and "마봉능력" not in 데이터:
                 상태["소지품"]["장비"][이름] = 상태["소지품"]["장비"].get(이름, 0) + 1
         for 탭 in ("상의", "하의", "어깨", "벨트", "신발"):
-            for 이름 in 카탈로그[탭]:
-                상태["소지품"]["장비"][이름] = 상태["소지품"]["장비"].get(이름, 0) + 1
+            for 이름, 데이터 in 카탈로그[탭].items():
+                if "마봉능력" not in 데이터:
+                    상태["소지품"]["장비"][이름] = (
+                        상태["소지품"]["장비"].get(이름, 0) + 1
+                    )
         매니저.current = "상점"
         상점 = 매니저.get_screen("상점")
 
@@ -1591,7 +1677,10 @@ class 스모크앱(main.DnfMobileApp):
             이름
             for 탭 in 카탈로그.values()
             for 이름, 데이터 in 탭.items()
-            if 데이터.get("레어도") != "치트" and 이름 not in 원래_판매목록
+            if 데이터.get("레어도") != "치트"
+            and "마봉능력"
+            not in 데이터  # 봉인을 푼 마법의 장비(1천여 종)는 상점 물건이 아니다
+            and 이름 not in 원래_판매목록
         )
         try:
             for 모드, 이름 in (
