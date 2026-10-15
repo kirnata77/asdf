@@ -27,7 +27,7 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 한 작업을 끝냈다고 하려면 다음을 모두 만족해야 한다:
 
 1. **`python tools/check.py` 통과** - compileall + `ruff check` + `ruff format --check` + `pytest` +
-   커버리지 하한(game/system + game/controller + gameflow.py, `COVERAGE_FLOOR`). CI(`.github/workflows/check.yml`)도
+   커버리지 하한(game/system + game/controller + gameflow.py, `COVERAGE_FLOOR`) + 훅 `node --test`. CI(`.github/workflows/check.yml`)도
    모든 push/PR에서 같은 명령을 돌린다. 서식이 걸리면 `python -m ruff format .`.
    **로직을 추가/변경하면 테스트도 같이 추가한다** - 어디에 넣을지는 `.claude/rules/tests.md`의 "테스트 지도".
 2. **골든 파일(`tests/golden/`)이 바뀌었다면 이유를 커밋에 적는다.** 리팩터링은
@@ -76,7 +76,7 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 `memory.md`(`MEMORY.md`/`.memory/`). `CLAUDE.md`는 100줄 이하(게이트가 검사).
 
 작업할 때 `repo-workflow` 스킬(계획·검증·클라우드·브랜치·커밋·PR)을 따른다. 그 밖의 스킬(`.claude/skills/`): `handoff-trigger`
-(핸드오프는 맥락 400k부터), `session-handoff`, `session-resume`, `code-graph`(Graft).
+(핸드오프 권유는 맥락 400k부터, `context-guard` 훅이 알림), `session-handoff`, `session-resume`, `code-graph`(Graft).
 
 ## 줄끝 - 모든 텍스트 파일은 LF
 

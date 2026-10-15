@@ -16,6 +16,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 텍스트로 취급할 확장자/파일명. 이미지(.webp 등)/폰트는 건드리지 않는다.
 TEXT_EXTS = {
     ".py",
+    ".cjs",
     ".md",
     ".json",
     ".yml",

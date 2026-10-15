@@ -16,7 +16,7 @@
 - 리팩터링 보고서 후속(종족 속성, skill 6모듈, 팝업 도우미, 몬스터 기본값 표 등): [refactoring_report.md](docs/refactoring_report.md) 9절. combat 순환은 안 함 - 이유 거기.
 - 테스트 915개, 커버리지 94.13%(게이트 범위)(2026-10-14 측정). 시나리오 공백(숙소·해체·레벨 11~20 등): [이슈 #74](https://github.com/kirnata77/asdf/issues/74) - 제안 S9의 포션은 지금 S9가 다룸, 제안 S10(숙소)은 미착수(새 번호 필요).
 - CI `ui-smoke`는 PR을 막는다. 병합된 브랜치는 자동 삭제. **`claude/*` PR은 `auto-merge.yml`이 CI 초록에서 병합**(10-15, [경위](.memory/sessions/2026-10-15-auto-merge-workflow.md), 첫 실행 미확인) - 워크플로·spec PR은 사용자.
-- 옛 *Now*의 경위 문단 원문: [보관본](.memory/sessions/2026-10-10-memory-index-archive.md).
+- 10-15 `context-guard` 훅(`.claude/hooks`)·새 handoff-trigger(agent-config에서). 옛 *Now*의 경위 문단 원문: [보관본](.memory/sessions/2026-10-10-memory-index-archive.md).
 
 ## 믿으면 안 되는 것 ([`known-bugs.md`](.memory/active-issues/known-bugs.md))
 - **실기기 미확인(화면 기준 기기 = 사용자 폰 갤럭시 S24):** 세이브 유지(N1c, 사용자가 직접 확인), 세로 화면의 지도 칸 수/감옥 2x2 모양, [뒤로] 키 전달,
