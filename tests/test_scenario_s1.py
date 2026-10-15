@@ -25,7 +25,8 @@ def _전투_한_번(상태, 이름들, 기록):
     골드전 = 상태["소지품"]["골드"]
     장비전 = scenario.소지품_아이템수(상태)
     HP전 = scenario.파티_HP(상태)
-    assert scenario.전투중_아군_HP(상태) == HP전  # 앞 전투의 피해가 이어져 들어온다
+    # 앞 전투의 피해가 이어져 들어온다(HP 0인 파티원은 전투에 들어오지 않는다 - party_system.생존자_목록)
+    assert scenario.전투중_아군_HP(상태) == {k: v for k, v in HP전.items() if v > 0}
     종료 = scenario.실전(상태)
     라운드 = 상태["전투상태"]["라운드"]
     assert gf.전투_결과_정리(상태) == 종료
