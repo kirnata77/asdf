@@ -42,7 +42,7 @@ description: 이 저장소에서 코드·설정·CI·문서를 고치는 모든 
 
 - 컨테이너는 사라진다. 세션을 끝내기 전에 커밋하고 브랜치를 push한다(핸드오프도 마찬가지). 브랜치 이름은 `claude/<작업>`.
 - 세션을 시작할 때마다 `CLAUDE.md`의 "처음 한 번"을 다시 한다(도구 설치, `git config core.hooksPath .githooks`).
-- GitHub 일(PR, 이슈, CI 확인)은 `gh`가 아니라 GitHub MCP 도구로 한다. Claude가 연 PR은 Claude가 병합한다(CLAUDE.md "Git").
+- GitHub 일(PR, 이슈, CI 확인)은 `gh`가 아니라 GitHub MCP 도구로 한다. Claude가 연 `claude/*` PR은 `auto-merge.yml`이 병합한다(CLAUDE.md "Git").
 - 환경 네트워크 정책이 막은 호스트(예: 패키지 저장소) 때문에 설치하지 못한 도구는, 이미 설치된 것으로 게이트를 단계별로
   돌리고 못 돌린 단계는 `NOT VERIFIED: <단계>: <이유>`로 커밋 본문이나 PR에 남긴다. 통과로 쓰지 않는다.
 
@@ -66,11 +66,12 @@ description: 이 저장소에서 코드·설정·CI·문서를 고치는 모든 
 - **기능이 끝나고 게이트가 통과하면 `main-branch`로 PR을 연다.** 다른 개발자가 `main-branch`의 PR
   목록만 보고 무엇이 왜 들어왔는지 알 수 있어야 한다 - PR 본문에 요점, 이유, 검증한 것,
   남은 것(`NOT VERIFIED` 포함)을 쓴다.
-- **Claude가 연 PR은 열자마자 자동 병합을 켠다**(`enable_pr_auto_merge`, merge). 켜지지 않으면(저장소 설정 꺼짐) PR 활동을 구독하고
-  CI가 초록이 되는 그 이벤트에서 바로 병합한다 - 사용자에게 묻지 않는다(2026-10-14 지시). 사용자가 연 PR은 그 순간 확인을 받는다.
+- **Claude가 연 `claude/*` PR은 `auto-merge.yml`이 병합한다**(2026-10-15 결정): Check가 초록이면 병합 커밋으로 병합하고 브랜치를 지운다.
+  Claude는 GitHub 자동 병합을 켜지도, 손으로 병합하지도 않는다 - PR 활동을 구독하고 빨간 CI와 리뷰를 고친다. 초안,
+  `.github/workflows/`·`buildozer.spec`을 바꾼 PR, 사용자가 연 PR은 사용자가 병합한다(병합할 차례라고 한 번 알린다).
 - **병합된 브랜치는 끝난 것이다.** 후속 작업은 최신 `main-branch`에서 새로 시작한다(병합된 브랜치에
   커밋을 더 쌓지 않는다).
-- **`main-branch`로 병합된 PR의 브랜치는 이름과 상관없이 자동으로 지워진다**(`.github/workflows/delete-merged-branch.yml`).
+- **`main-branch`로 병합된 PR의 브랜치는 이름과 상관없이 자동으로 지워진다**(`.github/workflows/delete-merged-branch.yml`, 워크플로가 병합한 `claude/*`는 `auto-merge.yml`).
   병합 없이 닫힌 PR의 브랜치는 그대로 둔다 - 지우려면 가드레일대로 그 순간 확인을 받는다.
 
 ### 커밋 - 한 작업 = 한 커밋, 게이트 통과 후

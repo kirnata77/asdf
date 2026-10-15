@@ -394,3 +394,40 @@ def test_캐시_채우기는_main_branch에서_spec이_바뀔_때만_돈다():
     assert (
         "gh release" not in 본문 and "contents: write" not in 본문
     )  # 릴리스를 만들지 않는다
+
+
+# ------------------------------------------------------------ 자동 병합(auto-merge.yml)
+
+
+def _필수_검사(본문):
+    """auto-merge.yml의 `REQUIRE: |` 블록에 적힌 check run 이름들."""
+    블록 = re.search(r"^ +REQUIRE: \|\n((?: {12}\S.*\n)+)", 본문, re.M)
+    assert 블록, "auto-merge.yml에 REQUIRE: | 블록이 없다"
+    return [줄.strip() for 줄 in 블록.group(1).splitlines()]
+
+
+def test_자동_병합의_필수_검사는_check_yml의_잡과_같다():
+    """잡 이름이 바뀌었는데 REQUIRE가 그대로면 모든 PR이 영영 "wait"에 머문다."""
+    워크플로들 = _워크플로들()
+    병합, 검사 = 워크플로들["auto-merge.yml"], 워크플로들["check.yml"]
+    검사_이름 = re.search(r"^name: (.+)$", 검사, re.M).group(1)
+    assert f'workflows: ["{검사_이름}"]' in 병합
+    잡들 = re.findall(r"^  ([\w-]+):\n", 검사.split("\njobs:\n", 1)[1], re.M)
+    assert (
+        "\n    name:" not in 검사
+    )  # 잡에 name:이 붙으면 check run 이름이 잡 id가 아니게 된다
+    assert sorted(_필수_검사(병합)) == sorted(잡들)
+
+
+def test_자동_병합은_claude_브랜치에서_main_branch로만_병합한다():
+    본문 = _워크플로들()["auto-merge.yml"]
+    assert "startsWith(github.event.workflow_run.head_branch, 'claude/')" in 본문
+    assert "--base main-branch" in 본문 and "--match-head-commit" in 본문
+    assert "python3 tools/auto_merge_gate.py" in 본문
+
+
+def test_자동_병합은_PR_코드를_체크아웃하지_않는다():
+    """workflow_run은 쓰기 권한으로 돈다 - 기본 브랜치의 판정 스크립트만 실행하고 PR 코드는 받지 않는다."""
+    본문 = _워크플로들()["auto-merge.yml"]
+    assert 본문.count("uses: actions/checkout@") == 1
+    assert "ref:" not in 본문 and "repository:" not in 본문

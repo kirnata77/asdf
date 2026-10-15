@@ -1,0 +1,84 @@
+name: Auto-merge
+
+# Claude가 연 `claude/*` PR을 CI가 초록이면 main-branch로 병합하고 브랜치를 지운다(2026-10-15 사용자 결정).
+# 세션이 살아 있지 않아도 병합된다. stella-rain/core의 auto-merge.yml을 옮겼고, 판정은 tools/auto_merge_gate.py다.
+#
+# - Check 워크플로가 끝날 때마다 돈다. check.yml은 push와 pull_request 둘 다에서 돌아 같은 커밋에 실행이 둘이므로
+#   어느 쪽이 끝나든 다시 판정한다(pull_request만 보면 push 실행이 나중에 끝날 때 영영 병합되지 않는다).
+# - 판정: head 커밋의 check run이 모두 초록이고 REQUIRE의 검사가 모두 성공. 초안, `.github/workflows/`나
+#   `buildozer.spec`을 바꾸는 PR은 사용자가 병합한다(이 파일 자체 포함).
+# - REQUIRE는 check.yml의 잡 이름이다. 잡을 더하거나 이름을 바꾸면 여기도 같은 PR에서 고친다(test_repo_hygiene가 대조).
+# - GITHUB_TOKEN으로 병합하므로 main-branch의 push 워크플로와 pull_request closed(delete-merged-branch.yml)가
+#   돌지 않는다 - 브랜치는 여기서 지우고, 닫는 키워드(`Closes #N`)의 이슈도 여기서 닫는다.
+# - workflow_run은 기본 브랜치의 이 파일을 읽는다: 이 파일의 변경은 병합된 뒤에야 적용된다.
+#   체크아웃도 기본 브랜치다 - PR의 코드는 쓰기 권한으로 실행하지 않는다.
+on:
+  workflow_run:
+    workflows: ["Check"]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  merge:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.head_branch, 'claude/') &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    permissions:
+      contents: write       # 병합, 브랜치 삭제
+      pull-requests: write  # 병합
+      issues: write         # PR이 닫는다고 한 이슈 닫기
+      checks: read          # head 커밋의 check run
+      statuses: read        # head 커밋의 commit status
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: auto-merge-${{ github.event.workflow_run.head_branch }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Merge if every check is green
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          REQUIRE: |
+            check
+            ui-smoke
+        run: |
+          set -euo pipefail
+          pr=$(gh pr list --repo "$REPO" --head "$BRANCH" --base main-branch --state open \
+                 --json number,headRefOid --jq '.[0]')
+          if [ -z "$pr" ] || [ "$pr" = "null" ]; then echo "no open PR from $BRANCH into main-branch"; exit 0; fi
+          number=$(jq -r .number <<<"$pr")
+          head=$(jq -r .headRefOid <<<"$pr")
+          # 초록인 실행이 PR의 최신 커밋 것이어야 한다(옛 push가 아니라).
+          if [ "$head" != "$RUN_SHA" ]; then echo "run is for $RUN_SHA, PR head is $head; waiting for its runs"; exit 0; fi
+          gh api --paginate "repos/$REPO/commits/$RUN_SHA/check-runs?per_page=100" \
+            --jq '.check_runs[] | {name, status, conclusion}' | jq -s . > "$RUNNER_TEMP/check-runs.json"
+          gh api "repos/$REPO/commits/$RUN_SHA/status" \
+            --jq '{state, total_count}' > "$RUNNER_TEMP/status.json"
+          gh api "repos/$REPO/pulls/$number" --jq '{draft, changed_files}' > "$RUNNER_TEMP/pr.json"
+          gh api --paginate "repos/$REPO/pulls/$number/files?per_page=100" \
+            --jq '.[] | {filename, previous_filename}' | jq -s . > "$RUNNER_TEMP/files.json"
+          verdict=$(python3 tools/auto_merge_gate.py --require "$REQUIRE" \
+                      --pr "$RUNNER_TEMP/pr.json" --files "$RUNNER_TEMP/files.json" \
+                      "$RUNNER_TEMP/check-runs.json" "$RUNNER_TEMP/status.json")
+          echo "PR #$number at $RUN_SHA: $verdict"
+          if [ "$verdict" != merge ]; then exit 0; fi
+          # 판정한 뒤 새 push가 들어왔으면 --match-head-commit이 병합을 거부한다.
+          gh pr merge "$number" --repo "$REPO" --merge --match-head-commit "$RUN_SHA"
+          case "$BRANCH" in
+            claude/*) gh api -X DELETE "repos/$REPO/git/refs/heads/$BRANCH" ;;
+            *) echo "not a claude/* branch; leaving $BRANCH" ;;
+          esac
+          gh pr view "$number" --repo "$REPO" --json closingIssuesReferences \
+            --jq .closingIssuesReferences > "$RUNNER_TEMP/closing.json"
+          for issue in $(python3 tools/auto_merge_gate.py --issues-to-close "$RUNNER_TEMP/closing.json" "$REPO"); do
+            gh issue close "$issue" --repo "$REPO" --reason completed --comment "Closed by #$number (auto-merge)."
+          done

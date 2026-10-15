@@ -63,7 +63,7 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 - **테스트/스모크/플레이 확인에서 "치트" 아이템을 쓰지 않는다** - 레어도 "치트" 아이템(치트용 소검,
   치트용 마법석 등)은 사용자 전용이다. 장착/구매/사용 모두 금지. 예외는 그 치트 아이템 자체를 검사하는 테스트뿐이다.
 - **되돌리기 어려운 명령은 실행하는 순간에 따로 허락을 받는다** - 원격 브랜치 강제 push,
-  브랜치 삭제, PR 병합(Claude가 연 PR은 예외 - 아래 "Git"), `game/saves/` 삭제. 그 명령이 들어 있는 계획을 승인받은 것은
+  브랜치 삭제, PR 병합(Claude의 `claude/*` PR은 워크플로가 병합 - 아래 "Git"), `game/saves/` 삭제. 그 명령이 들어 있는 계획을 승인받은 것은
   실행 허락이 아니다.
 - **비밀값을 커밋하지 않는다** - 서명 키스토어, 토큰, 비밀번호, `*.pem`, `.env`. CI 비밀은 GitHub Secrets로.
 - **이 저장소는 공개다** - 이슈와 Actions 로그도 전부 공개다. 내부 URL, 개인정보, 비공개 계획을 쓰지 않는다.
@@ -89,8 +89,8 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 ## Git
 
 - **`main-branch`에 직접 push하지 않는다.** 기능마다 최신 `main-branch`에서 브랜치를 따서 게이트 통과 후 PR을 연다.
-  **Claude가 연 PR은 묻지 않고 병합한다**(2026-10-14 사용자 지시): PR을 열자마자 자동 병합을 켜고(`enable_pr_auto_merge`, 병합 커밋),
-  켜지지 않으면 CI(`check`·`ui-smoke`)가 초록이 되는 즉시 Claude가 병합한다. 사용자가 연 PR의 병합은 그 순간 확인. 병합된 브랜치는 끝난 것이다.
+  **Claude가 연 `claude/*` PR은 `auto-merge.yml`이 CI(`check`·`ui-smoke`) 초록에서 병합한다**(2026-10-15 사용자 결정) - Claude는 GitHub 자동 병합을
+  켜거나 손으로 병합하지 않고 빨간 CI를 고친다. 초안, `.github/workflows/`·`buildozer.spec`을 바꾼 PR, 사용자가 연 PR은 사용자가 병합한다. 병합된 브랜치는 끝난 것이다.
 - **게이트 먼저, 커밋은 그다음.** 원격에 올라간 커밋은 고치지 않는다(강제 push 금지). 절차 전체는 `repo-workflow` 스킬.
 - Claude의 커밋은 `Claude <noreply@anthropic.com>`으로 쓴다: 커밋마다 `git -c user.name=Claude -c user.email=noreply@anthropic.com commit`,
   git config에는 넣지 않는다. 이슈와 사용자가 연 PR은 사용자의 것이다.
