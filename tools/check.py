@@ -8,6 +8,8 @@
 3. pytest      : tests/ (kivy 없이 gameflow 이하 로직만 헤드리스로 검사)
                 pytest-cov가 설치돼 있으면 game/system + game/controller + gameflow.py 커버리지가
                 COVERAGE_FLOOR(%) 아래로 떨어져도 실패한다(CI는 항상 설치).
+4. node --test : .claude/hooks/context-guard.cjs(맥락 크기 훅)의 테스트. node가 없으면 건너뛰고
+                NOT VERIFIED라고 찍는다(CI 러너에는 node가 있다).
 
 하나라도 실패하면 0이 아닌 코드로 끝난다. Windows/리눅스 어디서나 돈다.
 필요한 도구: pip install pytest pytest-cov ruff==0.16.9 (CI와 같은 버전 - 서식 결과가 버전마다 다르다)
@@ -15,6 +17,7 @@
 
 import importlib.util
 import os
+import shutil
 import subprocess
 import sys
 
@@ -50,6 +53,7 @@ STEPS = [
     ("ruff check", [sys.executable, "-m", "ruff", "check", "."]),
     ("ruff format", [sys.executable, "-m", "ruff", "format", "--check", "."]),
     ("pytest", PYTEST),
+    ("node --test", ["node", "--test", ".claude/hooks/context-guard.test.cjs"]),
 ]
 
 
@@ -58,6 +62,11 @@ def main():
     for name, cmd in STEPS:
         if name == "pytest" and not os.path.isdir(os.path.join(ROOT, "tests")):
             print(f"== {name}: tests/ 없음, 건너뜀")
+            continue
+        if name == "node --test" and shutil.which("node") is None:
+            print(
+                f"== {name}: node 없음, 건너뜀 - NOT VERIFIED: context-guard 훅 테스트"
+            )
             continue
         print(f"== {name}")
         if name == "pytest" and "--cov-branch" not in cmd:
