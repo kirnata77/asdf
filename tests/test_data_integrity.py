@@ -25,6 +25,7 @@ from game.data.monster.monster_defaults import 몬스터_기본값
 from game.data.equipment.eq_04_special_11_earring import 귀걸이목록
 from game.data.buff.debuff import 디버프목록
 from game.data.equipment.eq_04_special_10_magicstone import 마법석목록
+from game.data.equipment.eq_00_magic_seal import 마봉능력, 봉인장비_해제이름
 from game.data.equipment.eq_03_accessory_06_necklace import 목걸이목록
 from game.data.equipment.eq_03_accessory_07_ring import 반지목록
 from game.data.buff.buff import 버프목록
@@ -874,3 +875,27 @@ def test_무기는_모두_공격타입을_적는다():
     assert all(항목.get("공격타입") in _공격타입_값 for 항목 in 무기들), [
         (항목.get("이름"), 항목.get("공격타입")) for 항목 in 무기들
     ]
+
+
+def test_마봉능력의_부위_버프_상태이상_참조는_실제로_있다():
+    """마봉능력(eq_00_magic_seal.py)은 아직 게임 코드가 안 쓴다 - 오타는 여기서만 잡힌다."""
+    장비탭 = set(gf.상점_탭목록("장비"))
+    속성들 = {"전체", "화속성", "수속성", "명속성", "암속성"}
+    for 이름, 능력 in 마봉능력.items():
+        assert 능력["부위"] and set(능력["부위"]) <= 장비탭, 이름
+        assert 능력["효과"] and 능력["설명"], 이름
+        for 효과 in 능력["효과"]:
+            if "버프" in 효과:
+                assert 효과["버프"] in 버프목록, (이름, 효과)
+            if "상태이상" in 효과:
+                assert 효과["상태이상"] in 상태이상목록, (이름, 효과)
+                assert 효과["내성"]["능력치"] == "건강", 이름
+            if "속성" in 효과:
+                assert 효과["속성"] in 속성들, (이름, 효과)
+            if "발동" in 효과:
+                assert 효과["발동"] in ("턴시작", "공격", "명중"), (이름, 효과)
+    # 봉인된 장비마다 그 부위에 나올 수 있는 마봉능력이 있다
+    카탈로그 = gf.새_게임_시작([("", "귀검사")])["상점카탈로그"]["장비"]
+    for 탭, 아이템들 in 카탈로그.items():
+        for 봉인 in (n for n in 아이템들 if n in 봉인장비_해제이름):
+            assert any(탭 in 능력["부위"] for 능력 in 마봉능력.values()), (탭, 봉인)
