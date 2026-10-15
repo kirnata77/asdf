@@ -394,3 +394,31 @@ def test_캐시_채우기는_main_branch에서_spec이_바뀔_때만_돈다():
     assert (
         "gh release" not in 본문 and "contents: write" not in 본문
     )  # 릴리스를 만들지 않는다
+
+
+# ------------------------------------------------------------ context-guard 훅
+
+
+def test_context_guard_훅이_등록되고_게이트가_그_테스트를_돌린다():
+    """handoff-trigger 스킬은 이 훅의 메시지(맥락 크기)를 전제로 한다 - 등록이 빠지면 숫자를 모른다."""
+    import json
+
+    from tools import check
+
+    with open(
+        os.path.join(fix_eol.ROOT, ".claude", "settings.json"), encoding="utf-8"
+    ) as f:
+        훅 = json.load(f)["hooks"]
+    명령 = 'node "$CLAUDE_PROJECT_DIR/.claude/hooks/context-guard.cjs"'
+    assert [h["command"] for 묶음 in 훅["UserPromptSubmit"] for h in 묶음["hooks"]] == [
+        명령
+    ]
+    assert [
+        (묶음["matcher"], [h["command"] for h in 묶음["hooks"]])
+        for 묶음 in 훅["SessionStart"]
+    ] == [("compact", [명령])]
+    assert os.path.isfile(
+        os.path.join(fix_eol.ROOT, ".claude", "hooks", "context-guard.cjs")
+    )
+    assert any(이름 == "node --test" for 이름, _ in check.STEPS)
+    assert ".cjs" in fix_eol.TEXT_EXTS
