@@ -143,6 +143,14 @@ def test_랜덤_레어_무기는_봉인된_무기_하나를_소지품과_도감�
     assert gf.업적_보상_문구(받음) == 이름
 
 
+def test_랜덤_레어_무기_후보는_봉인된_무기뿐이다():
+    카탈로그 = support.새게임()["상점카탈로그"]
+    조건 = achievement_system.보상_내용(_업적("세리아_구출"))["랜덤장비"]
+    후보 = achievement_system.랜덤장비_후보(카탈로그, 조건)
+    assert len(후보) == 25 and "크로쿠타의 가시" not in 후보
+    assert all(n.startswith("마법으로 봉인된 ") for n in 후보)
+
+
 def test_장비_아이템_보상과_후보가_없는_랜덤장비():
     상태 = support.새게임([("", "귀검사")])
     카탈로그 = 상태["상점카탈로그"]
