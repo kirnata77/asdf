@@ -49,7 +49,19 @@ def test_카탈로그_구조(카탈로그):
         "제작재료": 30,
         "보석": 8,
     }
-    assert {탭: len(v) for 탭, v in 카탈로그["장비"].items()} == {
+    # 봉인을 푼 "마법의 ~" 장비(magic_seal_system.카탈로그_추가)는 따로 센다
+    assert {
+        탭: sum(1 for a in v.values() if "마봉능력" in a)
+        for 탭, v in 카탈로그["장비"].items()
+    } == {
+        "무기": 650,
+        **dict.fromkeys(("상의", "하의", "어깨", "벨트", "신발"), 50),
+        **dict.fromkeys(("목걸이", "반지", "팔찌", "보조장비", "마법석", "귀걸이"), 17),
+    }
+    assert {
+        탭: sum(1 for a in v.values() if "마봉능력" not in a)
+        for 탭, v in 카탈로그["장비"].items()
+    } == {
         "무기": 78,
         "상의": 20,
         "하의": 20,

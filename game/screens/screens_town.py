@@ -149,8 +149,11 @@ class 마을화면(Screen):
         주점버튼.bind(on_release=lambda *_: setattr(self.manager, "current", "주점"))
         버튼그리드.add_widget(주점버튼)
 
-        npc버튼 = Button(text="NPC (미구현)", disabled=True)
-        버튼그리드.add_widget(npc버튼)
+        전문직업버튼 = Button(text="전문직업")
+        전문직업버튼.bind(
+            on_release=lambda *_: setattr(self.manager, "current", "전문직업")
+        )
+        버튼그리드.add_widget(전문직업버튼)
 
         창고버튼 = Button(text="소지품/창고")
         창고버튼.bind(on_release=self._소지품창고_클릭)
@@ -483,11 +486,6 @@ class 상점화면(Screen):
         판매버튼 = Button(text="판매", font_size=_버튼_폰트크기)
         판매버튼.bind(on_release=lambda *_: self._대분류_그리기("판매"))
         self.내용틀.add_widget(판매버튼)
-
-        # 해체 - 장비만 (소울 + 큐브 조각)
-        해체버튼 = Button(text="해체", font_size=_버튼_폰트크기)
-        해체버튼.bind(on_release=lambda *_: self._탭목록_그리기("해체", "장비"))
-        self.내용틀.add_widget(해체버튼)
 
         나가기버튼 = Button(text="나가기", font_size=_버튼_폰트크기)
         뒤로키_버튼(나가기버튼)
@@ -876,7 +874,7 @@ class 상점화면(Screen):
     # 자세히 보기 팝업
     # -------------------------------------------------
 
-    _상세_제외키 = {"이름"}
+    _상세_제외키 = {"이름", "마봉효과", "봉인원본"}
 
     def _자세히보기(self, 아이템):
         본문 = BoxLayout(orientation="vertical", spacing=6, padding=12)
@@ -939,6 +937,118 @@ class 상점화면(Screen):
 # =====================================================
 # 상점처럼 대분류 -> 탭(-> 하위 탭) -> 목록. 줄마다 [상세보기], 쓸 수 있는 것(항아리/회복포션/
 # 음식/주류)은 [사용]. 항아리는 바로 열고, 나머지는 쓸 파티원을 고른다. 전투 중 아이템은 전투 화면에서.
+
+
+class 전문직업화면(상점화면):
+    """마을 [전문직업] - 장비강화/장비해체/마법부여/봉인해제/봉인변환(2026-10-15 사용자 결정).
+    장비해체는 상점에 있던 [해체]를 옮겨 온 것(상점화면의 해체 목록을 그대로 쓴다).
+    봉인해제/봉인변환은 장착 중인 장비도 고를 수 있다. 장비강화/마법부여는 미구현."""
+
+    제목 = "전문직업"
+
+    def _메인_그리기(self):
+        self._비우기()
+        self.안내라벨.text = ""
+        for 메뉴 in gameflow.전문직업_메뉴:
+            구현됨 = 메뉴 in gameflow.전문직업_구현됨
+            버튼 = Button(
+                text=메뉴 if 구현됨 else f"{메뉴} (미구현)",
+                font_size=_버튼_폰트크기,
+                disabled=not 구현됨,
+            )
+            if 메뉴 == "장비해체":
+                버튼.bind(on_release=lambda *_: self._탭목록_그리기("해체", "장비"))
+            elif 구현됨:
+                버튼.bind(on_release=lambda *_, m=메뉴: self._봉인_그리기(m))
+            self.내용틀.add_widget(버튼)
+        나가기버튼 = Button(text="나가기", font_size=_버튼_폰트크기)
+        뒤로키_버튼(나가기버튼)
+        나가기버튼.bind(on_release=self._나가기)
+        self.내용틀.add_widget(나가기버튼)
+
+    def _봉인_그리기(self, 모드):
+        """봉인해제: 봉인 장비 목록, 봉인변환: 봉인을 푼 장비 목록 - 줄마다 [자세히]와 실행 버튼."""
+        self._비우기()
+        상단 = BoxLayout(
+            orientation="horizontal", size_hint=(1, None), height=글자_높이()
+        )
+        뒤로버튼 = Button(text="◀ 뒤로", size_hint=(0.32, 1))
+        뒤로키_버튼(뒤로버튼)
+        뒤로버튼.bind(on_release=lambda *_: self._메인_그리기())
+        상단.add_widget(뒤로버튼)
+        상단.add_widget(
+            Label(text=f"{모드} ({gameflow.전문직업_비용글})", size_hint=(0.68, 1))
+        )
+        self.내용틀.add_widget(상단)
+
+        목록스크롤 = ScrollView(size_hint=(1, 1))
+        목록틀 = BoxLayout(orientation="vertical", size_hint_y=None, spacing=4)
+        목록틀.bind(minimum_height=목록틀.setter("height"))
+        목록스크롤.add_widget(목록틀)
+        self.내용틀.add_widget(목록스크롤)
+        self._목록틀 = 목록틀
+        self._봉인목록_채우기(모드)
+
+    def _봉인목록_채우기(self, 모드):
+        목록틀 = self._목록틀
+        목록틀.clear_widgets()
+        항목들 = gameflow.전문직업_봉인목록(App.get_running_app().게임상태, 모드)
+        if not 항목들:
+            빈글 = (
+                "봉인된 장비가 없습니다."
+                if 모드 == "봉인해제"
+                else "봉인을 푼 장비가 없습니다."
+            )
+            목록틀.add_widget(Label(text=빈글, size_hint=(1, None), height=글자_높이()))
+            return
+        for 항목 in 항목들:
+            목록틀.add_widget(self._봉인_행(모드, 항목))
+
+    def _봉인_행(self, 모드, 항목):
+        글자 = _행_글자크기
+        행 = BoxLayout(
+            orientation="horizontal", size_hint=(1, None), height=56, spacing=4
+        )
+        위치 = (
+            f"{항목['캐릭터']['캐릭터명']} 착용"
+            if 항목["캐릭터"] is not None
+            else f"소지품 {항목['수량']}개"
+        )
+        이름라벨 = Label(
+            text=f"{아이템_이름_글(항목['아이템'])}  ({위치})",
+            markup=True,
+            size_hint=(0.6, 1),
+            halign="left",
+            valign="middle",
+            font_size=글자,
+            shorten=True,
+            shorten_from="right",
+        )
+        이름라벨.bind(size=lambda inst, size: setattr(inst, "text_size", size))
+        행.add_widget(이름라벨)
+        자세히버튼 = Button(text="자세히", size_hint=(0.16, 1), font_size=글자)
+        자세히버튼.bind(on_release=lambda *_: self._자세히보기(항목["아이템"]))
+        행.add_widget(자세히버튼)
+        실행버튼 = Button(text=모드, size_hint=(0.24, 1), font_size=글자)
+        실행버튼.bind(on_release=lambda *_: self._봉인_실행(모드, 항목))
+        행.add_widget(실행버튼)
+        return 행
+
+    def _봉인_실행(self, 모드, 항목):
+        게임상태 = App.get_running_app().게임상태
+        처리 = (
+            gameflow.전문직업_봉인해제
+            if 모드 == "봉인해제"
+            else gameflow.전문직업_봉인변환
+        )
+        try:
+            새이름 = 처리(게임상태, 항목)
+        except ValueError as 오류:
+            self.안내라벨.text = str(오류)
+            return
+        self._골드_갱신()
+        self._봉인목록_채우기(모드)
+        self.안내라벨.text = f"{항목['이름']} -> {새이름}"
 
 
 class 소지품화면(상점화면):
