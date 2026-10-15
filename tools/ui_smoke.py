@@ -961,7 +961,16 @@ class 스모크앱(main.DnfMobileApp):
         _찍기("battle_action_choice_popup")
         _대상버튼들()[1].trigger_action(duration=0)  # 보조행동
         yield 0.3
-        _대상버튼들()[0].trigger_action(duration=0)  # 첫 번째 적
+        # 위에서 은신을 건 적은 고를 수 없다 - 살아 있고 은신이 아닌 적을 이름으로 고른다
+        # (앞 단계에서 어느 적이 쓰러지는지는 굴림에 따라 다르다)
+        대상 = next(
+            x["이름"]
+            for x in 전투상태["참가자"]
+            if x["진영"] == "적"
+            and x["생존"]
+            and not any(i["이름"] == "은신" for i in x["상태이상"])
+        )
+        next(b for b in _대상버튼들() if 대상 in b.text).trigger_action(duration=0)
         yield 0.5
         assert _팝업수() == 0, _팝업수()
         assert (p["행동자원"]["일반행동"], p["행동자원"]["보조행동"]) == (1, 0)
@@ -1047,6 +1056,15 @@ class 스모크앱(main.DnfMobileApp):
             for x in 전투상태["로그"][로그수:]
         ), 전투상태["로그"][로그수:]
         p["상태이상"] = []
+        # 만취 행동 뒤 화면이 이어서 돌리는 적 차례가 반응 팝업을 띄울 수 있다 - 쓰지 않고 엔진이 멈출 때까지
+        # 기다린다(남겨 두면 다음 단계의 전투가 막힌다. 어느 적이 누구를 치는지는 굴림에 따라 다르다)
+        for _ in range(50):
+            if not 전투._엔진중:
+                break
+            if "사용 안 함" in _팝업글():
+                _팝업_버튼("사용 안 함").dispatch("on_release")
+            yield 0.2
+        assert not 전투._엔진중, _팝업글()
         결과["단계"].append("만취 아군 차례 자동 진행(조종 불가, 만취 행동 로그)")
 
     def _단계_전투종료_자동전투_주점(self, 상태, 매니저, 전투):
@@ -1099,6 +1117,9 @@ class 스모크앱(main.DnfMobileApp):
             if 전리품줄 is False:
                 for 적 in gf.적_목록(상태):
                     적["원본"]["획득골드"] = "미정"
+                    적["원본"][
+                        "드랍표"
+                    ] = []  # 몬스터 개인 드랍(monster_drop.py)도 없앤다
             support.반응_처리(상태)
             매니저.current = "전투"
             전투.갱신(신규=True)
