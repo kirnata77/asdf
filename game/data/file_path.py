@@ -86,6 +86,7 @@
     "eq_01_weapon_030": "game.data.equipment.eq_01_weapon_030",
     "eq_01_weapon_040": "game.data.equipment.eq_01_weapon_040",
     "eq_01_weapon_050": "game.data.equipment.eq_01_weapon_050",
+    "eq_00_magic_seal": "game.data.equipment.eq_00_magic_seal",
     "eq_03_accessory_08_bracelet": "game.data.equipment.eq_03_accessory_08_bracelet",
     "eq_02_armor_01_top": "game.data.equipment.eq_02_armor_01_top",
     "eq_02_armor_03_shoulder": "game.data.equipment.eq_02_armor_03_shoulder",
