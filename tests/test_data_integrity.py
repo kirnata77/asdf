@@ -222,9 +222,21 @@ def test_몬스터_원본은_필수_칸을_적고_모르는_칸이_없다():
     assert not 문제, "\n".join(문제)
 
 
+# 아직 게임 목록(ctl_registry._몬스터파일목록)에 넣지 않은 초안 파일 - 이유와 함께.
+미등록_몬스터파일 = {
+    # 사용자 초안(2026-10-15): 레벨/차수, 특성 효과({"미정"}), 드랍군 "공어공용군"이 미정
+    "monster_race_spacefish",
+}
+
+
+def test_미등록_몬스터파일은_정말_등록되지_않았다():
+    """등록하면 이 목록에서 빼야 한다 - 빼는 것을 잊지 않게."""
+    assert not 미등록_몬스터파일 & {파일 for 파일, _ in gf._몬스터파일목록}
+
+
 def test_몬스터_기본값은_빈_칸만_채운다():
     assert not 몬스터_필수키 & set(몬스터_기본값)
-    원본들 = list(_몬스터_원본_목록())
+    원본들 = [항목 for 항목 in _몬스터_원본_목록() if 항목[0] not in 미등록_몬스터파일]
     assert len(원본들) == len(gf.몬스터목록)
     for _, 키, 몬스터 in 원본들:
         채운것 = gf.몬스터목록[키]
@@ -435,6 +447,22 @@ def test_샹들리에_몬스터는_타입에_건물형이_있다():
     for 키, 몬스터 in gf.몬스터목록.items():
         if "샹들리에" in (몬스터.get("특성") or []):
             assert "건물형" in 몬스터["타입"], 키
+
+
+def test_공어_몬스터는_그림이_연결된다():
+    """공어 3종 그림(사용자 제공 2026-10-15). 아직 미등록이라 데이터 파일을 직접 읽는다."""
+    공어 = {
+        키: 몬스터["이미지"]
+        for 파일, 키, 몬스터 in _몬스터_원본_목록()
+        if 파일 == "monster_race_spacefish"
+    }
+    for 이미지 in 공어.values():
+        assert (루트 / "game" / "assets" / "monster" / 이미지).is_file(), 이미지
+    assert 공어 == {
+        "공어": "asset_monster_spacefish.webp",
+        "대공어": "asset_monster_big_spacefish.webp",
+        "공왕 크로쿠타": "asset_monster_crocuta.webp",
+    }
 
 
 def test_용족_몬스터는_그림과_적등급을_가지고_등록된다():
