@@ -231,8 +231,8 @@ def 진행(직업, 시드값):
         후보 = sorted(
             (n, i)
             for n, i in 상태["상점카탈로그"]["장비"]["무기"].items()
-            if i["타입"] in 새종류 and "치트" not in n
-        )
+            if i["타입"] in 새종류 and i["레어도"] in ("커먼", "언커먼")
+        )  # 치트와 봉인 레어는 사지 않는다
         if not 후보:
             continue
         이름, 아이템 = 후보[0]
