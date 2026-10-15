@@ -320,18 +320,18 @@ class 업적화면(Screen):
     def _받기(self, 업적ID):
         게임상태 = App.get_running_app().게임상태
         try:
-            골드 = gameflow.업적_보상_받기(게임상태, 업적ID)
+            받음 = gameflow.업적_보상_받기(게임상태, 업적ID)
         except ValueError as 오류:
             self.안내라벨.text = str(오류)
             return
         self.갱신()
-        self.안내라벨.text = f"보상 {골드}G를 받았습니다."
+        self.안내라벨.text = f"보상 {gameflow.업적_보상_문구(받음)}을(를) 받았습니다."
 
     def _전부_받기(self, *args):
-        수, 골드 = gameflow.업적_보상_전부_받기(App.get_running_app().게임상태)
+        수, 받음 = gameflow.업적_보상_전부_받기(App.get_running_app().게임상태)
         self.갱신()
         self.안내라벨.text = (
-            f"업적 {수}개의 보상 {골드}G를 받았습니다."
+            f"업적 {수}개의 보상 {gameflow.업적_보상_문구(받음)}을(를) 받았습니다."
             if 수
             else "받을 보상이 없습니다."
         )

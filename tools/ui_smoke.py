@@ -2262,7 +2262,7 @@ class 스모크앱(main.DnfMobileApp):
 
         상태["소지품"]["골드"] = 상태["소지품"].get("골드", 0) + 200
         gf.상점_구매(상태, "소모품", "항아리", "만진의 항아리", 1)
-        상태["소지품"]["소모품"]["포린의 항아리"] = 1
+        상태["소지품"]["소모품"]["아린의 항아리"] = 1
         상태["소지품"]["소모품"]["칸나의 수제빵"] = 1
 
         매니저.get_screen("마을").갱신()
@@ -2298,15 +2298,15 @@ class 스모크앱(main.DnfMobileApp):
         assert "만진의 항아리" not in 상태["소지품"]["소모품"]
         _팝업_닫기()
         yield 0.3
-        버튼(행("포린의 항아리"), "사용").trigger_action(duration=0)
+        버튼(행("아린의 항아리"), "사용").trigger_action(duration=0)
         yield 0.3
         assert "데이터 없음" in 팝업_글(), 팝업_글()
-        assert 상태["소지품"]["소모품"]["포린의 항아리"] == 1
+        assert 상태["소지품"]["소모품"]["아린의 항아리"] == 1
         _팝업_닫기()
         yield 0.3
-        버튼(행("포린의 항아리"), "상세보기").trigger_action(duration=0)
+        버튼(행("아린의 항아리"), "상세보기").trigger_action(duration=0)
         yield 0.3
-        assert "레어 등급 장비" in 팝업_글(), 팝업_글()
+        assert "유니크 등급 장비" in 팝업_글(), 팝업_글()
         _팝업_닫기()
         yield 0.3
 
@@ -2484,6 +2484,27 @@ class 스모크앱(main.DnfMobileApp):
             if getattr(w, "업적ID", None) == "레벨_1"
         )
         assert 첫줄.text == "받음" and 첫줄.disabled
+        # 특수업적: 세리아 구출 -> [보상받기] = 랜덤 레어 무기(마법으로 봉인된 무기 하나)
+        상태["진행도"]["클리어한오브젝트"].add(("dungeon_01A_D01_Lorien", (15, 3)))
+        버튼(화면, "특수업적").trigger_action(duration=0)
+        yield 0.3
+        세리아 = next(
+            w
+            for w in 화면._목록틀.walk(restrict=True)
+            if getattr(w, "업적ID", None) == "세리아_구출"
+        )
+        assert not 세리아.disabled
+        장비전 = dict(상태["소지품"]["장비"])
+        세리아.trigger_action(duration=0)
+        yield 0.3
+        새장비 = [
+            n
+            for n in 상태["소지품"]["장비"]
+            if 상태["소지품"]["장비"][n] > 장비전.get(n, 0)
+        ]
+        assert len(새장비) == 1 and 새장비[0].startswith("마법으로 봉인된 "), 새장비
+        assert 새장비[0] in 화면.안내라벨.text, 화면.안내라벨.text
+        _찍기("achievements_special")
         버튼(화면, "전투업적").trigger_action(duration=0)
         yield 0.3
         _찍기("achievements_battle")
@@ -2497,7 +2518,8 @@ class 스모크앱(main.DnfMobileApp):
         assert 매니저.current == "마을"
         결과["단계"].append(
             "도감/업적 - [메뉴] -> [도감] 등록 수, 몬스터(미등록 어둡게/상세보기 못 누름, 상세 팝업), "
-            "무기 레어도 필터, 나가기 -> 마을. [메뉴] -> [업적] 분류 4개, 달성 전 못 누름, 보상받기/전부 받기"
+            "무기 레어도 필터, 나가기 -> 마을. [메뉴] -> [업적] 분류 4개, 달성 전 못 누름, 보상받기/전부 받기, "
+            "특수업적 보상받기(봉인 레어 무기와 안내 글)"
         )
 
     def _단계_메뉴(self, 상태, 매니저):
