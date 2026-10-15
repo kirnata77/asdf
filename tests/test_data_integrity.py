@@ -449,6 +449,22 @@ def test_샹들리에_몬스터는_타입에_건물형이_있다():
             assert "건물형" in 몬스터["타입"], 키
 
 
+def test_공어_몬스터는_그림이_연결된다():
+    """공어 3종 그림(사용자 제공 2026-10-15). 아직 미등록이라 데이터 파일을 직접 읽는다."""
+    공어 = {
+        키: 몬스터["이미지"]
+        for 파일, 키, 몬스터 in _몬스터_원본_목록()
+        if 파일 == "monster_race_spacefish"
+    }
+    for 이미지 in 공어.values():
+        assert (루트 / "game" / "assets" / "monster" / 이미지).is_file(), 이미지
+    assert 공어 == {
+        "공어": "asset_monster_spacefish.webp",
+        "대공어": "asset_monster_big_spacefish.webp",
+        "공왕 크로쿠타": "asset_monster_crocuta.webp",
+    }
+
+
 def test_용족_몬스터는_그림과_적등급을_가지고_등록된다():
     용족 = {n: d for n, d in gf.몬스터목록.items() if d["분류"] == "용족"}
     assert {n: (d["이미지"], d["적등급"]) for n, d in 용족.items()} == {
