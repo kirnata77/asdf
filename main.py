@@ -131,6 +131,7 @@ from game.screens.screens_town import (
     마을이동목록화면,
     상점화면,
     소지품화면,
+    전문직업화면,
     모험단화면,
     주점화면,
 )
@@ -175,6 +176,7 @@ class DnfMobileApp(App):
         매니저.add_widget(던전화면(name="던전"))
         매니저.add_widget(상점화면(name="상점"))
         매니저.add_widget(소지품화면(name="소지품"))
+        매니저.add_widget(전문직업화면(name="전문직업"))
         매니저.add_widget(전투화면(name="전투"))
         매니저.add_widget(모험단화면(name="모험단"))
         매니저.add_widget(주점화면(name="주점"))

@@ -22,6 +22,7 @@ from game.system import (
     character_creation_system as 캐릭터생성,
     drink_system,
     equipment_system,
+    magic_seal_system,
     party_system,
     player_system,
     shop_system,
@@ -202,9 +203,12 @@ def _상점_카탈로그_생성():
         "마법석": 마법석목록,
         "귀걸이": 귀걸이목록,
     }
-    return shop_system.카탈로그_생성(
+    카탈로그 = shop_system.카탈로그_생성(
         장비탭모음, 포션_데이터, 소모품_데이터, 음식_데이터, 재료_데이터
     )
+    # 봉인을 푼 "마법의 ~" 장비(봉인 장비 x 그 부위 마봉능력)를 미리 만들어 둔다 - 불러오기도 같다
+    magic_seal_system.카탈로그_추가(카탈로그["장비"])
+    return 카탈로그
 
 
 def 새_게임상태(파티, 진행도):

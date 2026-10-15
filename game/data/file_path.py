@@ -185,6 +185,7 @@
     "state_schema": "game.system.state_schema",
     "collection_system": "game.system.collection_system",
     "achievement_system": "game.system.achievement_system",
+    "magic_seal_system": "game.system.magic_seal_system",
     # game/controller/ (화면 <-> 로직/데이터 컨트롤러 - gameflow.py가 재수출하는 구현, N5)
     "ctl_registry": "game.controller.ctl_registry",
     "ctl_party": "game.controller.ctl_party",
@@ -205,6 +206,7 @@
     "ctl_skills": "game.controller.ctl_skills",
     "ctl_collection": "game.controller.ctl_collection",
     "ctl_achievement": "game.controller.ctl_achievement",
+    "ctl_profession": "game.controller.ctl_profession",
     # game/screens/ (Kivy 화면)
     "screens_common": "game.screens.screens_common",
     "screens_menu": "game.screens.screens_menu",
