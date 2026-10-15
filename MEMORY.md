@@ -15,7 +15,7 @@
 - 풀 시나리오 S1~S6·S8~S12 구현([계획](.memory/roadmap/scenario-tests.md) 전부 완료). 구조 점검 N0~N7 전부 완료: [architecture_review.md](docs/architecture_review.md) 10절, [refactor.md](.memory/roadmap/refactor.md).
 - 리팩터링 보고서 후속(종족 속성, skill 6모듈, 팝업 도우미, 몬스터 기본값 표 등): [refactoring_report.md](docs/refactoring_report.md) 9절. combat 순환은 안 함 - 이유 거기.
 - 테스트 915개, 커버리지 94.13%(게이트 범위)(2026-10-14 측정). 시나리오 공백(숙소·해체·레벨 11~20 등): [이슈 #74](https://github.com/kirnata77/asdf/issues/74) - 제안 S9의 포션은 지금 S9가 다룸, 제안 S10(숙소)은 미착수(새 번호 필요).
-- CI `ui-smoke`는 PR을 막는다. 병합된 브랜치는 자동 삭제. **Claude가 연 PR은 묻지 않고 병합**(10-14 지시) - 열 때 자동 병합을 켜고, 안 되면 CI 초록 즉시 병합(CLAUDE.md "Git").
+- CI `ui-smoke`는 PR을 막는다. 병합된 브랜치는 자동 삭제. **`claude/*` PR은 `auto-merge.yml`이 CI 초록에서 병합**(10-15, [경위](.memory/sessions/2026-10-15-auto-merge-workflow.md), 첫 실행 미확인) - 워크플로·spec PR은 사용자.
 - 10-15 `context-guard` 훅(`.claude/hooks`)·새 handoff-trigger(agent-config에서). 옛 *Now*의 경위 문단 원문: [보관본](.memory/sessions/2026-10-10-memory-index-archive.md).
 
 ## 믿으면 안 되는 것 ([`known-bugs.md`](.memory/active-issues/known-bugs.md))
