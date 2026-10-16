@@ -169,12 +169,36 @@ def test_워크플로와_buildozer_spec은_늘_보호된다(path):
 
 @pytest.mark.parametrize(
     "path",
-    ["tools/auto_merge_gate.py", "CLAUDE.md", ".claude/rules/tests.md"],
+    [
+        "tools/auto_merge_gate.py",
+        "CLAUDE.md",
+        ".claude/rules/eol.md",
+        ".claude/rules/build-and-save.md",
+        ".claude/rules/new.md",
+    ],
 )
 def test_판정_스크립트와_에이전트_규칙은_늘_보호된다(path):
     """auto-merge.yml은 main-branch의 이 스크립트를 돌린다 - PR이 보호 목록을 줄이면 그 PR이 옛 규칙으로
     스스로 병합되고 다음 PR부터 보호가 풀린다. 에이전트 규칙도 에이전트가 스스로 병합하지 않는다(전역 G23)."""
     assert _판정(pr(), [file(path)]) == "stop"
+
+
+@pytest.mark.parametrize("path", [".claude/rules/tests.md", ".claude/rules/layers.md"])
+def test_테스트_지도와_모듈_배치는_기능_PR과_같이_병합된다(path):
+    """기능 PR이 새 테스트 파일·모듈을 적는 곳이다 - 이것 때문에 기능 PR이 손 병합으로 멈추지 않게(2026-10-16 Kade)."""
+    assert _판정(pr(), [file(path)]) == "merge"
+    assert gate.protected_paths([file(path)]) == []
+
+
+def test_예외_파일도_보호_파일과_같이_바꾸면_멈춘다():
+    files = [file(".claude/rules/tests.md"), file("CLAUDE.md")]
+    assert _판정(pr(changed_files=2), files) == "stop"
+    assert gate.protected_paths(files) == ["CLAUDE.md"]
+
+
+def test_예외_파일로_이름을_바꾸면_옛_이름으로_멈춘다():
+    moved = file(".claude/rules/tests.md", previous=".claude/rules/eol.md")
+    assert gate.protected_paths([moved]) == [".claude/rules/eol.md"]
 
 
 @pytest.mark.parametrize(
