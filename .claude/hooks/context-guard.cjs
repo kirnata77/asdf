@@ -31,6 +31,9 @@
 // The hook never blocks a prompt: on any error it prints nothing and exits 0.
 // Copied 2026-10-15 from github.com/kade-agent/agent-config (hooks/); registered for this repository in
 // .claude/settings.json. The handoff-trigger skill (.claude/skills/) says what to do with its messages.
+// One change from the source (2026-10-16): agent-config now runs the hook from ~/.claude/hooks for every
+// repository, so where that copy exists (Kade's machines and cloud sessions) this one stays silent and
+// the same warning is not given twice. Sessions without it (the maintainer's) still get this one.
 
 "use strict";
 
@@ -194,7 +197,18 @@ function decide(input, transcriptText, previousLevel, env) {
   };
 }
 
+// True when the user-level copy (~/.claude/hooks) exists and is not this file: it gives the warnings.
+function shadowedByGlobal(self, home) {
+  const global = path.join(home, ".claude", "hooks", "context-guard.cjs");
+  try {
+    return fs.existsSync(global) && fs.realpathSync(global) !== fs.realpathSync(self);
+  } catch {
+    return false;
+  }
+}
+
 function main() {
+  if (shadowedByGlobal(__filename, os.homedir())) return;
   let raw = "";
   process.stdin.setEncoding("utf8");
   process.stdin.on("data", (chunk) => (raw += chunk));
@@ -218,4 +232,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { contextTokens, windowSize, thresholds, levelFor, decide, stateFile };
+module.exports = { contextTokens, windowSize, thresholds, levelFor, decide, stateFile, shadowedByGlobal };
