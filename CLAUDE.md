@@ -3,10 +3,8 @@
 Kivy로 만든 턴제 RPG 프로토타입이다. buildozer로 안드로이드 APK를 빌드한다.
 원격 저장소: https://github.com/megasunu/DFzero (기본 브랜치 `main-branch`)
 
-**세션 상태는 [`MEMORY.md`](MEMORY.md)다** - 지금 진행 중인 일과 아직 믿으면 안 되는 것이 거기 있다.
+**할 일과 상태는 작업 보드 [던전앤파이터 모바일](https://github.com/orgs/megasunu/projects/1)에만 있다** - 아래 "작업 보드".
 이어서 하는 세션은 `session-resume` 스킬로 시작한다.
-
-@MEMORY.md
 
 ## 구조와 계층 규칙
 
@@ -37,9 +35,9 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
    `xvfb-run -a -s "-screen 0 1080x2340x24"`를 앞에)로 실제 화면을 돌려 확인하고,
    바꾼 동작이 스모크에 없으면 스모크에 단계를 추가한다(주제별 `_단계_*` 제너레이터에 넣는다).
    CI에도 같은 스모크를 도는 `ui-smoke` 잡이 있고, 실패하면 PR을 막는다.
-4. **기억 갱신** - `MEMORY.md`의 *Now*와 `.memory/`를 코드와 같은 커밋에서 고친다(`.claude/rules/memory.md`).
+4. **보드 갱신** - PR 본문에 `Closes #N`으로 이슈를 잇고, 남은 일·새 버그·확인 못 한 것은 이슈로 만든다(아래 "작업 보드").
 5. **큰 기능은 풀 시나리오로 검증한다** - `.claude/rules/scenarios.md`.
-6. **큰 기능이면 `CHANGELOG.md`의 `미릴리스`에 한 줄**을 같은 커밋에 더한다. 변경 내역은 거기만 보고, `MEMORY.md`에는 쓰지 않는다.
+6. **큰 기능이면 `CHANGELOG.md`의 `미릴리스`에 한 줄**을 같은 커밋에 더한다. 변경 내역은 거기만 본다.
 
 **돌리지 못한 검증은 통과로 쓰지 않는다.** 커밋 본문에
 `NOT VERIFIED: <무엇을> 실행해 보지 못함 - <이유>`로 남긴다. APK 빌드는 CI(`build-apk.yml`)에서만
@@ -54,8 +52,7 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
   보여주고 명시적 승인을 받은 뒤 진행한다. 승인은 계획에 적힌 단계만 덮고, 범위가 넓어지는 새 단계는 다시 사용자에게 묻는다.
 - **새 모듈·의존성·서비스는 사용자와 먼저 정한다** - 선택지, 각각의 장기 유지보수 비용, 추천을 가져온다.
 - **테스트 먼저.** 새 동작이나 수정 전에 실패하는 테스트를 만들고 옳은 이유로 실패하는 것을 본다. 단위 테스트가 안 되는 것은 커밋 본문에 쓴다.
-- **리팩터링과 동작 변경을 한 커밋에 섞지 않는다.** 버그를 발견하면 기록
-  (`.memory/active-issues/`)하고 따로 고친다.
+- **리팩터링과 동작 변경을 한 커밋에 섞지 않는다.** 버그를 발견하면 이슈로 만들고 따로 고친다.
 - **자동 수정은 최대 2번.** 같은 문제로 두 번 고쳐도 게이트가 안 통과하면 멈추고(같은 검사가 매번 다른 곳에서 깨져도 같은 문제)
   상황을 보고한다. 테스트나 검사를 건너뛰거나 끄거나 약하게 해서 초록을 만들지 않는다. `main-branch`에서도 빨간 실패는 PR에 적는다.
 - **값은 데이터 파일이 아니라 실행 결과로 확인한다.** 딕셔너리에 적힌 값이 실제 게임에
@@ -72,8 +69,8 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 ## 규칙 파일과 스킬
 
 해당 파일을 건드릴 때 읽히는 규칙(`.claude/rules/`, 파일마다 80줄 이하 - 게이트가 검사한다): `layers.md`(구조·계층),
-`tests.md`(테스트 지도), `scenarios.md`(풀 시나리오), `build-and-save.md`(세이브 호환성·buildozer), `eol.md`(줄끝),
-`memory.md`(`MEMORY.md`/`.memory/`). `CLAUDE.md`는 100줄 이하(게이트가 검사).
+`tests.md`(테스트 지도), `scenarios.md`(풀 시나리오), `build-and-save.md`(세이브 호환성·buildozer), `eol.md`(줄끝).
+`CLAUDE.md`는 100줄 이하(게이트가 검사).
 
 작업할 때 `repo-workflow` 스킬(계획·검증·클라우드·브랜치·커밋·PR)을 따른다. 그 밖의 스킬(`.claude/skills/`): `handoff-trigger`
 (핸드오프 권유는 맥락 400k부터, `context-guard` 훅이 알림), `session-handoff`, `session-resume`, `code-graph`(Graft).
@@ -82,9 +79,12 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 
 - LF 규칙은 `.gitattributes`(`* text=auto eol=lf`)와 pre-commit 훅이 지키고 게이트가 검사한다. 세부는 `.claude/rules/eol.md`.
 
-## 기억 파일 (MEMORY.md / .memory/)
+## 작업 보드 (할 일의 유일한 기록, 2026-10-16부터)
 
-- 세션마다 *Now*를 갱신한다. 기억 파일은 관련 코드와 **같은 커밋**에 넣는다. 세부는 `.claude/rules/memory.md`.
+- **이슈가 작업 단위다.** 상태(백로그/다음/지금/검토 중/완료)·단계·검증·우선순위는 보드 칸에만 둔다. `MEMORY.md`/`.memory/`는 쓰지 않는다(게이트가 검사).
+- **주인이 정할 일 = 담당자 kirnata77**("결정 대기"). 폰에서만 확인되는 일은 검증 칸 `실기기 필요`. 담당자 없는 이슈는 세션이 가져갈 수 있다.
+- 로컬은 `gh project`(보드 #1)로, 클라우드 세션은 `status` 브랜치의 `STATUS.md`로 읽고 명령 라벨(`명령:상태-지금` 등)로 쓴다.
+  새 이슈·닫힘은 `project-sync`가 반영한다. 방법과 라벨 표: `docs/setup/project-board.md`. 게임 규칙은 `docs/game-rules.md`.
 
 ## Git
 

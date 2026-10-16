@@ -38,26 +38,18 @@ def test_gitattributes는_LF_정규화():
         assert 줄 in 결과.stdout, 결과.stdout
 
 
-# ------------------------------------------------------------ 기억 파일 크기
-
-MEMORY_최대_줄 = 40
-MEMORY_최대_바이트 = 6 * 1024  # 한글은 글자당 3바이트라 줄 수만으로는 크기가 안 막힌다
+# ------------------------------------------------------------ 할 일 기록
 
 
-def test_MEMORY_md는_줄과_크기_상한을_지킨다():
-    """.claude/rules/memory.md - 색인이 길어지면 매 세션 읽는 비용이 커지고 중요한 것이 묻힌다."""
-    경로 = os.path.join(fix_eol.ROOT, "MEMORY.md")
-    with open(경로, "rb") as f:
-        내용 = f.read()
-    줄수 = 내용.count(b"\n") + (0 if 내용.endswith(b"\n") or not 내용 else 1)
-    assert 줄수 <= MEMORY_최대_줄, (
-        f"MEMORY.md가 {줄수}줄이다(상한 {MEMORY_최대_줄}) - 규칙/수치 설명은 "
-        "docs/game-rules.md로 옮긴다"
-    )
-    assert len(내용) <= MEMORY_최대_바이트, (
-        f"MEMORY.md가 {len(내용)}바이트다(상한 {MEMORY_최대_바이트}) - 규칙/수치 설명은 "
-        "docs/game-rules.md로 옮긴다"
-    )
+def test_할_일_기록은_작업_보드뿐이다():
+    """2026-10-16부터 할 일과 상태는 megasunu 작업 보드(이슈)에만 둔다(CLAUDE.md "작업 보드").
+
+    MEMORY.md/.memory/가 다시 생기면 보드와 두 곳이 어긋난다 - 할 일은 이슈로, 게임 규칙은 docs/game-rules.md로.
+    """
+    for 이름 in ("MEMORY.md", ".memory", os.path.join(".claude", "rules", "memory.md")):
+        assert not os.path.exists(os.path.join(fix_eol.ROOT, 이름)), (
+            f"{이름}가 다시 생겼다 - 할 일은 이슈(작업 보드)로, 게임 규칙은 docs/game-rules.md로"
+        )
 
 
 # ------------------------------------------------------------ CLAUDE.md / 규칙 파일 / 스킬
@@ -119,23 +111,6 @@ def 스킬_파일_문제(폴더이름, 텍스트):
 def _읽기(경로):
     with open(경로, encoding="utf-8") as f:
         return f.read()
-
-
-MEMORY_최대_줄_글자 = 200  # 한 줄에 문단 하나를 통째로 넣는 빈틈을 막는다
-
-
-def test_MEMORY_md는_한_줄이_200자_이하():
-    """.claude/rules/memory.md - 줄 수와 바이트만 막으면 한 줄에 문단을 넣어 색인을 우회한다."""
-    텍스트 = _읽기(os.path.join(fix_eol.ROOT, "MEMORY.md"))
-    긴_줄 = [
-        f"{번호}번째 줄 {len(줄)}자"
-        for 번호, 줄 in enumerate(텍스트.splitlines(), start=1)
-        if len(줄) > MEMORY_최대_줄_글자
-    ]
-    assert not 긴_줄, (
-        f"MEMORY.md에 {MEMORY_최대_줄_글자}자를 넘는 줄이 있다: {', '.join(긴_줄)} - "
-        "항목마다 짧은 한 줄만 두고 자세한 것은 .memory/로 옮긴다"
-    )
 
 
 def test_CLAUDE_md는_100줄_이하():
@@ -322,7 +297,7 @@ def _변경내역_문제(본문, 버전):
 
 
 def test_CHANGELOG는_규칙을_지킨다():
-    """.claude/rules/build-and-save.md - 이 파일이 변경 내역의 유일한 출처다(MEMORY.md는 단기 기억)."""
+    """.claude/rules/build-and-save.md - 이 파일이 변경 내역의 유일한 출처다."""
     문제 = _변경내역_문제(_저장소_파일("CHANGELOG.md"), _spec_버전())
     assert not 문제, "\n".join(문제)
 

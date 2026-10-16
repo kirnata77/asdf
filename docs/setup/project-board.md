@@ -1,6 +1,6 @@
 # 작업 보드 설정 - 조직으로 옮기기
 
-작업 관리를 `MEMORY.md`/`.memory/` 파일에서 GitHub **Project 보드**로 옮긴다.
+작업 관리를 `MEMORY.md`/`.memory/` 파일에서 GitHub **Project 보드**로 옮겼다(2026-10-16, #186·#188과 그 다음 PR).
 보드는 새 조직 **`megasunu`** 이 갖고, 저장소도 그 조직으로 옮긴다. kirnata77과 enjay27(Kade)은 둘 다 조직의 **Owner**다.
 
 **진행: 2026-10-16 조직 `megasunu`를 만들고 저장소를 `megasunu/DFzero`로 옮겼다(주인 일 1~3 끝남).**
@@ -61,7 +61,7 @@ Kade는 조직 Owner 초대를 수락했다. 나머지는 Kade의 PC에서 `gh`(
 | 브리지 App `megasunu-board-bridge`(조직 프로젝트 쓰기, 이슈·PR 읽기, 이 조직에만 설치) | App 매니페스트 흐름 - Kade가 `Create`, `Install` 두 번 클릭 | 끝남 |
 | 조직 설정(DFzero에 공유): 변수 `BRIDGE_APP_CLIENT_ID`, `PROJECT_NUMBER`=1, Secret `BRIDGE_APP_PRIVATE_KEY` | `gh variable/secret set --org` | 끝남 |
 | 명령 라벨 15개(아래 표) | `gh label create` | 끝남 |
-| 워크플로 `project-sync.yml`, `project-snapshot.yml` | PR (워크플로 PR은 사용자가 병합) | PR |
+| 워크플로 `project-sync.yml`, `project-snapshot.yml` | #186 (Kade 병합), 시험 이슈 #187로 열기·라벨·닫기·스냅샷 확인 | 끝남 |
 
 **API로 안 되는 것 - 웹에서 한 번씩 (Kade):**
 
