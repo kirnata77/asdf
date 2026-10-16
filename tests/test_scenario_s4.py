@@ -24,7 +24,7 @@ from tests.test_gameflow_scenarios import 구현된_전직
     "좀비": "포레스트 좀비",
     "인간": "화염의 비노슈",
 }
-최대턴 = 15
+최대턴 = 20
 
 
 def _무기_종류(직업):
