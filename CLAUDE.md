@@ -45,9 +45,6 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 
 ## 작업 방식 (가드레일)
 
-- **병합 요청은 무조건 병합까지 끝낸다**(2026-10-15 사용자 지시, 다른 가드레일보다 앞선다). 도중에 묻지 않고 Claude가 판단해
-  병합한 뒤 판단한 내용과 문제점을 보고한다. 검사(게이트·CI)가 실패해도 병합을 우선하고, 미정인 값은 미정으로 둔 채 반영한다.
-
 - **계획 먼저.** 작업의 첫 턴에는 편집하지 않는다. 바꿀 것, 바꾸지 않을 것, 게이트, 이 세션이 그 게이트를 돌릴 수 있는지를
   보여주고 명시적 승인을 받은 뒤 진행한다. 승인은 계획에 적힌 단계만 덮고, 범위가 넓어지는 새 단계는 다시 사용자에게 묻는다.
 - **새 모듈·의존성·서비스는 사용자와 먼저 정한다** - 선택지, 각각의 장기 유지보수 비용, 추천을 가져온다.
@@ -70,14 +67,10 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 
 해당 파일을 건드릴 때 읽히는 규칙(`.claude/rules/`, 파일마다 80줄 이하 - 게이트가 검사한다): `layers.md`(구조·계층),
 `tests.md`(테스트 지도), `scenarios.md`(풀 시나리오), `build-and-save.md`(세이브 호환성·buildozer), `eol.md`(줄끝).
-`CLAUDE.md`는 100줄 이하(게이트가 검사).
+`CLAUDE.md`는 100줄 이하(게이트가 검사). **모든 텍스트 파일은 LF** - `.gitattributes`(`* text=auto eol=lf`)와 pre-commit 훅이 지키고 게이트가 검사한다(세부 `eol.md`).
 
 작업할 때 `repo-workflow` 스킬(계획·검증·클라우드·브랜치·커밋·PR)을 따른다. 그 밖의 스킬(`.claude/skills/`): `handoff-trigger`
 (핸드오프 권유는 맥락 400k부터, `context-guard` 훅이 알림), `session-handoff`, `session-resume`, `code-graph`(Graft).
-
-## 줄끝 - 모든 텍스트 파일은 LF
-
-- LF 규칙은 `.gitattributes`(`* text=auto eol=lf`)와 pre-commit 훅이 지키고 게이트가 검사한다. 세부는 `.claude/rules/eol.md`.
 
 ## 작업 보드 (할 일의 유일한 기록, 2026-10-16부터)
 
@@ -97,3 +90,8 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 - **APK 빌드는 `v*` 태그 push로만 돈다**(`build-apk.yml`). 사용자는 PC가 없고 이 세션의 git은 태그 push를 403으로 막는다. **릴리스는 사용자가
   APK를 만들어 달라고 할 때만 한다 - 그전에는 릴리스를 묻거나 권하지 않는다**(2026-10-13 사용자 지시). 요청을 받으면 Claude가 버전 PR을 열고(절차: `.claude/rules/build-and-save.md`), 사용자가 병합한 뒤
   GitHub 웹에서 릴리스를 게시한다(태그가 생겨 빌드가 돈다). Claude는 그 실행과 릴리스를 확인한다. 릴리스 삭제는 사용자에게 부탁한다.
+
+## Overrides of global rules (전역 규칙의 예외)
+
+- **결정은 kirnata77.** 전역 규칙이 Kade의 몫이라고 하는 결정(새 모듈·의존성, 사용자에게 남기는 병합, 주인이 정할 이슈)은 주인 kirnata77이나 Kade가 한다.
+- **기본 브랜치는 `main-branch`.** 전역 규칙의 `main`(브랜치를 따는 곳, PR과 자동 병합의 대상)은 여기서 `main-branch`다.
