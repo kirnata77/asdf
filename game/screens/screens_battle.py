@@ -185,6 +185,39 @@ class _전투보상팝업(Popup):
         self._완료()
 
 
+# 스킬 줄의 칸 너비 비율 - 이름(왼쪽 정렬) | 남은 횟수 | MP | 행동 (2026-10-16 사용자 지정)
+# 이름만 넘치면 "..."로 줄이고, 나머지 세 칸은 잘리지 않을 만큼 둔다("[일반][보조]", "MP 20", "5/5").
+# 이름 칸을 넓히려고 나머지 세 칸은 글을 조금 작게 쓴다(_스킬줄_작은글).
+_스킬줄_칸 = ((0.43, "left"), (0.12, "center"), (0.17, "center"), (0.28, "right"))
+_스킬줄_작은글 = "13sp"
+
+
+def _스킬_줄(이름, 줄, 가능):
+    """버튼 위에 글 칸 4개를 겹친 한 줄. (줄 위젯, 누를 버튼). 글 칸은 터치를 받지 않아
+    버튼이 받는다. 못 쓰면 버튼과 글 칸 모두 비활성(회색)."""
+    틀 = FloatLayout(size_hint_y=None, height=dp(56))
+    버튼 = Button(pos_hint={"x": 0, "y": 0}, disabled=not 가능)
+    버튼.스킬이름 = 이름
+    틀.add_widget(버튼)
+    칸들 = BoxLayout(pos_hint={"x": 0, "y": 0}, padding=(dp(10), 0), spacing=dp(2))
+    글들 = (이름, 줄["남은"], 줄["MP"], 줄["행동"])
+    for 번호, (글, (비율, 정렬)) in enumerate(zip(글들, _스킬줄_칸)):
+        칸 = Label(
+            text=글,
+            size_hint_x=비율,
+            halign=정렬,
+            valign="middle",
+            shorten=번호 == 0,  # 이름만 넘치면 "..."
+            **({} if 번호 == 0 else {"font_size": _스킬줄_작은글}),
+            shorten_from="right",
+            disabled=not 가능,
+        )
+        칸.bind(size=lambda inst, size: setattr(inst, "text_size", size))
+        칸들.add_widget(칸)
+    틀.add_widget(칸들)
+    return 틀, 버튼
+
+
 class _스킬선택팝업(Popup):
     """ "스킬" 버튼을 누르면 뜨는 목록 팝업(액션 버튼 5칸 고정 레이아웃이라
     화면에 스킬 목록을 펼칠 자리가 없다)."""
@@ -201,9 +234,14 @@ class _스킬선택팝업(Popup):
 
         for 이름, 스킬데이터, 가능, *나머지 in 항목목록:
             표시 = 나머지[0] if 나머지 else 이름
-            버튼 = Button(text=표시, size_hint_y=None, height=dp(56), disabled=not 가능)
+            if isinstance(표시, dict):  # 스킬 줄: 이름 | 남은 횟수 | MP | 행동
+                줄틀, 버튼 = _스킬_줄(이름, 표시, 가능)
+            else:
+                줄틀 = 버튼 = Button(
+                    text=표시, size_hint_y=None, height=dp(56), disabled=not 가능
+                )
             버튼.bind(on_release=lambda inst, n=이름, d=스킬데이터: self._선택(n, d))
-            목록틀.add_widget(버튼)
+            목록틀.add_widget(줄틀)
 
         스크롤.add_widget(목록틀)
         self.content = 스크롤
@@ -751,7 +789,8 @@ class 전투화면(Screen):
         행1 = BoxLayout(orientation="horizontal", spacing=4)
         일반공격버튼 = Button(text="일반공격")
         일반공격버튼.disabled = not (
-            아군차례 and 참가자["행동자원"].get("일반행동", 0) > 0
+            아군차례
+            and gameflow.일반공격_가능여부(App.get_running_app().게임상태, 참가자)
         )
         일반공격버튼.bind(on_release=lambda *_: self._일반공격_클릭())
         행1.add_widget(일반공격버튼)
@@ -798,13 +837,11 @@ class 전투화면(Screen):
         항목목록 = []
         for 이름 in 참가자["원본"].get("보유스킬", []):
             스킬데이터 = 스킬데이터모음.get(이름)
-            if 스킬데이터 is None or 스킬데이터.get("분류") == "반응스킬":
-                continue  # 반응스킬은 조건이 맞으면 저절로 쓰인다
-            가능, _ = gameflow.스킬_사용_가능여부(게임상태, 참가자, 이름)
-            # 휴식당횟수가 있는 스킬은 남은 횟수를 붙여 보여준다.
-            남은정보 = gameflow.스킬_휴식_남은횟수(게임상태, 참가자, 이름)
-            표시 = f"{이름} ({남은정보[0]}/{남은정보[1]})" if 남은정보 else 이름
-            항목목록.append((이름, 스킬데이터, 가능, 표시))
+            if 스킬데이터 is None:
+                continue
+            # 이름 | 남은 횟수 | MP | 지금 낼 행동 - 반응스킬은 [반응]으로 보이되 누를 수 없다
+            줄 = gameflow.스킬_팝업_줄(게임상태, 참가자, 이름)
+            항목목록.append((이름, 스킬데이터, 줄["가능"], 줄))
 
         if not 항목목록:
             self.안내라벨.text = "사용할 수 있는 스킬이 없습니다."
@@ -844,6 +881,7 @@ class 전투화면(Screen):
             self._스킬_대상_고르기(이름, 스킬데이터)
             return
         남은 = {
+            "추가행동": gameflow.추가행동_남은수(참가자),
             "쇼타임행동": 참가자.get("기타행동", {}).get("쇼타임행동", 0),
             "일반행동": 참가자["행동자원"].get("일반행동", 0),
             "보조행동": 참가자["행동자원"].get("보조행동", 0),
