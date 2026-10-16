@@ -186,6 +186,7 @@ def node(kind, number, title, state, values, archived=False, assignees=()):
             field_nodes.append({"name": value, "field": {"name": name}})
     field_nodes.append({})  # 글자/숫자 칸 값은 빈 객체로 온다
     return {
+        "id": f"PVTI_{number or 'draft'}",
         "isArchived": archived,
         "fieldValues": {"nodes": field_nodes},
         "content": content,
@@ -484,3 +485,141 @@ def test_권한_없는_사람의_이슈도_넣지만_명령은_지운다():
 def test_main_snapshot은_보드_번호가_필요하다():
     with mock.patch.dict(os.environ, {}, clear=True), pytest.raises(SystemExit):
         pb.main(["snapshot"])
+
+
+# ---------------------------------------------------------------- 닫힌 이슈 맞추기 (#189)
+# auto-merge.yml은 GITHUB_TOKEN으로 이슈를 닫아 issues: closed 사건이 project-sync를 깨우지 않는다.
+# 그래서 snapshot --reconcile이 내보내기 전에 닫혔는데 완료가 아닌 이슈를 완료로 맞춘다.
+
+
+def 맞출_보드():
+    return pb.parse_items(
+        [
+            page(
+                node("Issue", 11, "자동 병합이 닫음", "CLOSED", {"Status": "지금"}),
+                node("Issue", 12, "검토하다 닫힘", "CLOSED", {"상태": "검토 중"}),
+                node("Issue", 13, "상태 없이 닫힘", "CLOSED", {}),
+                node("Issue", 14, "이미 완료", "CLOSED", {"Status": "완료"}),
+                node("Issue", 15, "열린 일", "OPEN", {"Status": "지금"}),
+                node("PullRequest", 16, "병합된 PR", "MERGED", {"Status": "지금"}),
+                node("DraftIssue", None, "초안", None, {"Status": "지금"}),
+                node(
+                    "Issue", 17, "보관됨", "CLOSED", {"Status": "지금"}, archived=True
+                ),
+            )
+        ]
+    )
+
+
+def test_항목_id를_읽는다():
+    assert [i.item_id for i in 맞출_보드()][:2] == ["PVTI_11", "PVTI_12"]
+
+
+def test_닫혔는데_완료가_아닌_이슈만_고른다():
+    assert [i.ref() for i in pb.stale_closed(맞출_보드())] == [
+        "DFzero#11",
+        "DFzero#12",
+        "DFzero#13",
+    ]
+
+
+class 가짜_보드:
+    """보드 칸을 읽고 칸 값 쓰기를 적어 두는 가짜 GitHub. 보드 항목은 pages로 준다."""
+
+    def __init__(self, pages=(), field_name="Status"):
+        self.pages = list(pages)
+        self.field_name = field_name
+        self.calls = []
+
+    def __call__(self, token):  # pb.GitHub 자리에 클래스처럼 꽂는다
+        return self
+
+    def graphql(self, query, variables):
+        self.calls.append((query, variables))
+        if "updateProjectV2ItemFieldValue" in query:
+            return {"updateProjectV2ItemFieldValue": {"projectV2Item": {"id": "x"}}}
+        if "items(first" in query:
+            return self.pages.pop(0)
+        return {
+            "organization": {
+                "projectV2": {
+                    "id": "PVT_1",
+                    "fields": {
+                        "nodes": [
+                            {
+                                "id": "F_s",
+                                "name": self.field_name,
+                                "options": [
+                                    {"id": "o_now", "name": "지금"},
+                                    {"id": "o_done", "name": "완료"},
+                                ],
+                            }
+                        ]
+                    },
+                }
+            }
+        }
+
+    def writes(self):
+        return [v for q, v in self.calls if "updateProjectV2ItemFieldValue" in q]
+
+
+@pytest.mark.parametrize("field_name", ["Status", "상태"])
+def test_닫힌_이슈를_완료로_맞춘다(field_name, capsys):
+    gh = 가짜_보드(field_name=field_name)
+    items = 맞출_보드()
+    changed = pb.reconcile(gh, "megasunu", 1, items)
+    assert [i.ref() for i in changed] == ["DFzero#11", "DFzero#12", "DFzero#13"]
+    assert gh.writes() == [
+        {"project": "PVT_1", "item": f"PVTI_{n}", "field": "F_s", "option": "o_done"}
+        for n in (11, 12, 13)
+    ]
+    # 내보낼 내용도 보드와 같아진다
+    assert all(i.status == "완료" for i in changed)
+    assert {i.number: i.status for i in items if i.number in (15, 16)} == {
+        15: "지금",
+        16: "지금",
+    }
+    # 공개 로그에는 번호만 - 제목은 찍지 않는다
+    out = capsys.readouterr().out
+    assert "DFzero#11" in out and "자동 병합이 닫음" not in out
+
+
+def test_맞출_것이_없으면_보드에_쓰지_않는다(capsys):
+    gh = 가짜_보드()
+    items = [i for i in 맞출_보드() if i.number in (14, 15)]
+    assert pb.reconcile(gh, "megasunu", 1, items) == []
+    assert gh.calls == []
+
+
+def _snapshot(tmp_path, *extra):
+    gh = 가짜_보드(
+        pages=[
+            page(
+                node("Issue", 11, "자동 병합이 닫음", "CLOSED", {"Status": "지금"}),
+                node("Issue", 15, "열린 일", "OPEN", {"Status": "지금"}),
+            )
+        ]
+    )
+    out = tmp_path / "STATUS.md"
+    argv = ["snapshot", "--org", "megasunu", "--project", "1", "--out", str(out)]
+    with (
+        mock.patch.object(pb, "GitHub", gh),
+        mock.patch.dict(os.environ, {"GH_TOKEN": "t"}, clear=True),
+    ):
+        code = pb.main(argv + list(extra))
+    return code, gh, out.read_text(encoding="utf-8")
+
+
+def test_snapshot_reconcile은_맞춘_뒤에_내보낸다(tmp_path, capsys):
+    code, gh, text = _snapshot(tmp_path, "--reconcile")
+    assert code == 0
+    assert [w["item"] for w in gh.writes()] == ["PVTI_11"]
+    assert "## 지금 (1)" in text and "DFzero#15" in text
+
+
+def test_snapshot은_reconcile_없이는_보드에_쓰지_않는다(tmp_path, capsys):
+    code, gh, text = _snapshot(tmp_path)
+    assert code == 0
+    assert gh.writes() == []
+    assert "## 지금 (1)" in text

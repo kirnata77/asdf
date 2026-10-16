@@ -5,12 +5,14 @@ stella-rain/.github의 scripts/project_bridge.py를 옮겼다(2026-10-16). 바�
 조직의 기본 자동화(새 이슈/닫힘/다시 열림)는 API로 켤 수 없어 sync가 대신 상태를 맞춘다.
 설정과 클릭 순서는 docs/setup/project-board.md.
 
-명령 두 가지:
+명령:
 
   sync      project-sync 워크플로가 이슈 사건마다 부른다. 이슈를 보드에 넣고, 사건에 맞는 기본 상태
             (새 이슈/다시 열림 -> 백로그, 닫힘 -> 완료)를 두고, 명령 라벨(명령:<칸>-<값>)을 칸에 반영한 뒤
             그 라벨을 지운다. 라벨은 요청이지 상태가 아니다.
   snapshot  보드를 STATUS.md로 내보낸다. 클라우드 세션은 보드 API에 닿지 못해 이 파일을 읽는다.
+            --reconcile이면 먼저 닫혔는데 완료가 아닌 이슈를 완료로 맞춘다(GITHUB_TOKEN이 닫은 이슈는
+            sync를 깨우지 않는다 - auto-merge.yml). 이것만 보드에 쓰고, 없으면 읽기만 한다.
 
 둘 다 표준 라이브러리 HTTPS만 써서 Actions와 개발 PC에서 같은 파일이 돈다:
 
@@ -239,6 +241,7 @@ query($org: String!, $number: Int!, $cursor: String) {
       items(first: 100, after: $cursor) {
         pageInfo { hasNextPage endCursor }
         nodes {
+          id
           isArchived
           fieldValues(first: 30) {
             nodes {
@@ -399,6 +402,7 @@ class Item:
     state: str  # OPEN, CLOSED, MERGED, 초안은 DRAFT
     values: dict[str, str]
     assignees: list[str] = field(default_factory=list)
+    item_id: str = ""  # 보드 항목 id (칸 값을 쓸 때)
 
     @property
     def status(self) -> str:
@@ -456,14 +460,13 @@ def parse_items(pages: list[dict]) -> list[Item]:
                         for a in (content.get("assignees") or {}).get("nodes", [])
                         if a
                     ],
+                    item_id=node.get("id", ""),
                 )
             )
     return items
 
 
-def fetch_pages(
-    gh: GitHub, org: str, number: int
-) -> list[dict]:  # pragma: no cover - 실제 네트워크
+def fetch_pages(gh: GitHub, org: str, number: int) -> list[dict]:
     pages, cursor = [], None
     while True:
         data = gh.graphql(ITEMS_QUERY, {"org": org, "number": number, "cursor": cursor})
@@ -475,6 +478,46 @@ def fetch_pages(
         if not info["hasNextPage"]:
             return pages
         cursor = info["endCursor"]
+
+
+DONE = "완료"
+
+
+def stale_closed(items: list[Item]) -> list[Item]:
+    """닫혔는데 상태가 완료가 아닌 이슈. PR과 초안은 보지 않는다."""
+    return [
+        i
+        for i in items
+        if i.kind == "Issue" and i.state == "CLOSED" and i.status != DONE
+    ]
+
+
+def reconcile(gh: GitHub, org: str, number: int, items: list[Item]) -> list[Item]:
+    """stale_closed 항목의 상태를 보드에서 완료로 바꾸고 items의 값도 맞춘다. 바꾼 항목을 돌려준다."""
+    stale = stale_closed(items)
+    if not stale:
+        return []
+    project = parse_project(gh.graphql(PROJECT_QUERY, {"org": org, "number": number}))
+    field_id, option_id = project.option(FIELD_STATUS, DONE)
+    for item in stale:
+        gh.graphql(
+            SET_OPTION,
+            {
+                "project": project.id,
+                "item": item.item_id,
+                "field": field_id,
+                "option": option_id,
+            },
+        )
+        item.values[FIELD_STATUS] = DONE
+    # 공개 로그라 번호만 찍는다
+    summary(
+        [
+            f"### 닫힌 이슈 {len(stale)}개를 {DONE}로 맞춤",
+            *(f"- {i.ref()}" for i in stale),
+        ]
+    )
+    return stale
 
 
 STATE_TAGS = {"CLOSED": "닫힘", "MERGED": "병합됨"}
@@ -587,7 +630,7 @@ def render_status(
     return "\n".join(lines).rstrip() + "\n"
 
 
-def cmd_snapshot(args: argparse.Namespace) -> int:  # pragma: no cover - 실제 네트워크
+def cmd_snapshot(args: argparse.Namespace) -> int:
     token = (
         os.environ.get("PROJECT_TOKEN")
         or os.environ.get("GH_TOKEN")
@@ -597,9 +640,10 @@ def cmd_snapshot(args: argparse.Namespace) -> int:  # pragma: no cover - 실제 
     pages = fetch_pages(gh, args.org, args.project)
     title = pages[0]["organization"]["projectV2"]["title"]
     url = f"https://github.com/orgs/{args.org}/projects/{args.project}"
-    text = render_status(
-        parse_items(pages), title, dt.datetime.now(dt.timezone.utc), url
-    )
+    items = parse_items(pages)
+    if args.reconcile:
+        reconcile(gh, args.org, args.project, items)
+    text = render_status(items, title, dt.datetime.now(dt.timezone.utc), url)
     with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(text)
     print(f"{args.out}: {len(text.splitlines())}줄")
@@ -619,6 +663,11 @@ def main(argv: list[str] | None = None) -> int:
         "--project", type=int, default=int(os.environ.get("PROJECT_NUMBER") or 0)
     )
     snap.add_argument("--out", default="STATUS.md")
+    snap.add_argument(
+        "--reconcile",
+        action="store_true",
+        help="내보내기 전에 닫혔는데 완료가 아닌 이슈를 보드에서 완료로 맞춘다(보드 쓰기 권한)",
+    )
     sub.add_parser(
         "labels", help="저장소에 만들 명령 라벨 이름을 한 줄에 하나씩 찍는다"
     )

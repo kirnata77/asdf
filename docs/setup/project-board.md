@@ -70,6 +70,8 @@ Kade는 조직 Owner 초대를 수락했다. 나머지는 Kade의 PC에서 `gh`(
 2. 보드를 만들 때 생긴 `View 1` 화면 이름을 **전체**로(또는 지운다). API로 화면 이름을 바꾸거나 지울 수 없다.
 3. 보드의 기본 자동화(`Workflows`)는 켜지 않는다 - 새 이슈 -> 백로그, 닫힘 -> 완료, 다시 열림 -> 백로그는
    `project-sync`가 한다(PR이 닫으면 이슈도 닫혀 완료가 된다).
+   단, `auto-merge.yml`이 GITHUB_TOKEN으로 닫은 이슈는 `project-sync`를 깨우지 않는다 - 다음 `Project snapshot`
+   (하루 3번, 바로 필요하면 직접 실행)이 내보내기 전에 닫혔는데 완료가 아닌 이슈를 완료로 맞춘다(`--reconcile`, #189).
 
 App 키를 잃거나 바꿀 때: App 페이지(`https://github.com/organizations/megasunu/settings/apps/megasunu-board-bridge`)에서
 `Generate a private key` -> `gh secret set BRIDGE_APP_PRIVATE_KEY --org megasunu --visibility selected --repos DFzero < 키.pem`
