@@ -44,7 +44,7 @@ FIELD_VERIFICATION = "검증"
 FIELD_PRIORITY = "우선순위"
 FIELD_START = "시작"
 FIELD_TARGET = "목표"
-# GitHub 기본 칸 "Status"는 API로 이름을 바꿀 수 없다. 웹에서 "상태"로 바꾸기 전에도 같은 칸으로 읽는다.
+# GitHub이 만든 기본 칸 "Status"는 웹에서도 API로도 이름을 바꿀 수 없다 - 이 칸을 "상태"로 읽는다.
 FIELD_ALIASES = {"Status": FIELD_STATUS}
 
 STATUS_OPTIONS = ["백로그", "다음", "지금", "검토 중", "완료"]

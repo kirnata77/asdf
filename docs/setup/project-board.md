@@ -63,11 +63,11 @@ Kade는 조직 Owner 초대를 수락했다. 나머지는 Kade의 PC에서 `gh`(
 | 명령 라벨 15개(아래 표) | `gh label create` | 끝남 |
 | 워크플로 `project-sync.yml`, `project-snapshot.yml` | #186 (Kade 병합), 시험 이슈 #187로 열기·라벨·닫기·스냅샷 확인 | 끝남 |
 
-**API로 안 되는 것 - 웹에서 한 번씩 (Kade):**
+**알아 둘 것:**
 
-1. 기본 칸 이름 `Status`를 **상태**로. API는 옵션만 바꾸고 이름은 그대로 둔다(브리지는 두 이름 모두 읽는다).
-   보드 -> `⋯` -> `Settings` -> `Status` -> 이름 고치기.
-2. 보드를 만들 때 생긴 `View 1` 화면 이름을 **전체**로(또는 지운다). API로 화면 이름을 바꾸거나 지울 수 없다.
+1. 상태 칸의 이름은 **`Status` 그대로다.** GitHub이 만든 기본 칸이라 웹에서도 API로도 이름을 바꿀 수 없다(옵션은 한국어로 바꿨다).
+   브리지와 STATUS.md는 이 칸을 "상태"로 읽는다(`tools/project_bridge.py`의 `FIELD_ALIASES`).
+2. 보드를 만들 때 생긴 `View 1` 화면은 GraphQL `updateProjectV2View`로 **전체**로 바꿨다(REST에는 화면 고치기가 없다).
 3. 보드의 기본 자동화(`Workflows`)는 켜지 않는다 - 새 이슈 -> 백로그, 닫힘 -> 완료, 다시 열림 -> 백로그는
    `project-sync`가 한다(PR이 닫으면 이슈도 닫혀 완료가 된다).
    단, `auto-merge.yml`이 GITHUB_TOKEN으로 닫은 이슈는 `project-sync`를 깨우지 않는다 - 다음 `Project snapshot`
