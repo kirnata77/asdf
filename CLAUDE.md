@@ -70,14 +70,10 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 
 해당 파일을 건드릴 때 읽히는 규칙(`.claude/rules/`, 파일마다 80줄 이하 - 게이트가 검사한다): `layers.md`(구조·계층),
 `tests.md`(테스트 지도), `scenarios.md`(풀 시나리오), `build-and-save.md`(세이브 호환성·buildozer), `eol.md`(줄끝).
-`CLAUDE.md`는 100줄 이하(게이트가 검사).
+`CLAUDE.md`는 100줄 이하(게이트가 검사). **모든 텍스트 파일은 LF** - `.gitattributes`(`* text=auto eol=lf`)와 pre-commit 훅이 지키고 게이트가 검사한다(세부 `eol.md`).
 
 작업할 때 `repo-workflow` 스킬(계획·검증·클라우드·브랜치·커밋·PR)을 따른다. 그 밖의 스킬(`.claude/skills/`): `handoff-trigger`
 (핸드오프 권유는 맥락 400k부터, `context-guard` 훅이 알림), `session-handoff`, `session-resume`, `code-graph`(Graft).
-
-## 줄끝 - 모든 텍스트 파일은 LF
-
-- LF 규칙은 `.gitattributes`(`* text=auto eol=lf`)와 pre-commit 훅이 지키고 게이트가 검사한다. 세부는 `.claude/rules/eol.md`.
 
 ## 작업 보드 (할 일의 유일한 기록, 2026-10-16부터)
 
