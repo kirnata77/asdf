@@ -125,9 +125,10 @@ def _쓸_가치가_있나(상태, 시전자, 이름, 사용기록):
         지속 = 지속 if isinstance(지속, int) else 3  # 수식이면 짧게 본다
         return not 직전 or 라운드 >= max(직전) + 지속
     if 분류 == "해제스킬":
-        return any(
-            a["상태이상"] or a["디버프"] for a in gf.아군_목록(상태) if a["생존"]
-        )
+        # 디버프만 푸는 스킬(큐어)은 상태이상(기절 등)만 있을 때 쓰지 않는다
+        종류 = {e.get("종류") for e in 데이터.get("효과") or []}
+        칸 = ("디버프",) if 종류 == {"디버프해제"} else ("상태이상", "디버프")
+        return any(any(a[k] for k in 칸) for a in gf.아군_목록(상태) if a["생존"])
     if 분류 == "자원스킬":
         return not 시전자.get("보유자원")
     if 분류 == "소환스킬":

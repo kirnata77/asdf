@@ -11,6 +11,7 @@ import copy
 from game.data.ability.job_ability_0000 import 특성목록 as 공용특성
 from game.data.job_level.job_level_000x_style import 전투스타일
 from game.data.perks.perks_class_0000 import 퍽목록 as 공용퍽
+from game.system import character_data_system as 캐릭터데이터
 from game.system import character_levelup_system as 캐릭터레벨업
 from game.controller.ctl_party import 스킬데이터모음_생성
 from game.controller.ctl_registry import (
@@ -73,6 +74,8 @@ def _퍽_선택가능(캐릭터, 퍽정의):
     분류 = 퍽정의.get("분류")
     if 분류 == "일반퍽":
         return False
+    if 퍽정의.get("차수", 1) > 캐릭터데이터.차수_계산(캐릭터):
+        return False  # 스킬처럼 자기 차수보다 높은 퍽은 못 고른다
     if not _선행조건_만족(캐릭터, 퍽정의.get("선행조건")):
         return False
     if "획득특성" in 퍽정의:
@@ -87,8 +90,8 @@ def _퍽_선택가능(캐릭터, 퍽정의):
 
 def 선택가능_퍽목록(캐릭터):
     """이 캐릭터가 지금 고를 수 있는 (퍽이름, 퍽정의) 목록. 공용퍽
-    (perks_class_0000) + 그 직업 퍽목록 중 "일반퍽" 분류·선행조건
-    미충족·이미 보유한 것은 뺀다."""
+    (perks_class_0000) + 그 직업 퍽목록 중 "일반퍽" 분류·캐릭터 차수보다 높은 "차수"·
+    선행조건 미충족·이미 보유한 것은 뺀다."""
     직업퍽 = 직업_레지스트리[캐릭터["직업"]]["퍽목록"]
     전체 = list(공용퍽.items()) + list(직업퍽.items())
     return [(이름, 정의) for 이름, 정의 in 전체 if _퍽_선택가능(캐릭터, 정의)]
