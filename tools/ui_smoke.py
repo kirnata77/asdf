@@ -2859,6 +2859,10 @@ class 스모크앱(main.DnfMobileApp):
 
 
 if __name__ == "__main__":
+    # Windows에서 리디렉션된 출력은 cp1252라 한글 print가 죽는다(#200) - 콘솔 인코딩과 상관없이 UTF-8로.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     스모크앱().run()
     for 단계 in 결과["단계"]:
         print("OK  ", 단계)

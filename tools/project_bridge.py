@@ -654,6 +654,10 @@ def cmd_snapshot(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows에서 리디렉션된 출력은 cp1252라 한글 print가 죽는다(#200) - 콘솔 인코딩과 상관없이 UTF-8로.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("sync", help="이슈 사건 하나를 반영한다(입력은 환경 변수)")
