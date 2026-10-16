@@ -11,8 +11,8 @@ buildozer.spec도 기본 보호 경로다(버전 PR은 사용자가 병합한다
 - `wait`: 아직 도는 것이 있거나, 아무것도 보고되지 않았거나, 필수 검사가 아직 성공하지 않았다
   (시작 전이거나 건너뜀).
 - `stop`: 실패한 것이 있거나 사용자에게 남기는 PR이다: 초안, 보호 경로(`.github/workflows/`,
-  `buildozer.spec`, 이 스크립트, `CLAUDE.md`, `.claude/rules/`, `--protect` 경로)를 바꾸는 PR,
-  파일 목록을 다 읽지 못한 PR.
+  `buildozer.spec`, 이 스크립트, `CLAUDE.md`, `.claude/rules/`(테스트 지도 `tests.md`와 모듈 배치 `layers.md`는 뺀다),
+  `--protect` 경로)를 바꾸는 PR, 파일 목록을 다 읽지 못한 PR.
 
 사용법: python3 auto_merge_gate.py [--require NAMES]... [--protect PATHS]...
            [--pr PR_JSON [--files FILES_JSON]] CHECK_RUNS_JSON COMBINED_STATUS_JSON
@@ -43,6 +43,9 @@ PROTECTED = (
     "CLAUDE.md",
     ".claude/rules/",
 )
+# 보호 경로 안의 예외(파일 하나씩): 기능 PR이 새 테스트 파일·모듈을 적는 곳이라 기능과 같이 병합한다(2026-10-16 Kade,
+# CLAUDE.md "Overrides of global rules").
+UNPROTECTED = (".claude/rules/tests.md", ".claude/rules/layers.md")
 
 
 def name_list(text):
@@ -58,7 +61,9 @@ def protected_paths(files, protected=()):
     names = {
         n for f in files for n in (f.get("filename"), f.get("previous_filename")) if n
     }
-    return sorted(n for n in names if n.startswith(dirs) or n in whole)
+    return sorted(
+        n for n in names if (n.startswith(dirs) or n in whole) and n not in UNPROTECTED
+    )
 
 
 def left_to_user(pr, files, protected=()):
