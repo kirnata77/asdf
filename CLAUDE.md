@@ -1,7 +1,7 @@
 # 던전앤파이터 모바일 프로토타입
 
 Kivy로 만든 턴제 RPG 프로토타입이다. buildozer로 안드로이드 APK를 빌드한다.
-원격 저장소: https://github.com/kirnata77/asdf (기본 브랜치 `main-branch`)
+원격 저장소: https://github.com/megasunu/DFzero (기본 브랜치 `main-branch`)
 
 **세션 상태는 [`MEMORY.md`](MEMORY.md)다** - 지금 진행 중인 일과 아직 믿으면 안 되는 것이 거기 있다.
 이어서 하는 세션은 `session-resume` 스킬로 시작한다.
