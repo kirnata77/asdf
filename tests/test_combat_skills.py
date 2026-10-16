@@ -177,10 +177,13 @@ def test_스킬_전수(직업, golden):
     golden(f"combat_skills_{직업}", 결과)
 
 
-def test_스킬은_82개이고_모두_소유직업이_있다():
+def test_스킬은_직업_82개와_공용_2개이고_직업_스킬은_모두_소유직업이_있다():
+    from game.data.job_skill.job_skill_0000 import 스킬목록 as 공용스킬
+
     반응 = [n for n, d in 스킬데이터.items() if d["분류"] == "반응스킬"]
-    assert (len(스킬데이터), len(반응)) == (82, 10)
-    assert set(스킬_소유) == set(스킬데이터)
+    assert (len(스킬데이터), len(반응)) == (84, 11)
+    assert set(공용스킬) == {"도발", "탈"}  # 공용 스킬(퍽으로 얻는다)은 소유직업이 없다
+    assert set(스킬_소유) == set(스킬데이터) - set(공용스킬)
 
 
 def test_귀참은_귀신_태그_스킬_수만큼_d8을_더한다():
