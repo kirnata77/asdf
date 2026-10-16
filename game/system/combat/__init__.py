@@ -145,7 +145,7 @@
 #   damage           명중 판정, 피해 계산/속성 배율/피해 적용, 피격 부가효과, 지속피해
 #   attacks          아군 일반공격, 장전(은탄 등) 소모
 #   monster_actions  몬스터 턴 - 패턴(공격/다중/자폭/버프/회복/내성)과 몬스터 소환수
-#   reactions        캐릭터 반응특성(회피/반격/피격시/공격후/전투시작 반응)
+#   reactions        캐릭터 반응스킬(회피/반격/피격시/공격후/전투시작 반응)
 #   flow             전투 흐름 - 전투 시작, 턴 시작/종료, 턴 순서, 다음 턴, 전투 이탈
 #
 # 의존 방향(아래가 위를 부르지 않는다): core/formula -> participants/status -> resources -> stats/traits
