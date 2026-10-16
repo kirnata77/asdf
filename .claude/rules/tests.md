@@ -26,6 +26,7 @@ paths:
 | `test_state_schema.py` | 캐릭터/전투 참가자/게임상태가 `state_schema.py` 표대로인지(칸이 빠지거나 이름이 바뀌면 실패), 불러올 때 핵심 칸 검사 | 규칙 |
 | `test_data_integrity.py` | 데이터의 수식이 엄격하게 평가되는지, 몬스터/스킬/버프/던전/마을/상점의 키·이름 참조 | 규칙(허용 목록은 이유와 함께) |
 | `test_scenario_*.py` | 풀 시나리오(실제 전투로 처음부터 끝까지, scenarios.md) | 요약 골든 + 값 |
+| `test_auto_merge_gate.py`, `test_project_bridge.py` | 자동 병합 판정, 보드 브리지(명령 라벨·사건별 상태·STATUS.md) | 값 |
 | `test_imports.py`, `test_repo_hygiene.py` | 모듈 import, file_path.py, LF 줄끝, 시나리오 장부 대조 | 규칙 |
 
 - 공용 도우미는 `tests/support.py`(자동 전투, 강제 승리/패배, 경로 걷기, 결정적 성장).

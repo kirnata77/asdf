@@ -10,7 +10,7 @@
 - 그림: 고블린 12종·케라하·비노슈 원본 교체, 카겔/봄 카겔 추가(10-13). 공어 3종 그림 연결(10-15) - 공어는 미등록 초안(game-rules "공어"). 배치는 game-rules "화면 배치".
 - 10-14: 타우 패턴 통일·어설터 개명(세이브 v4)·비스트 거대화·몬스터 타입(game-rules "타우 패턴"). 10-13: 키놀·프라그·펜릴 패턴. **수치 시뮬레이션은 `scenario.측정_파티_준비/측정_학습/측정_실전`**(배운 플레이어, 퍽도 배움(10-16), game-rules "밸런스 측정 조건"). D06 밸런스 조정 대기.
 - **10-15:** 봉인 장비·`마봉능력` 58개, [전문직업] 봉인해제/변환, 마봉효과 전투 반영(S13)·내성보너스 수정, 집요함, 레어 무기 2종, 업적 장비 보상 - game-rules 같은 이름 절. **다음:** 주류 얻을 곳 미정. 루가루 패턴·보스 축소, 차수만큼 행동, 케라하·비노슈 영창(game-rules).
-- **다음(사용자 결정):** 업적 보상 확정(항아리?), 창고, 임시 그림 교체. 레벨 12~20 미정: 13 스킬, 16 각성 특성, 17 스킬 개화 선택지, 18 각성 스킬.
+- **할 일은 [보드](https://github.com/orgs/megasunu/projects/1)로 옮기는 중**(10-16): 이슈 #154~#183, 주인 결정은 kirnata77 담당. 설정·브리지: [project-board](docs/setup/project-board.md).
 - **2차수:** 웨스트코스트(T03, D10 보스 클리어로 개방) + 하늘성 D11~D16은 지도 틀만. 용족 4종(`monster_race_dragon.py`, 10-13)은 데이터만 있고 인카운트/보스 미정. 풀 시나리오 S7은 계획 상태.
 - 풀 시나리오 S1~S6·S8~S12 구현([계획](.memory/roadmap/scenario-tests.md) 전부 완료). 구조 점검 N0~N7 전부 완료: [architecture_review.md](docs/architecture_review.md) 10절, [refactor.md](.memory/roadmap/refactor.md).
 - 리팩터링 보고서 후속(종족 속성, skill 6모듈, 팝업 도우미, 몬스터 기본값 표 등): [refactoring_report.md](docs/refactoring_report.md) 9절. combat 순환은 안 함 - 이유 거기.
