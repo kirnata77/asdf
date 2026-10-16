@@ -5,7 +5,7 @@
 ## Now - 2026-10-16
 - **10-16:** 반응스킬(세이브 v5)·추가행동(DnD 추가 공격, 자동전투도) - game-rules 같은 이름 절. 마봉능력 같은 능력은 한 번만·회피는 방어구만·부위별 구역(game-rules "마법으로 봉인된 장비"). 주/보조/약점스탯 고르기·마법사 약점 근력, 퍽 차수(1~4, 다음은 퍽 추가) - game-rules 같은 이름 절.
 - **릴리스는 APK 요청 때만**(10-13 지시). 품질 백로그 P1~P10 끝남: [quality-plan](.memory/roadmap/quality-plan.md), [P8·P6](.memory/sessions/2026-10-14-quality-p8-p6.md).
-- **직전 병합:** 10-16 지속피해형 턴 종료 감소·좀비 출혈 개편(명중시 1턴·우선 표적·명중 -1), 10-15 루가루/좀비/키놀/펜릴 조정·공중에뜸->넘어짐 - [game-rules](.memory/roadmap/game-rules.md).
+- **직전 병합:** 10-16 지속피해형 턴 종료 감소·좀비 출혈 개편(명중시 1턴·우선 표적·명중 -1), 10-15 루가루/좀비/키놀/펜릴 조정·공중에뜸->넘어짐 - [game-rules](docs/game-rules.md).
 - 직전: 레벨 1 공중에뜸 스킬 5종·단죄의 십자가 2회(game-rules, 옛 세이브는 불러올 때 채움, S5 6->2번째 승리), 직업별 특징 주석(10-13). **공격 연출**: 10-14 그림 20장(모양x색)·키 `공격타입`(무기 `무기속성` 개명) - game-rules "공격 연출". 실기기 미확인.
 - 그림: 고블린 12종·케라하·비노슈 원본 교체, 카겔/봄 카겔 추가(10-13). 공어 3종 그림 연결(10-15) - 공어는 미등록 초안(game-rules "공어"). 배치는 game-rules "화면 배치".
 - 10-14: 타우 패턴 통일·어설터 개명(세이브 v4)·비스트 거대화·몬스터 타입(game-rules "타우 패턴"). 10-13: 키놀·프라그·펜릴 패턴. **수치 시뮬레이션은 `scenario.측정_파티_준비/측정_학습/측정_실전`**(배운 플레이어, 퍽도 배움(10-16), game-rules "밸런스 측정 조건"). D06 밸런스 조정 대기.
@@ -32,9 +32,9 @@
 | [`CLAUDE.md`](CLAUDE.md), [`.claude/rules/`](.claude/rules/), [`.claude/skills/`](.claude/skills/) | 규칙: 완료 기준·가드레일, 주제별 규칙, 절차 |
 | [`.memory/README.md`](.memory/README.md) | 어느 기억 파일에 무엇을 쓰나 |
 | [`.memory/active-issues/`](.memory/active-issues/) | 값/문서/동작을 믿기 전에 |
-| [`.memory/roadmap/`](.memory/roadmap/) | 다음에 할 일, 숫자가 있는 사실(`game-rules.md`) |
+| [`.memory/roadmap/`](.memory/roadmap/) | 다음에 할 일, 숫자가 있는 사실 |
 | [`.memory/sessions/`](.memory/sessions/) | 왜 그렇게 결정했나 (헛발질 포함) |
-| [`README.md`](README.md), [`docs/`](docs/) | 실행/개발 입구, 빌드 노트, 구조 점검 보고서 |
+| [`README.md`](README.md), [`docs/`](docs/) | 실행/개발 입구, 빌드 노트, 구조 점검 보고서, 게임 규칙([`game-rules.md`](docs/game-rules.md)) |
 
 ## 규칙
 - *Now*는 세션마다 갱신한다. 숫자가 있는 사실은 roadmap, 경위는 sessions, 아직 확인 안 된 것/알려진 버그는 active-issues로.

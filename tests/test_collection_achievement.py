@@ -1,6 +1,6 @@
 """도감과 업적 - 등록 시점, 전투 승리 횟수, 업적 판정과 보상 수령, 세이브 왕복과 옛 세이브(2026-10-13).
 
-규칙은 .memory/roadmap/game-rules.md "도감 / 업적".
+규칙은 docs/game-rules.md "도감 / 업적".
 """
 
 import json
