@@ -32,6 +32,7 @@ from game.screens.screens_common import (
     _도트_필터,
     뒤로키_버튼,
     스크롤_목록,
+    스탯고르기판,
     닫기_버튼,
     탭_줄,
     글자_높이,
@@ -1284,7 +1285,7 @@ class 주점화면(Screen):
             Label(
                 text=f"새 동료 (레벨 1, {gameflow.영입_비용}골드)\n"
                 "파티가 가득 차 있으면 모험단 숙소로 갑니다.",
-                size_hint=(1, 0.35),
+                size_hint=(1, 0.2),
                 halign="center",
             )
         )
@@ -1292,7 +1293,7 @@ class 주점화면(Screen):
             text="",
             hint_text=gameflow.캐릭터명_안내 + " (비우면 직업 이름)",
             multiline=False,
-            size_hint=(1, 0.2),
+            size_hint=(1, 0.11),
         )
         이름칸.bind(
             text=lambda inst, 값: (
@@ -1303,17 +1304,40 @@ class 주점화면(Screen):
         )
         본문.add_widget(이름칸)
         직업선택 = Spinner(
-            text=gameflow.직업목록[0], values=gameflow.직업목록, size_hint=(1, 0.2)
+            text=gameflow.직업목록[0], values=gameflow.직업목록, size_hint=(1, 0.11)
         )
         본문.add_widget(직업선택)
+        # 능력치 칸을 터치해 주(노랑)/보조(파랑)/약점(빨강)스탯을 고른다 - 점수는 바로 보인다
+        자원라벨 = Label(text="", markup=True, size_hint=(1, 0.08))
+        본문.add_widget(자원라벨)
+
+        def 미리보기_갱신(스탯구성):
+            미리 = gameflow.캐릭터_미리보기(직업선택.text, 스탯구성)
+            자원라벨.text = (
+                f"[color=e05555]HP {미리['기본최대HP']}[/color]    "
+                f"[color=6fa0ff]MP {미리['기본최대MP']}[/color]"
+            )
+            if None in 스탯구성.values():  # 안내 줄은 팝업에 가려서 여기 알린다
+                자원라벨.text += (
+                    "    [color=e05555]주/보조/약점을 모두 고르세요[/color]"
+                )
+            스탯판.설정(스탯구성, 미리)
+
+        스탯판 = 스탯고르기판(바뀜=미리보기_갱신, font_size="14sp", size_hint=(1, 0.24))
+        본문.add_widget(스탯판)
+        직업선택.bind(text=lambda inst, 값: 미리보기_갱신(gameflow.기본_스탯구성(값)))
+        미리보기_갱신(gameflow.기본_스탯구성(직업선택.text))
         팝업 = Popup(
-            title="파티원 영입", content=본문, size_hint=(0.85, 0.6), auto_dismiss=False
+            title="파티원 영입",
+            content=본문,
+            size_hint=(0.85, 0.75),
+            auto_dismiss=False,
         )
         결과 = {}
 
         def 영입():
             결과["캐릭터"], 결과["자리"] = gameflow.파티원_영입(
-                self._게임상태(), 이름칸.text, 직업선택.text
+                self._게임상태(), 이름칸.text, 직업선택.text, 스탯판.스탯구성
             )
 
         def 누름(*_):
@@ -1328,7 +1352,7 @@ class 주점화면(Screen):
                     f"{결과['캐릭터']['캐릭터명']}을(를) 영입해 {자리글}."
                 )
 
-        버튼줄 = BoxLayout(orientation="horizontal", spacing=8, size_hint=(1, 0.25))
+        버튼줄 = BoxLayout(orientation="horizontal", spacing=8, size_hint=(1, 0.14))
         영입버튼 = Button(text=f"영입 ({gameflow.영입_비용}골드)")
         영입버튼.bind(on_release=누름)
         취소버튼 = Button(text="취소")

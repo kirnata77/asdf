@@ -5,7 +5,6 @@
 
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
 from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.checkbox import CheckBox
@@ -30,6 +29,7 @@ from game.screens.screens_common import (
     설정_불러오기,
     설정_저장,
     뒤로키_버튼,
+    스탯고르기판,
 )
 
 
@@ -117,7 +117,6 @@ class 메인메뉴화면(Screen):
 
 
 class 파티생성화면(Screen):
-    _능력치_목록 = ["근력", "민첩", "건강", "지능", "지혜", "매력"]
     # 처음 열었을 때 칸마다 고른 직업 - 네 칸 모두 참여 상태로 시작한다
     _기본_직업 = ["귀검사", "격투가", "거너", "마법사"]
 
@@ -185,11 +184,12 @@ class 파티생성화면(Screen):
         for 슬롯 in self.슬롯목록:
             self._카드_갱신(슬롯)
 
-    def _미리보기(self, 직업):
-        """그 직업으로 새로 만든 캐릭터(시작 HP/MP/능력치 미리보기용)."""
-        if 직업 not in self._미리보기_캐시:
-            self._미리보기_캐시[직업] = gameflow.캐릭터_생성("", 직업)
-        return self._미리보기_캐시[직업]
+    def _미리보기(self, 직업, 스탯구성):
+        """그 직업과 고른 스탯구성으로 새로 만든 캐릭터(시작 HP/MP/능력치 미리보기용)."""
+        키 = (직업, tuple(sorted(스탯구성.items(), key=lambda 쌍: 쌍[0])))
+        if 키 not in self._미리보기_캐시:
+            self._미리보기_캐시[키] = gameflow.캐릭터_미리보기(직업, 스탯구성)
+        return self._미리보기_캐시[키]
 
     def _카드_생성(self, i):
         카드 = _둥근상자(
@@ -257,7 +257,9 @@ class 파티생성화면(Screen):
             background_color=(0.3, 0.31, 0.35, 1),
             size_hint=(0.4, 1),
         )
-        슬롯["직업스피너"].bind(text=lambda inst, 값, 슬=슬롯: self._카드_갱신(슬))
+        슬롯["스탯구성"] = gameflow.기본_스탯구성(self._기본_직업[i])
+        # 직업을 바꾸면 스탯 고르기도 그 직업 기본값으로 돌아간다
+        슬롯["직업스피너"].bind(text=lambda inst, 값, 슬=슬롯: self._직업_바뀜(슬))
         입력줄.add_widget(슬롯["직업스피너"])
         가운데.add_widget(입력줄)
 
@@ -272,16 +274,12 @@ class 파티생성화면(Screen):
         슬롯["자원라벨"].bind(size=lambda inst, size: setattr(inst, "text_size", size))
         가운데.add_widget(슬롯["자원라벨"])
 
-        능력치판 = GridLayout(cols=3, size_hint=(1, 0.36))
-        슬롯["능력치칸"] = {}
-        for 이름 in self._능력치_목록:
-            칸 = Label(
-                text="", markup=True, font_size="12sp", halign="left", valign="middle"
-            )
-            칸.bind(size=lambda inst, size: setattr(inst, "text_size", size))
-            능력치판.add_widget(칸)
-            슬롯["능력치칸"][이름] = 칸
-        가운데.add_widget(능력치판)
+        # 능력치 칸을 터치해 주(노랑)/보조(파랑)/약점(빨강)스탯을 고른다
+        슬롯["능력치판"] = 스탯고르기판(
+            바뀜=lambda 구성, 슬=슬롯: self._스탯_바뀜(슬, 구성),
+            size_hint=(1, 0.36),
+        )
+        가운데.add_widget(슬롯["능력치판"])
         카드.add_widget(가운데)
 
         오른쪽 = BoxLayout(orientation="vertical", size_hint=(0.22, 1))
@@ -314,10 +312,19 @@ class 파티생성화면(Screen):
         self.슬롯목록.append(슬롯)
         return 카드
 
+    def _직업_바뀜(self, 슬롯):
+        슬롯["스탯구성"] = gameflow.기본_스탯구성(슬롯["직업스피너"].text)
+        self._카드_갱신(슬롯)
+
+    def _스탯_바뀜(self, 슬롯, 스탯구성):
+        슬롯["스탯구성"] = 스탯구성
+        self.안내라벨.text = ""
+        self._카드_갱신(슬롯)
+
     def _카드_갱신(self, 슬롯):
-        """직업 미리보기와 참여 여부(흐림/입력 막기)를 카드에 반영한다."""
+        """직업·스탯구성 미리보기와 참여 여부(흐림/입력 막기)를 카드에 반영한다."""
         토글 = 슬롯.get("참여토글")
-        if "능력치칸" not in 슬롯:
+        if "능력치판" not in 슬롯:
             return  # 카드 생성 도중(아직 위젯이 다 없음)
         참여 = 토글 is None or 토글.state == "down"
         if 토글 is not None:
@@ -325,17 +332,17 @@ class 파티생성화면(Screen):
             토글.background_color = _강조색 if 참여 else (0.2, 0.21, 0.25, 1)
             토글.bold = 참여
         직업 = 슬롯["직업스피너"].text
-        미리 = self._미리보기(직업)
+        미리 = self._미리보기(직업, 슬롯["스탯구성"])
         슬롯["초상"].source = _캐릭터이미지_경로(gameflow.초상화_코드(미리))
         슬롯["초상"].color = (1, 1, 1, 1) if 참여 else (0.35, 0.35, 0.35, 1)
         슬롯["자원라벨"].text = (
             f"[color=e05555]HP {미리['기본최대HP']}[/color]    "
             f"[color=6fa0ff]MP {미리['기본최대MP']}[/color]"
         )
-        for 이름, 칸 in 슬롯["능력치칸"].items():
-            칸.text = f"[color=9ea6b3]{이름}[/color] {미리[이름]}"
+        슬롯["능력치판"].설정(슬롯["스탯구성"], 미리)
         슬롯["이름입력"].disabled = not 참여
         슬롯["직업스피너"].disabled = not 참여
+        슬롯["능력치판"].disabled = not 참여
         슬롯["가운데"].opacity = 1 if 참여 else 0.45
 
     def _시작(self, *args):
@@ -343,12 +350,14 @@ class 파티생성화면(Screen):
         for i, 슬롯 in enumerate(self.슬롯목록):
             if i > 0 and 슬롯["참여토글"].state != "down":
                 continue
-            파티구성.append((슬롯["이름입력"].text, 슬롯["직업스피너"].text))
+            파티구성.append(
+                (슬롯["이름입력"].text, 슬롯["직업스피너"].text, 슬롯["스탯구성"])
+            )
 
         앱 = App.get_running_app()
         try:
             앱.게임상태 = gameflow.새_게임_시작(파티구성)
-        except ValueError as 오류:  # 이름 중복 - 시작하지 않고 알려 준다
+        except ValueError as 오류:  # 이름 중복/스탯 덜 고름 - 시작하지 않고 알려 준다
             self.안내라벨.text = str(오류)
             return
         self.manager.get_screen("마을").갱신()
