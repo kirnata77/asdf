@@ -137,12 +137,44 @@ test("after compaction, SessionStart tells Claude to offer a handoff", () => {
   assert.strictEqual(g.decide({ hook_event_name: "SessionStart", source: "startup" }, "", 0, {}), null);
 });
 
+// A home folder for the hook's child process: with or without the user-level copy of this hook.
+function home(withGlobalCopy) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-home-"));
+  if (withGlobalCopy) {
+    fs.mkdirSync(path.join(dir, ".claude", "hooks"), { recursive: true });
+    fs.writeFileSync(path.join(dir, ".claude", "hooks", "context-guard.cjs"), "// the user-level copy\n");
+  }
+  return { ...process.env, HOME: dir, USERPROFILE: dir };
+}
+
+test("the user-level copy shadows this one: the same warning is not given twice", () => {
+  const withCopy = home(true);
+  assert.strictEqual(g.shadowedByGlobal(__filename, withCopy.HOME), true);
+  assert.strictEqual(g.shadowedByGlobal(__filename, home(false).HOME), false);
+  // run as the user-level copy itself (a home whose hook is this file): never shadowed
+  const self = path.join(withCopy.HOME, ".claude", "hooks", "context-guard.cjs");
+  assert.strictEqual(g.shadowedByGlobal(self, withCopy.HOME), false);
+});
+
+test("end to end: quiet when the user-level copy exists", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-"));
+  const transcript = path.join(dir, "t.jsonl");
+  fs.writeFileSync(transcript, [user, entry(0, 450000)].join("\n") + "\n");
+  const input = JSON.stringify({ ...prompt, session_id: "shadow", transcript_path: transcript, scratchpad_dir: dir });
+  const run = (env) =>
+    execFileSync(process.execPath, [path.join(__dirname, "context-guard.cjs")], { input, encoding: "utf8", env });
+  assert.strictEqual(run(home(true)), "");
+  assert.match(JSON.parse(run(home(false))).systemMessage, /handoff recommended/);
+});
+
 test("end to end through stdin, with state kept between prompts", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-"));
   const transcript = path.join(dir, "t.jsonl");
   fs.writeFileSync(transcript, [user, entry(0, 309000)].join("\n") + "\n");
   const input = JSON.stringify({ ...prompt, session_id: "e2e", transcript_path: transcript, scratchpad_dir: dir });
-  const run = () => execFileSync(process.execPath, [path.join(__dirname, "context-guard.cjs")], { input, encoding: "utf8" });
+  const env = home(false);
+  const run = () =>
+    execFileSync(process.execPath, [path.join(__dirname, "context-guard.cjs")], { input, encoding: "utf8", env });
 
   const first = JSON.parse(run());
   assert.strictEqual(first.systemMessage, "Context 310k tokens (31%) used");
