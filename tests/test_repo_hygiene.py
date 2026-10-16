@@ -195,6 +195,20 @@ def test_CLAUDE_md는_100줄_이하():
     )
 
 
+def test_CLAUDE_md는_전역_규칙의_예외를_이름으로_적는다():
+    """Kade의 전역 규칙(~/.claude/AGENTS.md "Precedence"): 저장소가 바꾸는 전역 규칙은
+    "Overrides of global rules" 섹션에 굵은 머리 불릿으로 하나씩 적는다. 적지 않은 것은 전역 규칙을 따른다."""
+    텍스트 = _읽기(os.path.join(fix_eol.ROOT, "CLAUDE.md"))
+    섹션 = re.search(
+        r"^## Overrides of global rules\b.*\n((?:(?!## ).*\n?)*)", 텍스트, re.M
+    )
+    assert 섹션, 'CLAUDE.md에 "## Overrides of global rules" 섹션이 없다'
+    본문 = 섹션.group(1)
+    assert re.search(r"^- \*\*[^*]+\*\*", 본문, re.M) or "없음." in 본문, (
+        '예외는 "- **이름.** 설명" 꼴로 적는다(없으면 "없음."이라고 쓴다)'
+    )
+
+
 def test_규칙_파일은_80줄_이하이고_paths를_가진다():
     폴더 = os.path.join(fix_eol.ROOT, ".claude", "rules")
     파일들 = (
