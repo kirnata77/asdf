@@ -3,7 +3,7 @@
 **색인이지 기록이 아니다.** 낡는 순간 거짓이 되는 것만 여기 둔다. **40줄/6KB 이하, 한 줄 200자 이하**(게이트가 검사).
 
 ## Now - 2026-10-16
-- **10-16:** 마봉능력 같은 능력은 한 번만·회피는 방어구만·부위별 구역(game-rules "마법으로 봉인된 장비"). 주/보조/약점스탯 고르기·마법사 약점 근력, 퍽 차수(1~4, 다음은 퍽 추가) - game-rules 같은 이름 절.
+- **10-16:** 반응특성 -> 스킬 분류 `반응스킬`(세이브 v5, game-rules 같은 이름 절). 마봉능력 같은 능력은 한 번만·회피는 방어구만·부위별 구역(game-rules "마법으로 봉인된 장비"). 주/보조/약점스탯 고르기·마법사 약점 근력, 퍽 차수(1~4, 다음은 퍽 추가) - game-rules 같은 이름 절.
 - **릴리스는 APK 요청 때만**(10-13 지시). 품질 백로그 P1~P10 끝남: [quality-plan](.memory/roadmap/quality-plan.md), [P8·P6](.memory/sessions/2026-10-14-quality-p8-p6.md).
 - **직전 병합:** 10-16 지속피해형 턴 종료 감소·좀비 출혈 개편(명중시 1턴·우선 표적·명중 -1), 10-15 루가루/좀비/키놀/펜릴 조정·공중에뜸->넘어짐 - [game-rules](.memory/roadmap/game-rules.md).
 - 직전: 레벨 1 공중에뜸 스킬 5종·단죄의 십자가 2회(game-rules, 옛 세이브는 불러올 때 채움, S5 6->2번째 승리), 직업별 특징 주석(10-13). **공격 연출**: 10-14 그림 20장(모양x색)·키 `공격타입`(무기 `무기속성` 개명) - game-rules "공격 연출". 실기기 미확인.
@@ -14,7 +14,7 @@
 - **2차수:** 웨스트코스트(T03, D10 보스 클리어로 개방) + 하늘성 D11~D16은 지도 틀만. 용족 4종(`monster_race_dragon.py`, 10-13)은 데이터만 있고 인카운트/보스 미정. 풀 시나리오 S7은 계획 상태.
 - 풀 시나리오 S1~S6·S8~S12 구현([계획](.memory/roadmap/scenario-tests.md) 전부 완료). 구조 점검 N0~N7 전부 완료: [architecture_review.md](docs/architecture_review.md) 10절, [refactor.md](.memory/roadmap/refactor.md).
 - 리팩터링 보고서 후속(종족 속성, skill 6모듈, 팝업 도우미, 몬스터 기본값 표 등): [refactoring_report.md](docs/refactoring_report.md) 9절. combat 순환은 안 함 - 이유 거기.
-- 테스트 915개, 커버리지 94.13%(게이트 범위)(2026-10-14 측정). 시나리오 공백(숙소·해체·레벨 11~20 등): [이슈 #74](https://github.com/kirnata77/asdf/issues/74) - 제안 S9의 포션은 지금 S9가 다룸, 제안 S10(숙소)은 미착수(새 번호 필요).
+- 테스트 1079개, 커버리지 94%(게이트 범위)(2026-10-16 측정). 시나리오 공백(숙소·해체·레벨 11~20 등): [이슈 #74](https://github.com/kirnata77/asdf/issues/74) - 제안 S9의 포션은 지금 S9가 다룸, 제안 S10(숙소)은 미착수(새 번호 필요).
 - CI `ui-smoke`는 PR을 막는다. 병합된 브랜치는 자동 삭제. **`claude/*` PR은 `auto-merge.yml`이 CI 초록에서 병합**(10-15, [경위](.memory/sessions/2026-10-15-auto-merge-workflow.md), 첫 실행 미확인) - 워크플로·spec PR은 사용자.
 - 10-15 `context-guard` 훅(`.claude/hooks`)·새 handoff-trigger(agent-config에서). 옛 *Now*의 경위 문단 원문: [보관본](.memory/sessions/2026-10-10-memory-index-archive.md).
 

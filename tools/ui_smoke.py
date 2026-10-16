@@ -197,6 +197,7 @@ class 스모크앱(main.DnfMobileApp):
         yield from self._단계_파티생성(상태, 매니저)
         yield from self._단계_상점(상태, 매니저)
         yield from self._단계_파티관리_팝업(상태, 매니저)
+        yield from self._단계_반응스킬_표시(상태, 매니저)
         전투 = yield from self._단계_장비_포션_뒤로키_전투팝업(상태, 매니저)
         yield from self._단계_전투종료_자동전투_주점(상태, 매니저, 전투)
         yield from self._단계_맵_타일(상태, 매니저)
@@ -713,6 +714,27 @@ class 스모크앱(main.DnfMobileApp):
             "스킬습득 팝업(한 줄: 이름/가격/상세보기, 가격 누르면 배움, 모자라면 잠금, 상세 팝업)"
         )
 
+    def _단계_반응스킬_표시(self, 상태, 매니저):
+        """파티원 화면 [스킬과 특성] - 반응스킬은 스킬 탭에 "반응스킬"로, 특성 탭에는 없다"""
+        거너 = next(c for c in 상태["파티"]["파티원"] if c["직업"] == "거너")
+        assert "건가드" in 거너["보유스킬"] and "건가드" not in 거너["보유특성"]
+        화면 = 매니저.get_screen("파티원")
+        화면.캐릭터 = 거너
+        화면.탭, 화면.하위탭 = "스킬과 특성", "스킬"
+        매니저.current = "파티원"
+        yield 0.5
+        글들 = [_글(getattr(w, "text", "")) for w in 화면.walk(restrict=True)]
+        assert any("건가드" in 글 for 글 in 글들), 글들
+        assert any("반응스킬 · 반응행동" in 글 for 글 in 글들), 글들
+        _찍기("party_member_reaction_skill")
+        화면._하위탭_선택("특성")
+        yield 0.3
+        글들 = [_글(getattr(w, "text", "")) for w in 화면.walk(restrict=True)]
+        assert not any("건가드" in 글 for 글 in 글들), 글들
+        화면._하위탭_선택("스킬")
+        화면.탭 = "장비와 스탯"
+        결과["단계"].append("파티원 스킬 탭에 반응스킬 표시(특성 탭에는 없음)")
+
     def _단계_장비_포션_뒤로키_전투팝업(self, 상태, 매니저):
         """장비 교체/파티원 포션/뒤로 키, 전투 화면 팝업(스킬/대상/포션/행동 선택/도망)"""
         무기 = yield from self._단계_장비교체(상태, 매니저)
@@ -883,11 +905,21 @@ class 스모크앱(main.DnfMobileApp):
             p = _차례(전투상태, 이름)
             _팝업_닫기()
             전투._스킬_버튼_클릭(p)
+            반응 = [
+                n
+                for n in p["원본"]["보유스킬"]
+                if 상태["스킬데이터모음"][n]["분류"] == "반응스킬"
+            ]
+            if 이름 in ("거너", "마법사"):  # 레벨 3에 건가드/위상 변화
+                assert 반응, p["원본"]["보유스킬"]
+            팝업글 = _팝업글()
+            assert not any(n in 글 for n in 반응 for 글 in 팝업글), (반응, 팝업글)
             for 스킬 in p["원본"]["보유스킬"]:
                 데이터 = 상태["스킬데이터모음"][스킬]
                 assert 전투._실제_타겟(데이터) == gf.스킬_실제_타겟(상태, 데이터), 스킬
             결과["단계"].append(
                 f"{이름} 스킬 팝업/실제 타겟 {len(p['원본']['보유스킬'])}개"
+                f"(반응스킬 {len(반응)}개는 팝업에 없음)"
             )
         yield 0.5
         _찍기("battle_skill_popup")

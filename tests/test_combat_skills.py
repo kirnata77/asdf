@@ -168,8 +168,8 @@ def 스킬_시나리오(스킬, 준비):
 def test_스킬_전수(직업, golden):
     결과 = {}
     for 스킬, 소유 in 스킬_소유.items():
-        if 소유 != 직업:
-            continue
+        if 소유 != 직업 or 스킬데이터[스킬]["분류"] == "반응스킬":
+            continue  # 반응스킬은 직접 쓰지 않는다 - test_combat_effects 반응 전투
         결과[스킬] = {
             "기본": 스킬_시나리오(스킬, 준비=False),
             "준비됨": 스킬_시나리오(스킬, 준비=True),
@@ -177,8 +177,10 @@ def test_스킬_전수(직업, golden):
     golden(f"combat_skills_{직업}", 결과)
 
 
-def test_스킬은_72개이고_모두_소유직업이_있다():
-    assert len(스킬데이터) == 72 and set(스킬_소유) == set(스킬데이터)
+def test_스킬은_82개이고_모두_소유직업이_있다():
+    반응 = [n for n, d in 스킬데이터.items() if d["분류"] == "반응스킬"]
+    assert (len(스킬데이터), len(반응)) == (82, 10)
+    assert set(스킬_소유) == set(스킬데이터)
 
 
 def test_귀참은_귀신_태그_스킬_수만큼_d8을_더한다():
