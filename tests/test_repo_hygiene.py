@@ -514,6 +514,11 @@ def test_main_branch가_빨가면_이슈를_열고_보드에_올린다():
     )
     assert "main-branch가 빨갛다: Check" in 잡
     assert "python3 tools/project_bridge.py sync" in 잡
+    # 새로 연 이슈는 백로그가 아니라 지금·1순위로(보낸 사람이 없어 라벨 명령은 못 쓴다)
+    assert (
+        "APPLY_COMMANDS: ${{ steps.issue.outputs.action == 'opened' && "
+        "'명령:상태-지금 명령:우선순위-1' || '' }}"
+    ) in 잡
     assert "actions/create-github-app-token@" in 잡 and "contents: write" not in 잡
 
 

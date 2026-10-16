@@ -482,6 +482,33 @@ def test_권한_없는_사람의_이슈도_넣지만_명령은_지운다():
     ]
 
 
+def test_워크플로가_보낸_명령은_라벨_없이_적용한다():
+    """check.yml의 main-status: 보낸 사람이 없어(SENDER="") 라벨 명령은 못 쓰므로 APPLY_COMMANDS로 넘긴다.
+    이슈의 라벨은 건드리지 않고, 권한도 묻지 않는다."""
+    code, calls = run_sync(
+        {
+            "EVENT_ACTION": "opened",
+            "SENDER": "",
+            "APPLY_COMMANDS": "명령:상태-지금 명령:우선순위-1",
+        }
+    )
+    assert code == 0
+    assert sorted(_설정한_옵션(calls)) == ["o_now", "o_p1"]
+    assert not [c for c in calls if c[0] in ("DELETE", "GET")]
+
+
+def test_워크플로가_보낸_모르는_명령은_무시한다():
+    code, calls = run_sync(
+        {
+            "EVENT_ACTION": "opened",
+            "SENDER": "",
+            "APPLY_COMMANDS": "명령:상태-없는값 버그",
+        }
+    )
+    assert code == 0
+    assert _설정한_옵션(calls) == ["o_backlog"]
+
+
 def test_main_snapshot은_보드_번호가_필요하다():
     with mock.patch.dict(os.environ, {}, clear=True), pytest.raises(SystemExit):
         pb.main(["snapshot"])

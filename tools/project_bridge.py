@@ -9,7 +9,8 @@ stella-rain/.github의 scripts/project_bridge.py를 옮겼다(2026-10-16). 바�
 
   sync      project-sync 워크플로가 이슈 사건마다 부른다. 이슈를 보드에 넣고, 사건에 맞는 기본 상태
             (새 이슈/다시 열림 -> 백로그, 닫힘 -> 완료)를 두고, 명령 라벨(명령:<칸>-<값>)을 칸에 반영한 뒤
-            그 라벨을 지운다. 라벨은 요청이지 상태가 아니다.
+            그 라벨을 지운다. 라벨은 요청이지 상태가 아니다. APPLY_COMMANDS(공백으로 나눈 명령)는 워크플로가
+            직접 보내는 명령이다 - 이슈 라벨이 아니어서 지우지 않고 권한도 묻지 않는다(check.yml의 main-status).
   snapshot  보드를 STATUS.md로 내보낸다. 클라우드 세션은 보드 API에 닿지 못해 이 파일을 읽는다.
             --reconcile이면 먼저 닫혔는데 완료가 아닌 이슈를 완료로 맞춘다(GITHUB_TOKEN이 닫은 이슈는
             sync를 깨우지 않는다 - auto-merge.yml). 이것만 보드에 쓰고, 없으면 읽기만 한다.
@@ -355,7 +356,10 @@ def cmd_sync(args: argparse.Namespace | None) -> int:
     )
     item_id = item["addProjectV2ItemById"]["item"]["id"]
 
-    values = last_wins(plan.apply)
+    # 워크플로가 보낸 명령: 보낸 사람이 없어(SENDER="") 라벨 명령을 쓸 수 없는 check.yml의 main-status가 쓴다.
+    sent = env.get("APPLY_COMMANDS", "").split()
+    unknown_sent = [c for c in sent if not parse_command(c)]
+    values = last_wins(plan.apply + sent)  # last_wins는 모르는 것을 건너뛴다
     default_status = status_on_event(action)
     if default_status and FIELD_STATUS not in values:
         values[FIELD_STATUS] = default_status
@@ -385,6 +389,8 @@ def cmd_sync(args: argparse.Namespace | None) -> int:
         )
     if plan.unknown:
         lines.append(f"- 모르는 명령 라벨(그대로 둠): {', '.join(plan.unknown)}")
+    if unknown_sent:
+        lines.append(f"- 워크플로가 보낸 모르는 명령(무시): {', '.join(unknown_sent)}")
     summary(lines)
     return 0
 
