@@ -18,6 +18,7 @@ from game.data.item.item_consumable import 소모품_데이터
 from game.data.item.item_food import 음식_데이터
 from game.data.item.item_materials import 재료_데이터
 from game.data.item.item_potion import 포션_데이터
+from game.data.job_skill.job_skill_0000 import 스킬목록 as 공용스킬
 from game.system import (
     character_creation_system as 캐릭터생성,
     drink_system,
@@ -191,11 +192,11 @@ def 파티_최대치로_회복(게임상태):
 
 
 def 스킬데이터모음_생성():
-    """5직업의 스킬목록을 전부 합친 딕셔너리 하나를 만든다. 스킬 이름은
+    """공용 스킬목록과 5직업의 스킬목록을 전부 합친 딕셔너리 하나를 만든다. 스킬 이름은
     직업 간에 겹치지 않아(확인됨) 그냥 합쳐도 안전하다. 파티 구성과
     무관하게 항상 같은 내용이라, 캐릭터별이 아니라 게임상태 전체에서
     하나만 쓴다."""
-    결과 = {}
+    결과 = dict(공용스킬)  # 공용 스킬(퍽으로 얻는 탈 등 - job_skill_0000.py)
     for 정보 in 직업_레지스트리.values():
         결과.update(정보["스킬목록"])
     # 1차 전직 스킬도 합친다(파티 화면 [스킬습득]으로 배운다).
