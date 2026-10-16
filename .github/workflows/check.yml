@@ -3,10 +3,14 @@ name: Check
 # 모든 push/PR에서 완료 기준(DoD) 게이트를 돌린다. 로컬의
 # `python tools/check.py`와 같은 명령이다(커버리지 하한 포함). check 잡은 kivy를 설치하지 않는다 -
 # tests/는 gameflow 이하 헤드리스 로직만 검사한다. 화면은 아래 ui-smoke 잡이 따로 돌려 본다.
+# main-branch는 auto-merge.yml이 병합한 뒤(workflow_dispatch)와 매주 다시 검사한다 - GITHUB_TOKEN 병합은 push 실행을
+# 만들지 않는다. main-branch 실행이 실패하면 main-status 잡이 "main-branch가 빨갛다: Check" 이슈를 열고, 통과하면 닫는다.
 on:
   push:
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: "41 1 * * 1"  # 월요일 10:41 KST
 
 permissions: {}
 
@@ -64,3 +68,85 @@ jobs:
           name: ui-smoke-shots
           path: ui_smoke_shots
           if-no-files-found: ignore
+
+  # main-branch 실행의 결과를 이슈로 남긴다(PR 실행에서는 건너뜀 - 필수 검사가 아니다).
+  # GITHUB_TOKEN이 연 이슈는 issues 사건을 만들지 않아 project-sync가 돌지 않으므로, 보드에는 여기서
+  # megasunu-board-bridge App 토큰으로 직접 올린다(project-sync.yml과 같은 조직 설정, App 권한은 그대로).
+  main-status:
+    needs: [check, ui-smoke]
+    if: always() && github.ref == 'refs/heads/main-branch'
+    permissions:
+      issues: write  # 이슈 열기·댓글·닫기
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Open, comment on or close the issue
+        id: issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          CHECK: ${{ needs.check.result }}
+          UI_SMOKE: ${{ needs.ui-smoke.result }}
+          SHA: ${{ github.sha }}
+          EVENT: ${{ github.event_name }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="main-branch가 빨갛다: Check"
+          number=$(gh issue list --repo "$REPO" --state open --search "in:title $title" --json number,title                      | jq -r --arg t "$title" 'map(select(.title == $t)) | .[0].number // empty')
+          if [ "$CHECK" = failure ] || [ "$UI_SMOKE" = failure ]; then
+            body="main-branch의 Check가 $SHA에서 실패했다($EVENT): $RUN - check: $CHECK, ui-smoke: $UI_SMOKE"
+            if [ -n "$number" ]; then
+              gh issue comment "$number" --repo "$REPO" --body "$body"
+            else
+              url=$(gh issue create --repo "$REPO" --title "$title" --body "$body")
+              echo "action=opened" >> "$GITHUB_OUTPUT"
+              echo "number=${url##*/}" >> "$GITHUB_OUTPUT"
+            fi
+          elif [ "$CHECK" = success ] && [ "$UI_SMOKE" = success ]; then
+            if [ -n "$number" ]; then
+              gh issue close "$number" --repo "$REPO" --reason completed --comment "main-branch의 Check가 $SHA에서 통과했다: $RUN"
+              echo "action=closed" >> "$GITHUB_OUTPUT"
+              echo "number=$number" >> "$GITHUB_OUTPUT"
+            else
+              echo "main-branch passed at $SHA; no open issue to close"
+            fi
+          else
+            echo "check: $CHECK, ui-smoke: $UI_SMOKE - nothing to record"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.issue.outputs.action != ''
+        with:
+          persist-credentials: false
+          sparse-checkout: tools/project_bridge.py
+          sparse-checkout-cone-mode: false
+
+      - name: 보드 토큰 받기 (megasunu-board-bridge App)
+        if: steps.issue.outputs.action != ''
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.BRIDGE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.BRIDGE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          permission-organization-projects: write
+          permission-issues: read
+
+      - name: 보드에 반영 (열림 -> 백로그, 닫힘 -> 완료)
+        if: steps.issue.outputs.action != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROJECT_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          ORG: ${{ github.repository_owner }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
+          EVENT_ACTION: ${{ steps.issue.outputs.action }}
+          SENDER: ""  # 명령 라벨이 없다 - 권한 조회도 하지 않는다
+        run: |
+          set -euo pipefail
+          ISSUE_NODE_ID=$(gh api "repos/$REPO/issues/$ISSUE_NUMBER" --jq .node_id)
+          export ISSUE_NODE_ID
+          python3 tools/project_bridge.py sync
