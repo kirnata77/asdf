@@ -477,7 +477,44 @@ def test_자동_병합의_필수_검사는_check_yml의_잡과_같다():
     assert (
         "\n    name:" not in 검사
     )  # 잡에 name:이 붙으면 check run 이름이 잡 id가 아니게 된다
-    assert sorted(_필수_검사(병합)) == sorted(잡들)
+    # main-status는 main-branch 실행에서만 돈다(PR에서는 건너뜀) - 필수 검사가 아니다.
+    assert sorted(_필수_검사(병합)) == sorted(j for j in 잡들 if j != "main-status")
+
+
+def _잡(본문, 이름):
+    """워크플로 본문에서 잡 하나의 줄들(다음 잡 전까지)."""
+    잡들 = 본문.split("\njobs:\n", 1)[1]
+    찾음 = re.search(rf"^  {re.escape(이름)}:\n((?:(?:    .*)?\n)*)", 잡들, re.M)
+    assert 찾음, f"{이름} 잡이 없다"
+    return 찾음.group(1)
+
+
+def test_자동_병합_뒤와_매주_main_branch를_다시_검사한다():
+    """GITHUB_TOKEN 병합은 main-branch에 push 실행을 만들지 않아 병합 커밋이 검사되지 않았다(#206).
+    workflow_dispatch는 GITHUB_TOKEN으로도 실행이 생기므로, 병합한 뒤 auto-merge.yml이 Check를 부른다."""
+    워크플로들 = _워크플로들()
+    병합, 검사 = 워크플로들["auto-merge.yml"], 워크플로들["check.yml"]
+    부르기 = '      gh workflow run check.yml --repo "$REPO" --ref main-branch'
+    assert 부르기 in 병합
+    assert 병합.index("gh pr merge") < 병합.index(부르기)
+    assert re.search(r"^      actions: write\b", _잡(병합, "merge"), re.M)
+    on = 검사.split("\npermissions:")[0]
+    assert "\n  workflow_dispatch:" in on and re.search(
+        r"^  schedule:\n    - cron: ", on, re.M
+    )
+
+
+def test_main_branch가_빨가면_이슈를_열고_보드에_올린다():
+    """main-branch 실행이 실패하면 "main-branch가 빨갛다: Check" 이슈를 열고, 통과하면 닫는다.
+    GITHUB_TOKEN이 연 이슈는 project-sync를 깨우지 않으므로 보드 브리지를 직접 부른다."""
+    잡 = _잡(_워크플로들()["check.yml"], "main-status")
+    assert "needs: [check, ui-smoke]" in 잡
+    assert re.search(
+        r"^    if: always\(\) && github\.ref == 'refs/heads/main-branch'$", 잡, re.M
+    )
+    assert "main-branch가 빨갛다: Check" in 잡
+    assert "python3 tools/project_bridge.py sync" in 잡
+    assert "actions/create-github-app-token@" in 잡 and "contents: write" not in 잡
 
 
 def test_자동_병합은_claude_브랜치에서_main_branch로만_병합한다():
