@@ -169,9 +169,21 @@ def test_워크플로와_buildozer_spec은_늘_보호된다(path):
 
 @pytest.mark.parametrize(
     "path",
+    ["tools/auto_merge_gate.py", "CLAUDE.md", ".claude/rules/tests.md"],
+)
+def test_판정_스크립트와_에이전트_규칙은_늘_보호된다(path):
+    """auto-merge.yml은 main-branch의 이 스크립트를 돌린다 - PR이 보호 목록을 줄이면 그 PR이 옛 규칙으로
+    스스로 병합되고 다음 PR부터 보호가 풀린다. 에이전트 규칙도 에이전트가 스스로 병합하지 않는다(전역 G23)."""
+    assert _판정(pr(), [file(path)]) == "stop"
+
+
+@pytest.mark.parametrize(
+    "path",
     [
         ".github/dependabot.yml",
-        "tools/auto_merge_gate.py",
+        "tools/auto_merge_gate.py.orig",
+        "docs/CLAUDE.md",
+        ".claude/skills/repo-workflow/SKILL.md",
         "docs/github/workflows/x.md",
         "buildozer.spec.orig",
         "docs/buildozer.spec",

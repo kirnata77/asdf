@@ -68,8 +68,9 @@ description: 이 저장소에서 코드·설정·CI·문서를 고치는 모든 
   목록만 보고 무엇이 왜 들어왔는지 알 수 있어야 한다 - PR 본문에 요점, 이유, 검증한 것,
   남은 것(`NOT VERIFIED` 포함)을 쓴다.
 - **Claude가 연 `claude/*` PR은 `auto-merge.yml`이 병합한다**(2026-10-15 결정): Check가 초록이면 병합 커밋으로 병합하고 브랜치를 지운다.
-  Claude는 GitHub 자동 병합을 켜지도, 손으로 병합하지도 않는다 - PR 활동을 구독하고 빨간 CI와 리뷰를 고친다. 초안,
-  `.github/workflows/`·`buildozer.spec`을 바꾼 PR, 사용자가 연 PR은 사용자가 병합한다(병합할 차례라고 한 번 알린다).
+  Claude는 GitHub 자동 병합을 켜지도, 손으로 병합하지도 않는다 - PR 활동을 구독하고 빨간 CI와 리뷰를 고친다. 보호 경로
+  (`.github/workflows/`, `buildozer.spec`, `tools/auto_merge_gate.py`, `CLAUDE.md`, `.claude/rules/` - 목록은 그 스크립트의 `PROTECTED`)를
+  바꾸는 PR은 **초안으로 연다.** 초안과 사용자가 연 PR은 사용자가 병합한다(병합할 차례라고 한 번 알린다).
 - **병합된 브랜치는 끝난 것이다.** 후속 작업은 최신 `main-branch`에서 새로 시작한다(병합된 브랜치에
   커밋을 더 쌓지 않는다).
 - **`main-branch`로 병합된 PR의 브랜치는 이름과 상관없이 자동으로 지워진다**(`.github/workflows/delete-merged-branch.yml`, 워크플로가 병합한 `claude/*`는 `auto-merge.yml`).

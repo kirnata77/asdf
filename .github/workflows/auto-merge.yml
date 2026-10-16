@@ -5,8 +5,9 @@ name: Auto-merge
 #
 # - Check 워크플로가 끝날 때마다 돈다. check.yml은 push와 pull_request 둘 다에서 돌아 같은 커밋에 실행이 둘이므로
 #   어느 쪽이 끝나든 다시 판정한다(pull_request만 보면 push 실행이 나중에 끝날 때 영영 병합되지 않는다).
-# - 판정: head 커밋의 check run이 모두 초록이고 REQUIRE의 검사가 모두 성공. 초안, `.github/workflows/`나
-#   `buildozer.spec`을 바꾸는 PR은 사용자가 병합한다(이 파일 자체 포함).
+# - 판정: head 커밋의 check run이 모두 초록이고 REQUIRE의 검사가 모두 성공. 초안과 보호 경로(`.github/workflows/`,
+#   `buildozer.spec`, `tools/auto_merge_gate.py`, `CLAUDE.md`, `.claude/rules/` - 그 스크립트의 PROTECTED)를 바꾸는 PR은
+#   사용자가 병합한다(이 파일 자체 포함).
 # - REQUIRE는 check.yml의 잡 이름이다. 잡을 더하거나 이름을 바꾸면 여기도 같은 PR에서 고친다(test_repo_hygiene가 대조).
 # - GITHUB_TOKEN으로 병합하므로 main-branch의 push 워크플로와 pull_request closed(delete-merged-branch.yml)가
 #   돌지 않는다 - 브랜치는 여기서 지우고, 닫는 키워드(`Closes #N`)의 이슈도 여기서 닫는다.
