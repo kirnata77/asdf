@@ -71,7 +71,7 @@ jobs:
 
   # main-branch 실행의 결과를 이슈로 남긴다(PR 실행에서는 건너뜀 - 필수 검사가 아니다).
   # GITHUB_TOKEN이 연 이슈는 issues 사건을 만들지 않아 project-sync가 돌지 않으므로, 보드에는 여기서
-  # megasunu-board-bridge App 토큰으로 직접 올린다(project-sync.yml과 같은 조직 설정, App 권한은 그대로).
+  # megasunu-board-bridge App 토큰으로 직접 올린다(project-sync.yml과 같은 조직 설정, App 권한은 그대로) - 지금·1순위로.
   main-status:
     needs: [check, ui-smoke]
     if: always() && github.ref == 'refs/heads/main-branch'
@@ -133,7 +133,7 @@ jobs:
           permission-organization-projects: write
           permission-issues: read
 
-      - name: 보드에 반영 (열림 -> 백로그, 닫힘 -> 완료)
+      - name: 보드에 반영 (열림 -> 지금·1순위, 닫힘 -> 완료)
         if: steps.issue.outputs.action != ''
         env:
           GH_TOKEN: ${{ github.token }}
@@ -145,6 +145,8 @@ jobs:
           ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
           EVENT_ACTION: ${{ steps.issue.outputs.action }}
           SENDER: ""  # 명령 라벨이 없다 - 권한 조회도 하지 않는다
+          # 빨간 main-branch는 바로 고칠 일이다. 라벨 대신 명령을 직접 보낸다(project_bridge.py sync의 APPLY_COMMANDS).
+          APPLY_COMMANDS: ${{ steps.issue.outputs.action == 'opened' && '명령:상태-지금 명령:우선순위-1' || '' }}
         run: |
           set -euo pipefail
           ISSUE_NODE_ID=$(gh api "repos/$REPO/issues/$ISSUE_NUMBER" --jq .node_id)
