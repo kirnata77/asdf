@@ -1,6 +1,6 @@
 """마법으로 봉인된 장비의 봉인해제/봉인변환과 "마법의 ~" 장비(2026-10-15 사용자 결정).
 
-규칙은 .memory/roadmap/game-rules.md "마법으로 봉인된 장비".
+규칙은 docs/game-rules.md "마법으로 봉인된 장비".
 """
 
 import random

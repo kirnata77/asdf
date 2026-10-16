@@ -52,11 +52,11 @@ def test_MEMORY_md는_줄과_크기_상한을_지킨다():
     줄수 = 내용.count(b"\n") + (0 if 내용.endswith(b"\n") or not 내용 else 1)
     assert 줄수 <= MEMORY_최대_줄, (
         f"MEMORY.md가 {줄수}줄이다(상한 {MEMORY_최대_줄}) - 규칙/수치 설명은 "
-        ".memory/roadmap/game-rules.md로 옮긴다"
+        "docs/game-rules.md로 옮긴다"
     )
     assert len(내용) <= MEMORY_최대_바이트, (
         f"MEMORY.md가 {len(내용)}바이트다(상한 {MEMORY_최대_바이트}) - 규칙/수치 설명은 "
-        ".memory/roadmap/game-rules.md로 옮긴다"
+        "docs/game-rules.md로 옮긴다"
     )
 
 
