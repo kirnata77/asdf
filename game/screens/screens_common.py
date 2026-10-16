@@ -461,6 +461,77 @@ class _테두리박스(ButtonBehavior, BoxLayout):
 
 
 # =====================================================
+# 주/보조/약점스탯 고르기 판 - 새 게임 파티 구성과 주점 영입(2026-10-16 사용자 결정)
+# =====================================================
+# 능력치 6칸을 터치하면 역할이 주스탯 -> 보조스탯 -> 일반 -> 약점스탯 순서로 바뀐다
+# (다른 칸이 이미 맡은 역할은 건너뜀 - 규칙은 gameflow.스탯역할_다음). 테두리 색이
+# 역할을 보여 준다. 점수는 쓰는 쪽이 미리보기 캐릭터로 계산해 설정()으로 넣는다.
+스탯역할_테두리색 = {
+    "주스탯": (1, 0.82, 0.2, 1),  # 노랑
+    "보조스탯": (0.35, 0.6, 1, 1),  # 파랑
+    "약점스탯": (0.92, 0.3, 0.3, 1),  # 빨강
+    "일반": (1, 1, 1, 1),  # 하양
+}
+
+
+class _스탯칸(ButtonBehavior, Label):
+    def __init__(self, 스탯이름, **kwargs):
+        super().__init__(markup=True, halign="center", valign="middle", **kwargs)
+        self.스탯이름 = 스탯이름
+        self.역할 = "일반"
+        with self.canvas.before:
+            self._테두리색 = Color(*스탯역할_테두리색["일반"])
+            self._테두리 = Line(width=1.4)
+        self.bind(pos=self._다시그리기, size=self._다시그리기)
+
+    def _다시그리기(self, *args):
+        self.text_size = self.size
+        self._테두리.rectangle = (
+            self.x + 2,
+            self.y + 2,
+            max(self.width - 4, 0),
+            max(self.height - 4, 0),
+        )
+
+    def 역할_설정(self, 역할):
+        self.역할 = 역할
+        self._테두리색.rgba = 스탯역할_테두리색[역할]
+
+
+class 스탯고르기판(GridLayout):
+    """능력치 6칸(3x2). 칸을 터치하면 self.스탯구성이 바뀌고 바뀜(스탯구성)을 부른다."""
+
+    능력치_목록 = ["근력", "민첩", "건강", "지능", "지혜", "매력"]
+
+    def __init__(self, 바뀜=None, font_size="12sp", **kwargs):
+        kwargs.setdefault("cols", 3)
+        kwargs.setdefault("spacing", dp(3))
+        super().__init__(**kwargs)
+        self.스탯구성 = {}
+        self._바뀜 = 바뀜
+        self.칸 = {}
+        for 이름 in self.능력치_목록:
+            칸 = _스탯칸(이름, font_size=font_size)
+            칸.bind(on_release=lambda inst: self.터치(inst.스탯이름))
+            self.add_widget(칸)
+            self.칸[이름] = 칸
+
+    def 터치(self, 스탯이름):
+        if self.disabled:
+            return
+        self.스탯구성 = gameflow.스탯역할_다음(self.스탯구성, 스탯이름)
+        if self._바뀜 is not None:
+            self._바뀜(self.스탯구성)
+
+    def 설정(self, 스탯구성, 능력치):
+        """역할(테두리)과 점수 글자를 다시 그린다. 능력치 = {이름: 값}."""
+        self.스탯구성 = dict(스탯구성)
+        for 이름, 칸 in self.칸.items():
+            칸.역할_설정(gameflow.스탯역할(스탯구성, 이름))
+            칸.text = f"[color=9ea6b3]{이름}[/color] {능력치[이름]}"
+
+
+# =====================================================
 # 기준 화면 틀 - 화면은 사용자 폰(갤럭시 S24 세로, 1080x2340 픽셀) 하나를 기준으로
 # 만든다. 비율이 다른 기기에서는 기준 화면 전체를 같은 배율로 줄이거나 키워 가운데에
 # 두고, 남는 곳(더 길면 위아래, 더 넓으면 좌우)은 검정 여백으로 둔다. 터치 위치도

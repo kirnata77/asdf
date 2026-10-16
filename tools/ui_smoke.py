@@ -253,6 +253,50 @@ class 스모크앱(main.DnfMobileApp):
         yield 0.3
         _찍기("party_create_duplicate")
         결과["단계"].append("파티 구성 이름 중복 -> 시작 안 함")
+        yield from self._단계_스탯고르기(매니저)
+
+    def _단계_스탯고르기(self, 매니저):
+        """파티 구성 - 능력치 칸 터치로 주/보조/약점스탯 고르기(테두리 색, 점수 바로 반영)"""
+        from game.screens.screens_common import 스탯역할_테두리색
+
+        파티생성 = 매니저.get_screen("파티생성")
+        for 남은슬롯 in 파티생성.슬롯목록:  # 앞 단계의 겹치는 이름("철수")을 지운다
+            남은슬롯["이름입력"].text = ""
+        슬롯 = 파티생성.슬롯목록[0]  # 귀검사: 주 근력 / 보조 민첩 / 약점 지능
+        판 = 슬롯["능력치판"]
+
+        def 칸(이름):
+            return 판.칸[이름]
+
+        assert tuple(칸("근력")._테두리색.rgba) == 스탯역할_테두리색["주스탯"]
+        assert tuple(칸("민첩")._테두리색.rgba) == 스탯역할_테두리색["보조스탯"]
+        assert tuple(칸("지능")._테두리색.rgba) == 스탯역할_테두리색["약점스탯"]
+        assert tuple(칸("매력")._테두리색.rgba) == 스탯역할_테두리색["일반"]
+        assert 칸("근력").text.endswith(" 14"), 칸("근력").text  # 13 + 귀수 1
+        # 근력(주) 터치 -> 보조는 민첩이 가짐 -> 일반(10 + 귀수 1)
+        칸("근력").dispatch("on_release")
+        assert 슬롯["스탯구성"]["주스탯"] is None
+        assert 칸("근력").text.endswith(" 11"), 칸("근력").text
+        assert tuple(칸("근력")._테두리색.rgba) == 스탯역할_테두리색["일반"]
+        # 덜 고르면 시작 안 함
+        이전상태 = self.게임상태
+        파티생성._시작()
+        assert 매니저.current == "파티생성" and self.게임상태 is 이전상태
+        assert "모두 골라" in 파티생성.안내라벨.text, 파티생성.안내라벨.text
+        # 매력(일반) 터치 -> 약점은 지능이 가짐 -> 비어 있는 주
+        칸("매력").dispatch("on_release")
+        assert 슬롯["스탯구성"]["주스탯"] == "매력"
+        assert 칸("매력").text.endswith(" 13"), 칸("매력").text
+        assert tuple(칸("매력")._테두리색.rgba) == 스탯역할_테두리색["주스탯"]
+        yield 0.3
+        _찍기("party_create_stat_pick")
+        # 직업을 바꾸면 그 직업 기본값으로 돌아간다
+        슬롯["직업스피너"].text = "격투가"
+        assert 슬롯["스탯구성"] == gf.기본_스탯구성("격투가")
+        슬롯["직업스피너"].text = "귀검사"
+        결과["단계"].append(
+            "파티 구성 스탯 고르기(터치 순서·건너뛰기, 테두리 색, 점수 반영, 덜 고르면 시작 안 함)"
+        )
 
     def _단계_상점(self, 상태, 매니저):
         """상점 - 구매/판매 목록, [전문직업] 장비해체(일괄해체 확인 팝업)와 봉인해제/봉인변환"""
@@ -1487,10 +1531,26 @@ class 스모크앱(main.DnfMobileApp):
             if w.__class__.__name__ == "TextInput"
         )
         이름칸.text = "새동료"
+        # 영입 팝업에서도 능력치 칸 터치로 주/보조/약점스탯을 고른다(귀검사 기본값에서
+        # 근력 주 -> 일반, 건강 일반 -> 주)
+        스탯판 = next(
+            w
+            for w in list(Window.children)[0].walk(restrict=True)
+            if w.__class__.__name__ == "스탯고르기판"
+        )
+        스탯판.칸["근력"].dispatch("on_release")
+        스탯판.칸["건강"].dispatch("on_release")
+        assert 스탯판.칸["건강"].text.endswith(" 13"), 스탯판.칸["건강"].text
+        yield 0.3
+        _찍기("tavern_recruit_stat_pick")
         팝업버튼("영입").dispatch("on_release")
         yield 0.3
         숙소 = gf.숙소_목록(상태)
         assert [c["캐릭터명"] for c in 숙소] == ["새동료"], 주점.안내라벨.text
+        assert (숙소[0]["주스탯"], 숙소[0]["건강"]) == ("건강", 13)
+        결과["단계"].append(
+            "주점 영입 스탯 고르기(터치로 주스탯 변경 -> 영입 캐릭터에 반영)"
+        )
         assert 상태["소지품"]["골드"] == 1000 - gf.영입_비용
 
         파티 = 상태["파티"]["파티원"]
