@@ -52,6 +52,78 @@ def test_할_일_기록은_작업_보드뿐이다():
         )
 
 
+# ------------------------------------------------------------ 비밀값
+
+# 공개 저장소다(CLAUDE.md "작업 방식") - 이슈와 Actions 로그까지 전부 공개다.
+비밀값_확장자 = {".pem", ".key", ".keystore", ".jks", ".p12", ".pfx"}
+비밀값_내용 = [
+    ("개인 키", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")),
+    ("GitHub 토큰", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36}\b|\bgithub_pat_\w{22,}")),
+    ("AWS 액세스 키", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
+]
+
+
+def _비밀값_문제(경로, 내용):
+    """커밋하면 안 되는 파일이나 내용이면 그 종류들(없으면 빈 목록). 경로는 `/`로 나눈 저장소 상대 경로."""
+    이름 = 경로.rsplit("/", 1)[-1]
+    if os.path.splitext(이름)[1].lower() in 비밀값_확장자 or (
+        이름 == ".env"
+        or (이름.startswith(".env.") and 이름 not in (".env.example", ".env.template"))
+    ):
+        return ["비밀값 파일"]
+    return [종류 for 종류, 패턴 in 비밀값_내용 if 패턴.search(내용)]
+
+
+def _커밋될_파일들():
+    """git이 커밋할 파일: 추적 중인 것 + 무시되지 않은 새 파일. git이 없으면 None."""
+    결과 = subprocess.run(
+        ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+        cwd=fix_eol.ROOT,
+        capture_output=True,
+    )
+    if 결과.returncode != 0:
+        return None
+    return sorted({p for p in 결과.stdout.decode("utf-8").split("\0") if p})
+
+
+def test_비밀값을_커밋하지_않는다():
+    """키스토어, 토큰, `*.pem`, `.env`는 저장소에 두지 않는다 - CI 비밀은 GitHub Secrets로."""
+    파일들 = _커밋될_파일들()
+    if 파일들 is None:  # git이 없는 환경(zip으로 받은 경우 등)은 건너뛴다
+        return
+    위반 = []
+    for 경로 in 파일들:
+        전체 = os.path.join(fix_eol.ROOT, *경로.split("/"))
+        if not os.path.isfile(전체):  # 지운 뒤 아직 커밋하지 않은 파일
+            continue
+        이름 = 경로.rsplit("/", 1)[-1]
+        글 = (
+            os.path.splitext(이름)[1].lower() in fix_eol.TEXT_EXTS
+            or 이름 in fix_eol.TEXT_NAMES
+            or "." not in 이름
+        )
+        with open(전체, "rb") as f:
+            내용 = f.read().decode("utf-8", "replace") if 글 else ""
+        위반 += [f"{경로}: {종류}" for 종류 in _비밀값_문제(경로, 내용)]
+    assert not 위반, (
+        "비밀값을 커밋하려 한다 - 지우고, 이미 push했으면 값을 바꾼다:\n"
+        + "\n".join(위반)
+    )
+
+
+def test_비밀값_검사는_어긋남을_잡는다():
+    # 패턴을 이어 붙여 만든다 - 이 파일 자체가 검사에 걸리지 않게.
+    키 = "-----BEGIN " + "RSA PRIVATE KEY-----\nMIIE\n"
+    토큰 = "gh" + "p_" + "a" * 36
+    assert _비밀값_문제("release.keystore", "") == ["비밀값 파일"]
+    assert _비밀값_문제("config/.env", "") == ["비밀값 파일"]
+    assert _비밀값_문제("docs/key.md", 키) == ["개인 키"]
+    assert _비밀값_문제("tools/x.py", f"TOKEN = '{토큰}'") == ["GitHub 토큰"]
+    assert _비밀값_문제("tools/x.py", "AKIA" + "ABCDEFGHIJKLMNOP") == ["AWS 액세스 키"]
+    assert _비밀값_문제(".env.example", "") == []
+    assert _비밀값_문제("game/data/a.py", "ghp_ 접두사만 있는 글") == []
+
+
 # ------------------------------------------------------------ CLAUDE.md / 규칙 파일 / 스킬
 
 CLAUDE_최대_줄 = 100  # 매 세션 읽는다 - 길면 지시가 덜 지켜진다
