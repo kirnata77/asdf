@@ -11,7 +11,8 @@ buildozer.spec도 기본 보호 경로다(버전 PR은 사용자가 병합한다
 - `wait`: 아직 도는 것이 있거나, 아무것도 보고되지 않았거나, 필수 검사가 아직 성공하지 않았다
   (시작 전이거나 건너뜀).
 - `stop`: 실패한 것이 있거나 사용자에게 남기는 PR이다: 초안, 보호 경로(`.github/workflows/`,
-  `buildozer.spec`, `--protect` 경로)를 바꾸는 PR, 파일 목록을 다 읽지 못한 PR.
+  `buildozer.spec`, 이 스크립트, `CLAUDE.md`, `.claude/rules/`, `--protect` 경로)를 바꾸는 PR,
+  파일 목록을 다 읽지 못한 PR.
 
 사용법: python3 auto_merge_gate.py [--require NAMES]... [--protect PATHS]...
            [--pr PR_JSON [--files FILES_JSON]] CHECK_RUNS_JSON COMBINED_STATUS_JSON
@@ -33,8 +34,15 @@ import sys
 
 GREEN = {"success", "neutral", "skipped"}
 
-# 워크플로(검사와 병합 규칙 자체)와 buildozer.spec(릴리스 버전)을 바꾸는 PR은 사용자가 병합한다.
-PROTECTED = (".github/workflows/", "buildozer.spec")
+# 사용자가 병합하는 PR: 워크플로(검사와 병합 규칙 자체), buildozer.spec(릴리스 버전), 이 스크립트(auto-merge.yml이
+# main-branch의 이것을 돌린다 - 바꾸는 PR이 스스로 병합되면 다음 PR부터 보호가 풀린다), 에이전트 규칙(전역 G23).
+PROTECTED = (
+    ".github/workflows/",
+    "buildozer.spec",
+    "tools/auto_merge_gate.py",
+    "CLAUDE.md",
+    ".claude/rules/",
+)
 
 
 def name_list(text):

@@ -90,7 +90,7 @@ git config core.hooksPath .githooks          # pre-commit 훅 켜기
 
 - **`main-branch`에 직접 push하지 않는다.** 기능마다 최신 `main-branch`에서 브랜치를 따서 게이트 통과 후 PR을 연다.
   **Claude가 연 `claude/*` PR은 `auto-merge.yml`이 CI(`check`·`ui-smoke`) 초록에서 병합한다**(2026-10-15 사용자 결정) - Claude는 GitHub 자동 병합을
-  켜거나 손으로 병합하지 않고 빨간 CI를 고친다. 초안, `.github/workflows/`·`buildozer.spec`을 바꾼 PR, 사용자가 연 PR은 사용자가 병합한다. 병합된 브랜치는 끝난 것이다.
+  켜거나 손으로 병합하지 않고 빨간 CI를 고친다. 보호 경로(`.github/workflows/`·`buildozer.spec`·`tools/auto_merge_gate.py`·`CLAUDE.md`·`.claude/rules/`)를 바꾸는 PR은 초안으로 열고, 초안과 사용자가 연 PR은 사용자가 병합한다. 병합된 브랜치는 끝난 것이다.
 - **게이트 먼저, 커밋은 그다음.** 원격에 올라간 커밋은 고치지 않는다(강제 push 금지). 절차 전체는 `repo-workflow` 스킬.
 - Claude의 커밋은 `Claude <noreply@anthropic.com>`으로 쓴다: 커밋마다 `git -c user.name=Claude -c user.email=noreply@anthropic.com commit`,
   git config에는 넣지 않는다. 이슈와 사용자가 연 PR은 사용자의 것이다.
