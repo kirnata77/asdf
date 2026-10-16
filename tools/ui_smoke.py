@@ -151,6 +151,21 @@ def _팝업글():
     ]
 
 
+def _스킬줄_버튼들():
+    """떠 있는 스킬 팝업의 줄 버튼들(screens_battle._스킬_줄 - 버튼에 스킬이름이 붙어 있다)"""
+    return [w for w in Window.children[0].walk(restrict=True) if hasattr(w, "스킬이름")]
+
+
+def _스킬줄_칸(버튼):
+    """줄 버튼 위에 겹친 글 칸 4개(이름 | 남은 횟수 | MP | 행동)"""
+    칸틀 = [w for w in 버튼.parent.children if w is not 버튼][0]
+    return list(reversed(칸틀.children))
+
+
+def _스킬줄_글(버튼):
+    return [칸.text for 칸 in _스킬줄_칸(버튼)]
+
+
 def _팝업_버튼(글):
     return next(
         w
@@ -905,6 +920,7 @@ class 스모크앱(main.DnfMobileApp):
             p = _차례(전투상태, 이름)
             _팝업_닫기()
             전투._스킬_버튼_클릭(p)
+            yield 0.3  # 칸 너비가 정해진 뒤 잘림을 본다
             반응 = [
                 n
                 for n in p["원본"]["보유스킬"]
@@ -912,14 +928,28 @@ class 스모크앱(main.DnfMobileApp):
             ]
             if 이름 in ("거너", "마법사"):  # 레벨 3에 건가드/위상 변화
                 assert 반응, p["원본"]["보유스킬"]
-            팝업글 = _팝업글()
-            assert not any(n in 글 for n in 반응 for 글 in 팝업글), (반응, 팝업글)
+            # 한 줄 = 이름(왼쪽 정렬) | 남은 횟수 | MP | 행동, 반응스킬은 [반응]으로 비활성
+            줄버튼 = _스킬줄_버튼들()
+            assert [b.스킬이름 for b in 줄버튼] == p["원본"]["보유스킬"]
+            for b in 줄버튼:
+                줄 = gf.스킬_팝업_줄(상태, p, b.스킬이름)
+                assert _스킬줄_글(b) == [b.스킬이름, 줄["남은"], 줄["MP"], 줄["행동"]]
+                assert _스킬줄_칸(b)[0].halign == "left"
+                for 칸 in _스킬줄_칸(b)[1:]:  # 남은/MP/행동은 잘리지 않는다
+                    칸.texture_update()
+                    assert 칸.texture_size[0] <= 칸.width + 1, (b.스킬이름, 칸.text)
+                assert b.disabled == (not 줄["가능"]), b.스킬이름
+                if b.스킬이름 in 반응:
+                    assert b.disabled and 줄["행동"] == "[반응]", b.스킬이름
+            if 이름 == "거너":
+                yield 0.5
+                _찍기("battle_skill_popup_gunner")
             for 스킬 in p["원본"]["보유스킬"]:
                 데이터 = 상태["스킬데이터모음"][스킬]
                 assert 전투._실제_타겟(데이터) == gf.스킬_실제_타겟(상태, 데이터), 스킬
             결과["단계"].append(
-                f"{이름} 스킬 팝업/실제 타겟 {len(p['원본']['보유스킬'])}개"
-                f"(반응스킬 {len(반응)}개는 팝업에 없음)"
+                f"{이름} 스킬 팝업 {len(줄버튼)}줄(이름|남은|MP|행동, 반응스킬 {len(반응)}개 비활성)"
+                "/실제 타겟"
             )
         yield 0.5
         _찍기("battle_skill_popup")
@@ -956,6 +986,28 @@ class 스모크앱(main.DnfMobileApp):
         yield 0.5
         assert _팝업수() == 0 and len(전투상태["로그"]) > 로그수, "고르면 바로 공격한다"
         결과["단계"].append("일반공격 대상 팝업(적 목록 + 취소/뒤로 키, 고르면 공격)")
+
+        # 추가행동: 일반행동으로 일반공격한 귀검사(웨펀마스터, 추가공격 1)는 [일반공격]이 아직 눌리고
+        # 일반공격취급 스킬(어퍼 슬래쉬)은 [추가]로 낸다
+        귀검사 = gf.현재_턴_참가자(상태)
+        assert 귀검사["행동자원"]["일반행동"] == 0 and gf.추가행동_남은수(귀검사) == 1
+        전투.갱신()
+        yield 0.3
+        일반공격버튼 = next(
+            w
+            for w in 전투.액션틀.walk(restrict=True)
+            if getattr(w, "text", None) == "일반공격"
+        )
+        assert not 일반공격버튼.disabled
+        전투._스킬_버튼_클릭(귀검사)
+        yield 0.5
+        어퍼 = next(b for b in _스킬줄_버튼들() if b.스킬이름 == "어퍼 슬래쉬")
+        assert _스킬줄_글(어퍼)[3] == "[추가]" and not 어퍼.disabled
+        _찍기("battle_skill_popup_extra")
+        _팝업_닫기()
+        결과["단계"].append(
+            "추가행동 - 일반공격 뒤 [일반공격] 활성, 어퍼 슬래쉬 [추가]"
+        )
         return 전투
 
     def _단계_전투_아이템(self, 상태, 전투):
