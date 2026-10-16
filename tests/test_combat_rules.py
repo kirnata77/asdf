@@ -2050,6 +2050,111 @@ def test_종족_좀비는_AC_마이너스1_방어력_마이너스1(몬스터):
     assert stats.유효_방어력(전투상태, 적) == -1
 
 
+_좀비들 = ["포레스트 좀비", "할로우 아이", "칼카자크", "굴 구위시"]
+
+
+def test_종족_좀비는_명중보너스_마이너스1이고_출혈인_적이_있으면_속도만_오른다():
+    # 사용자 지정 2026-10-16: 명중보너스 -1, 조건부(출혈인 적)의 명중보너스 +1은 뺐다
+    from game.data.monster.monster_ability import 특성목록
+
+    좀비 = 특성목록["종족:좀비"]
+    assert {"변동대상": "명중보너스", "변동값": -1} in 좀비["효과"]
+    assert 좀비["조건부효과"]["효과"] == [{"변동대상": "속도보너스", "변동값": 7}]
+    assert 좀비["명중시효과"] == {
+        "종류": "상태이상",
+        "이름": "출혈",
+        "내성": "건강",
+        "난이도": "10+근력보정치",
+        "적용시점": "명중후",
+        "지속턴": 1,
+    }
+    assert 좀비["우선표적상태이상"] == "출혈"
+
+
+def test_좀비_패턴에는_출혈이_없다():
+    # 사용자 지정 2026-10-16: 출혈은 패턴이 아니라 종족:좀비의 명중시효과로 건다
+    for 몬스터 in _좀비들:
+        for p in gf.몬스터목록[몬스터]["패턴"].values():
+            효과 = p.get("효과")
+            assert not (isinstance(효과, dict) and 효과.get("이름") == "출혈"), (
+                몬스터,
+                p["이름"],
+            )
+
+
+def _좀비전장(몬스터="포레스트 좀비"):
+    random.seed(4)
+    상태 = support.새게임()
+    gf.전투_시작(상태, [몬스터], 레벨=5, 차수=1)
+    support.반응_처리(상태)
+    전투상태 = 상태["전투상태"]
+    for p in 전투상태["참가자"]:
+        p["현재HP"] = 999
+    좀비 = next(p for p in 전투상태["참가자"] if p["진영"] == "적")
+    아군 = sorted(
+        (p for p in 전투상태["참가자"] if p["진영"] == "아군"),
+        key=lambda p: p["대형위치"],
+    )
+    return 전투상태, 좀비, 아군
+
+
+@pytest.mark.parametrize("내성성공", [False, True])
+def test_좀비_공격이_명중하면_건강내성_실패시_출혈_1턴(내성성공, monkeypatch):
+    from game.system.combat import monster_actions
+
+    전투상태, 좀비, 아군 = _좀비전장()
+    _주사위고정(monkeypatch, 15)  # 명중
+    monkeypatch.setattr(
+        dice_utils, "내성_굴림", lambda 보정치, 난이도, **kw: (내성성공, 난이도)
+    )
+    할퀴기 = gf.몬스터목록["포레스트 좀비"]["패턴"][1]
+    monkeypatch.setattr(
+        __import__("game.system.monster_ai", fromlist=["x"]),
+        "행동_선택",
+        lambda p: 할퀴기,
+    )
+    monkeypatch.setattr(
+        __import__("game.system.monster_ai", fromlist=["x"]),
+        "타겟_선택",
+        lambda *a, **k: 아군[0],
+    )
+    monster_actions.몬스터_턴_실행(전투상태, 좀비)
+    출혈 = [i for i in 아군[0]["상태이상"] if i["이름"] == "출혈"]
+    if 내성성공:
+        assert not 출혈
+    else:
+        assert len(출혈) == 1 and 출혈[0]["지속턴"] == 1
+
+
+def test_좀비는_출혈인_아군을_어그로_비중으로_우선_노린다(monkeypatch):
+    from game.system import monster_ai
+    from game.system.combat import monster_actions
+
+    전투상태, 좀비, 아군 = _좀비전장()
+    아군[1]["상태이상"].append({"이름": "출혈", "지속턴": 2})
+    아군[3]["상태이상"].append({"이름": "출혈", "지속턴": 2})
+    본것 = []
+    원래 = random.choices
+
+    def 기록(목록, weights=None, k=1):
+        본것.append([p["이름"] for p in 목록])
+        return 원래(목록, weights=weights, k=k)
+
+    monkeypatch.setattr(monster_ai.random, "choices", 기록)
+    할퀴기 = gf.몬스터목록["포레스트 좀비"]["패턴"][1]
+    monkeypatch.setattr(monster_ai, "행동_선택", lambda p: 할퀴기)
+    monster_actions.몬스터_턴_실행(전투상태, 좀비)
+    assert len(본것) == 1 and sorted(본것[0]) == sorted(
+        [아군[1]["이름"], 아군[3]["이름"]]
+    )
+    # 출혈인 아군이 없으면 전원 중에서
+    본것.clear()
+    for p in 아군:
+        p["상태이상"] = []
+    monster_actions.몬스터_턴_실행(전투상태, 좀비)
+    assert 본것 and len(본것[0]) == len(아군)
+
+
 def test_루가루_계열_패턴은_사용자가_정한_대로다():
     """사용자 지정 2026-10-14 - 마구 할퀴기/단독 물어뜯기는 없고, 달려들기는 다섯 종 모두 같다."""
 
