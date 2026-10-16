@@ -18,7 +18,7 @@
 # 참가자에게 옮기고(combat.participants), 전투가 끝나면 되돌려 쓰고(유지_상태이상),
 # 마을에서 휴식하면 "휴식시해제"인 것을 지운다(휴식_해제).
 
-from game.system.combat import formula
+from game.system.combat import formula, status
 
 소지품_카테고리 = "소모품"
 보정치_키워드 = {"HP": "건강보정치", "MP": "주문시전보정치"}
@@ -100,14 +100,16 @@ def 휴식_해제(상태이상목록, 정의모음):
     ]
 
 
-def 능력치_변동(상태이상목록, 정의모음, 능력치이름):
+def 능력치_변동(상태이상목록, 정의모음, 능력치이름, 보유특성=None):
     """전투 밖 능력치에 더할 상태이상 "추가효과" 합(취기의 매력 -중첩수 등). 전투 중에는
-    combat.stats가 같은 값을 더한다."""
+    combat.stats가 같은 값을 더한다. 보유특성의 상태이상 보정(취권)도 같이 반영한다."""
     합계 = 0
     for 항목 in 상태이상목록:
-        추가효과 = (
-            ((정의모음.get(항목.get("이름")) or {}).get("효과") or {}).get("추가효과")
-        ) or {}
+        정의 = 정의모음.get(항목.get("이름"))
+        if 정의 is None:
+            continue
+        정의 = status.특성_보정_정의(항목.get("이름"), 정의, 보유특성)
+        추가효과 = (정의.get("효과") or {}).get("추가효과") or {}
         수식 = 추가효과.get(능력치이름)
         if 수식 is None:
             continue
