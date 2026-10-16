@@ -1,0 +1,68 @@
+# megasunu 작업 보드를 `status` 브랜치의 STATUS.md로 내보낸다(tools/project_bridge.py snapshot).
+# 클라우드 세션은 보드 API에 닿지 못해 이 파일을 읽는다:
+#   git fetch origin status && git show origin/status:STATUS.md
+# 최신 상태가 필요하면 이 워크플로를 직접 돌린다(workflow_dispatch). 설정: docs/setup/project-board.md.
+#
+# `status` 브랜치는 생성물 하나만 있는 보기용 브랜치다 - 매번 커밋 하나로 바꿔 쓴다(이력 아님).
+# GITHUB_TOKEN으로 push하므로 다른 워크플로(check 등)를 깨우지 않는다.
+name: Project snapshot
+
+on:
+  schedule:
+    - cron: "17 0,6,12 * * *"  # 09:17, 15:17, 21:17 KST
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: project-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    name: 보드를 STATUS.md로
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write  # status 브랜치 push
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: tools/project_bridge.py
+          sparse-checkout-cone-mode: false
+
+      - name: 보드 토큰 받기 (megasunu-board-bridge App)
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.BRIDGE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.BRIDGE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          permission-organization-projects: read
+          permission-issues: read
+          permission-pull-requests: read
+
+      - name: 내보내기
+        env:
+          PROJECT_TOKEN: ${{ steps.app-token.outputs.token }}
+          ORG: ${{ github.repository_owner }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
+        run: python3 tools/project_bridge.py snapshot --out "$RUNNER_TEMP/STATUS.md"
+
+      - name: status 브랜치에 올리기
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/status-branch"
+          mkdir -p "$out" && cd "$out"
+          git init -q -b status
+          cp "$RUNNER_TEMP/STATUS.md" STATUS.md
+          git add STATUS.md
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "보드 스냅샷"
+          git push -q --force "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" status
+          echo "STATUS.md $(wc -l < STATUS.md)줄을 status 브랜치에 올림" >> "$GITHUB_STEP_SUMMARY"

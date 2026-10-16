@@ -1,0 +1,56 @@
+# 이슈를 megasunu 작업 보드(조직 Project)에 넣고 상태를 맞춘다(tools/project_bridge.py, docs/setup/project-board.md).
+# - 새 이슈/다시 열림 -> 백로그, 닫힘 -> 완료 (보드의 기본 자동화는 API로 켤 수 없어 여기서 대신한다)
+# - 명령 라벨(명령:상태-지금, 명령:검증-실기기필요 ...)은 보드 칸에 반영한 뒤 지운다. 쓰기 권한자의 것만.
+#
+# 조직 megasunu의 설정(DFzero에 공유): vars.PROJECT_NUMBER, vars.BRIDGE_APP_CLIENT_ID,
+# secrets.BRIDGE_APP_PRIVATE_KEY - megasunu-board-bridge App(조직 프로젝트 쓰기, 이슈 읽기).
+# 공개 저장소라 Actions 로그도 공개다 - 스크립트는 이슈 제목을 찍지 않는다.
+name: Project sync
+
+on:
+  issues:
+    types: [opened, reopened, closed, labeled]
+
+permissions: {}
+
+jobs:
+  sync:
+    name: 이슈를 보드에 반영
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write  # 적용한 명령 라벨 지우기, 보낸 사람의 권한 읽기
+    concurrency:
+      group: project-sync-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: tools/project_bridge.py
+          sparse-checkout-cone-mode: false
+
+      - name: 보드 토큰 받기 (megasunu-board-bridge App)
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.BRIDGE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.BRIDGE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          permission-organization-projects: write
+          permission-issues: read
+
+      - name: 동기화
+        env:
+          PROJECT_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          ORG: ${{ github.repository_owner }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+          EVENT_ACTION: ${{ github.event.action }}
+          EVENT_LABEL: ${{ github.event.label.name }}
+          ISSUE_LABELS: ${{ toJSON(github.event.issue.labels.*.name) }}
+          SENDER: ${{ github.event.sender.login }}
+        run: python3 tools/project_bridge.py sync
