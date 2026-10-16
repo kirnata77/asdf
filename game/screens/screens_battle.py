@@ -751,7 +751,8 @@ class 전투화면(Screen):
         행1 = BoxLayout(orientation="horizontal", spacing=4)
         일반공격버튼 = Button(text="일반공격")
         일반공격버튼.disabled = not (
-            아군차례 and 참가자["행동자원"].get("일반행동", 0) > 0
+            아군차례
+            and gameflow.일반공격_가능여부(App.get_running_app().게임상태, 참가자)
         )
         일반공격버튼.bind(on_release=lambda *_: self._일반공격_클릭())
         행1.add_widget(일반공격버튼)
@@ -844,6 +845,7 @@ class 전투화면(Screen):
             self._스킬_대상_고르기(이름, 스킬데이터)
             return
         남은 = {
+            "추가행동": gameflow.추가행동_남은수(참가자),
             "쇼타임행동": 참가자.get("기타행동", {}).get("쇼타임행동", 0),
             "일반행동": 참가자["행동자원"].get("일반행동", 0),
             "보조행동": 참가자["행동자원"].get("보조행동", 0),
