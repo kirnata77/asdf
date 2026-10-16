@@ -29,7 +29,6 @@ tools/project_bridge.py  이슈 <-> megasunu 작업 보드 브리지 (project-sy
 .githooks/         pre-commit (줄끝 통일)
 docs/              빌드 노트, 구조 점검 보고서, 리뷰 보고서, 시나리오 장부, 게임 규칙(game-rules.md)
 README.md          입구(실행/개발/구조/빌드 요약)
-.memory/           작업 기억 (MEMORY.md가 색인)
 ```
 
 **계층은 한 방향이다: `screens` -> `gameflow`(창구) -> `controller` -> `system` -> `data`.**

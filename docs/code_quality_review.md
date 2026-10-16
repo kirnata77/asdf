@@ -345,7 +345,7 @@ elif "스킬" in 항목 and "지속공격 자동 발동" in str(항목.get("비�
 | B. `game/controller/ctl_autobattle.py`(자동전투·전력전투) - 컨트롤러 층에서 모듈만 나눔, 만취는 보류 | 순수 이동. `ctl_autobattle -> ctl_battle` 한 방향(역방향 호출 없음 확인) | 모듈 1개. `file_path.py`, `gameflow.py` import 줄, 테스트 바꿔치기 대상 한 곳 |
 | C. 그대로 두고 `ctl_battle.py` 안에서 절만 정리 | 비용 최소 | 파일이 계속 커진다 |
 
-**추천: B(사용자 승인 2026-10-13).** 실행 순서와 단계는 [`.memory/roadmap/quality-plan.md`](../.memory/roadmap/quality-plan.md).
+**추천: B(사용자 승인 2026-10-13).** 실행 순서와 단계는 [`quality-plan.md`](https://github.com/megasunu/DFzero/blob/3d981e7ac4ecb2776d7ea12be085e260198fa745/.memory/roadmap/quality-plan.md)(2026-10-16에 지움, 마지막 판).
 
 **하지 말 것(판단 유지):** combat 순환 끊기(10-06 판단 그대로 - 도메인 재귀), 수식 DSL 토큰 파서화(R-6), 로컬 DB(D-6).
 이번 측정에서 이 판단을 뒤집을 근거는 찾지 못했다.
